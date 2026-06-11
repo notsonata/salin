@@ -1,0 +1,37 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  font-family: "Avenir Next", "Avenir", "Segoe UI", sans-serif;
+}
+
+code,
+pre,
+.font-mono {
+  font-family: "SF Mono", "Menlo", "Consolas", monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+input,
+select,
+button {
+  font: inherit;
+}
+
+::selection {
+  background: #d9ebe7;
+  color: #15120f;
+}

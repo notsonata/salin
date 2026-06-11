@@ -1,0 +1,13 @@
+[tool.uv.workspace]
+members = ["apps/api", "apps/worker"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "N"]
+
+[tool.pytest.ini_options]
+addopts = "-q"
+pythonpath = ["apps/api", "apps/worker"]

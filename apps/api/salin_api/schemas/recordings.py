@@ -1,0 +1,100 @@
+from __future__ import annotations
+
+from datetime import datetime
+from enum import StrEnum
+
+from pydantic import BaseModel, ConfigDict
+
+
+class LanguageOption(StrEnum):
+    AUTO = "auto"
+    TL = "tl"
+    EN = "en"
+
+
+class ProcessingMode(StrEnum):
+    FAST = "fast"
+    ACCURATE = "accurate"
+
+
+class SpeakerCount(StrEnum):
+    AUTO = "auto"
+    ONE = "1"
+    TWO = "2"
+    THREE = "3"
+    FOUR = "4"
+    FIVE_PLUS = "5_plus"
+
+
+class JobStage(StrEnum):
+    UPLOADED = "uploaded"
+    PREPROCESSING = "preprocessing"
+    TRANSCRIBING = "transcribing"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+
+class RecordingSummary(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    filename: str
+    content_type: str
+    file_size: int
+    language: LanguageOption
+    processing_mode: ProcessingMode
+    speaker_count: SpeakerCount
+    created_at: datetime
+    updated_at: datetime
+
+
+class ProcessingJobSummary(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    recording_id: str
+    stage: JobStage
+    retryable: bool
+    retry_count: int
+    error_message: str | None
+    last_provider: str | None
+    created_at: datetime
+    updated_at: datetime
+    started_at: datetime | None
+    completed_at: datetime | None
+
+
+class TranscriptSegmentSummary(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    recording_id: str
+    index: int
+    start_ms: int
+    end_ms: int
+    text: str
+    speaker_label: str
+    speaker_estimated: bool
+    source_provider: str
+
+
+class ArtifactUrls(BaseModel):
+    original: str | None = None
+    normalized: str | None = None
+
+
+class RecordingCreateResponse(BaseModel):
+    recording: RecordingSummary
+    job: ProcessingJobSummary
+
+
+class RecordingDetailResponse(BaseModel):
+    recording: RecordingSummary
+    job: ProcessingJobSummary
+    transcript_segments: list[TranscriptSegmentSummary]
+    artifact_urls: ArtifactUrls | None = None
+
+
+class RetryResponse(BaseModel):
+    recording_id: str
+    job: ProcessingJobSummary

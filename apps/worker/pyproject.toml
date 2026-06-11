@@ -1,0 +1,25 @@
+[project]
+name = "salin-worker"
+version = "0.1.0"
+description = "RQ worker for Salin transcript processing."
+requires-python = ">=3.12"
+dependencies = [
+  "faster-whisper>=1.0.3",
+  "groq>=0.11.0",
+  "redis>=5.2.0",
+  "rq>=1.16.2",
+  "salin-api"
+]
+
+[tool.uv.sources]
+salin-api = { workspace = true }
+
+[dependency-groups]
+dev = [
+  "pytest>=8.3.3",
+  "ruff>=0.7.1"
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

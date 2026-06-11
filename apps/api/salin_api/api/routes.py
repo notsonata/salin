@@ -1,0 +1,171 @@
+from __future__ import annotations
+
+from pathlib import Path
+from uuid import uuid4
+
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile, status
+from sqlalchemy.orm import Session
+
+from salin_api.repositories.recordings import RecordingRepository
+from salin_api.schemas.recordings import (
+    ArtifactUrls,
+    LanguageOption,
+    ProcessingMode,
+    RecordingCreateResponse,
+    RecordingDetailResponse,
+    ProcessingJobSummary,
+    RecordingSummary,
+    RetryResponse,
+    SpeakerCount,
+    TranscriptSegmentSummary,
+)
+
+SUPPORTED_EXTENSIONS = {".mp3", ".wav", ".m4a", ".aac", ".mp4", ".mov", ".webm"}
+
+router = APIRouter()
+
+
+def get_session(request: Request) -> Session:
+    session = request.app.state.session_factory()
+    try:
+        yield session
+    finally:
+        session.close()
+
+
+def sanitize_filename(filename: str) -> str:
+    return Path(filename).name.replace(" ", "-")
+
+
+def ensure_supported_file(filename: str) -> None:
+    suffix = Path(filename).suffix.lower()
+    if suffix not in SUPPORTED_EXTENSIONS:
+        supported = ", ".join(sorted(SUPPORTED_EXTENSIONS))
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Unsupported file type. Supported formats: {supported}.",
+        )
+
+
+@router.post(
+    "/recordings",
+    response_model=RecordingCreateResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_recording(
+    request: Request,
+    file: UploadFile = File(...),
+    language: LanguageOption = Form(...),
+    processing_mode: ProcessingMode = Form(...),
+    speaker_count: SpeakerCount = Form(...),
+    session: Session = Depends(get_session),
+) -> RecordingCreateResponse:
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="A filename is required.")
+
+    ensure_supported_file(file.filename)
+    payload = await file.read()
+    max_bytes = request.app.state.settings.max_upload_mb * 1024 * 1024
+    if len(payload) > max_bytes:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Upload exceeds the {request.app.state.settings.max_upload_mb} MB limit.",
+        )
+
+    recording_id = str(uuid4())
+    job_id = str(uuid4())
+    normalized_name = sanitize_filename(file.filename)
+    object_key = f"recordings/{recording_id}/original/{normalized_name}"
+    content_type = file.content_type or "application/octet-stream"
+    repository = RecordingRepository(session)
+
+    request.app.state.services.storage.upload_bytes(object_key, payload, content_type)
+    recording, job = repository.create_recording_with_job(
+        recording_id=recording_id,
+        filename=normalized_name,
+        content_type=content_type,
+        file_size=len(payload),
+        language=language.value,
+        processing_mode=processing_mode.value,
+        speaker_count=speaker_count.value,
+        original_object_key=object_key,
+        job_id=job_id,
+    )
+
+    try:
+        request.app.state.services.job_queue.enqueue_recording(recording_id)
+    except Exception as exc:  # pragma: no cover - exercised via integration behavior
+        job = repository.mark_job_failed(
+            recording_id,
+            error_message="Recording saved but could not be queued for processing.",
+            retryable=True,
+        )
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+    return RecordingCreateResponse(
+        recording=RecordingSummary.model_validate(recording),
+        job=ProcessingJobSummary.model_validate(job),
+    )
+
+
+@router.get("/recordings/{recording_id}", response_model=RecordingDetailResponse)
+def get_recording(
+    recording_id: str,
+    request: Request,
+    session: Session = Depends(get_session),
+) -> RecordingDetailResponse:
+    repository = RecordingRepository(session)
+    recording = repository.get_recording(recording_id)
+    job = repository.get_job(recording_id)
+    if recording is None or job is None:
+        raise HTTPException(status_code=404, detail="Recording not found.")
+
+    segments = repository.list_segments(recording_id)
+    artifact_urls = ArtifactUrls(
+        original=request.app.state.services.storage.presign_get(recording.original_object_key),
+        normalized=(
+            request.app.state.services.storage.presign_get(recording.normalized_object_key)
+            if recording.normalized_object_key
+            else None
+        ),
+    )
+    if artifact_urls.normalized is None:
+        artifact_urls = ArtifactUrls(original=artifact_urls.original)
+
+    return RecordingDetailResponse(
+        recording=RecordingSummary.model_validate(recording),
+        job=ProcessingJobSummary.model_validate(job),
+        transcript_segments=[
+            TranscriptSegmentSummary.model_validate(segment) for segment in segments
+        ],
+        artifact_urls=artifact_urls,
+    )
+
+
+@router.post("/recordings/{recording_id}/retry", response_model=RetryResponse)
+def retry_recording(
+    recording_id: str,
+    request: Request,
+    session: Session = Depends(get_session),
+) -> RetryResponse:
+    repository = RecordingRepository(session)
+    job = repository.get_job(recording_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="Recording not found.")
+    if job.stage != "failed" or not job.retryable:
+        raise HTTPException(status_code=409, detail="Recording is not retryable.")
+
+    updated_job = repository.reset_failed_job(recording_id)
+    try:
+        request.app.state.services.job_queue.enqueue_recording(recording_id)
+    except Exception as exc:  # pragma: no cover - exercised via integration behavior
+        updated_job = repository.mark_job_failed(
+            recording_id,
+            error_message="Retry requested but the job could not be re-queued.",
+            retryable=True,
+        )
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    return RetryResponse(
+        recording_id=recording_id,
+        job=ProcessingJobSummary.model_validate(updated_job),
+    )
