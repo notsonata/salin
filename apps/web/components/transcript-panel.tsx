@@ -32,7 +32,7 @@ export function TranscriptPanel({
       <div className="grid gap-4 border-b border-line px-5 py-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
         <div className="grid gap-2">
           <div className="flex flex-wrap items-center gap-3">
-            <h2 className="text-lg font-semibold tracking-[-0.02em] text-ink">
+            <h2 className="font-mono text-lg tracking-[-0.04em] text-ink">
               Transcript
             </h2>
             <Badge>{matchCount} visible</Badge>

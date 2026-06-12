@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import datetime, timedelta, timezone
+
 from salin_api.repositories.recordings import RecordingRepository, TranscriptSegmentInput
 
 
@@ -54,7 +56,7 @@ def test_unsupported_upload_is_rejected(client) -> None:
     assert "Unsupported file type" in response.json()["detail"]
 
 
-def create_completed_recording(client, app) -> str:
+def create_completed_recording(client, app, *, filename: str = "lecture.mp3") -> str:
     response = client.post(
         "/recordings",
         data={
@@ -62,7 +64,7 @@ def create_completed_recording(client, app) -> str:
             "processing_mode": "accurate",
             "speaker_count": "auto",
         },
-        files={"file": ("lecture.mp3", b"fake-audio", "audio/mpeg")},
+        files={"file": (filename, b"fake-audio", "audio/mpeg")},
     )
     assert response.status_code == 201
     recording_id = response.json()["recording"]["id"]
@@ -92,6 +94,15 @@ def create_completed_recording(client, app) -> str:
     )
     session.close()
     return recording_id
+
+
+def set_recording_updated_at(app, recording_id: str, *, seconds_from_now: int) -> None:
+    session = app.state.session_factory()
+    repository = RecordingRepository(session)
+    recording = repository.require_recording(recording_id)
+    recording.updated_at = datetime.now(timezone.utc) + timedelta(seconds=seconds_from_now)
+    session.commit()
+    session.close()
 
 
 def test_recording_detail_synthesizes_idle_notes_state(client, app) -> None:
@@ -157,3 +168,78 @@ def test_generate_notes_rejects_duplicate_in_flight_requests(client, app) -> Non
     assert first_response.status_code == 202
     assert second_response.status_code == 409
     assert "already in progress" in second_response.json()["detail"]
+
+
+def test_list_recordings_returns_recent_rows(client, app) -> None:
+    first_id = create_completed_recording(client, app, filename="lecture-a.mp3")
+    second_id = create_completed_recording(client, app, filename="lecture-b.mp3")
+    set_recording_updated_at(app, first_id, seconds_from_now=-5)
+    set_recording_updated_at(app, second_id, seconds_from_now=5)
+
+    response = client.get("/recordings")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert [row["recording"]["id"] for row in payload["recordings"]] == [
+        second_id,
+        first_id,
+    ]
+    assert [row["recording"]["filename"] for row in payload["recordings"]] == [
+        "lecture-b.mp3",
+        "lecture-a.mp3",
+    ]
+    assert payload["recordings"][0]["job"]["stage"] == "completed"
+    assert payload["recordings"][0]["notes"]["status"] == "idle"
+
+
+def test_update_notes_persists_structured_edits(client, app) -> None:
+    recording_id = create_completed_recording(client, app)
+
+    response = client.put(
+        f"/recordings/{recording_id}/notes",
+        json={
+            "summary": "Updated summary",
+            "key_points": ["Point A"],
+            "decisions": ["Decision A"],
+            "action_items": ["Action A"],
+            "questions": ["Question A"],
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["recording_id"] == recording_id
+    assert payload["notes"]["status"] == "completed"
+    assert payload["notes"]["summary"] == "Updated summary"
+    assert payload["notes"]["key_points"] == ["Point A"]
+    assert payload["notes"]["decisions"] == ["Decision A"]
+    assert payload["notes"]["action_items"] == ["Action A"]
+    assert payload["notes"]["questions"] == ["Question A"]
+
+
+def test_update_notes_refreshes_dashboard_recency(client, app) -> None:
+    first_id = create_completed_recording(client, app, filename="lecture-a.mp3")
+    second_id = create_completed_recording(client, app, filename="lecture-b.mp3")
+    set_recording_updated_at(app, second_id, seconds_from_now=-10)
+
+    save_response = client.put(
+        f"/recordings/{first_id}/notes",
+        json={
+            "summary": "Fresh edit",
+            "key_points": [],
+            "decisions": [],
+            "action_items": [],
+            "questions": [],
+        },
+    )
+
+    assert save_response.status_code == 200
+
+    list_response = client.get("/recordings")
+
+    assert list_response.status_code == 200
+    payload = list_response.json()
+    assert [row["recording"]["id"] for row in payload["recordings"]] == [
+        first_id,
+        second_id,
+    ]

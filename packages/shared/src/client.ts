@@ -1,9 +1,11 @@
 import type {
   LanguageOption,
   NotesGenerationResponse,
+  NotesUpdateRequest,
   ProcessingMode,
   RecordingCreateResponse,
   RecordingDetailResponse,
+  RecordingListResponse,
   RetryResponse,
   SpeakerCount,
 } from "./api-types";
@@ -28,6 +30,14 @@ async function parseResponse<T>(response: Response): Promise<T> {
 
 export class SalinApiClient {
   constructor(private readonly baseUrl: string) {}
+
+  async listRecordings(): Promise<RecordingListResponse> {
+    const response = await fetch(`${this.baseUrl}/recordings`, {
+      cache: "no-store",
+    });
+
+    return parseResponse<RecordingListResponse>(response);
+  }
 
   async createRecording(input: CreateRecordingInput): Promise<RecordingCreateResponse> {
     const formData = new FormData();
@@ -63,6 +73,21 @@ export class SalinApiClient {
   async generateNotes(recordingId: string): Promise<NotesGenerationResponse> {
     const response = await fetch(`${this.baseUrl}/recordings/${recordingId}/notes/generate`, {
       method: "POST",
+    });
+
+    return parseResponse<NotesGenerationResponse>(response);
+  }
+
+  async updateNotes(
+    recordingId: string,
+    payload: NotesUpdateRequest,
+  ): Promise<NotesGenerationResponse> {
+    const response = await fetch(`${this.baseUrl}/recordings/${recordingId}/notes`, {
+      method: "PUT",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(payload),
     });
 
     return parseResponse<NotesGenerationResponse>(response);

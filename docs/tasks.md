@@ -63,7 +63,7 @@ Acceptance criteria:
 
 - **Files**: `apps/web`, `apps/api`, `packages/shared`, `docs/ui.md`, `docs/testing.md`, `docs/architecture.md`, `docs/tasks.md`
 - **Context**: The current flow feels like a disconnected demo. The product needs a durable home, repeat-use navigation, and a usable notes workflow.
-- **Status**: Active
+- **Status**: Done
 
 ### [P1] Build the interactive transcript workspace
 

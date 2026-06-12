@@ -10,7 +10,7 @@ Salin now has the transcript spine plus the first review-and-notes layer as a re
 - `packages/shared`: generated-type boundary plus typed fetch client for the web app
 - `infra/docker-compose.yml`: local orchestration for `web`, `api`, `worker`, `postgres`, and `redis`
 
-This slice now covers uploaded recordings, persistent jobs, canonical transcript segments, normalized-audio review, transcript search, transcript TXT export, and manual notes generation. It still does not implement diarization, speaker editing, notes TXT export, PDF export, or combined export flows.
+This slice now covers an upload-first dashboard, persistent jobs, canonical transcript segments, normalized-audio review, transcript search, transcript TXT export, manual notes generation, and structured notes editing. It still does not implement diarization, speaker editing, notes TXT export, PDF export, or combined export flows.
 
 ## System Overview
 
@@ -48,11 +48,13 @@ salin/
 
 ### `apps/web`
 
-- Render upload form at `/`
+- Render the upload-first dashboard at `/`
+- Render recent recordings history from `GET /recordings`
 - Redirect to `/recordings/[id]` after upload
 - Poll `GET /recordings/{id}` every 2 seconds until the transcript job and notes lifecycle reach terminal states
-- Render normalized-audio review, timestamp seeking, transcript search, transcript TXT export, and right-rail metadata
-- Render manual notes generation and regeneration states without blocking transcript review
+- Render recording detail header plus transcript/notes tabs
+- Render normalized-audio review, timestamp seeking, transcript search, and transcript TXT export inside the transcript tab
+- Render manual notes generation, regeneration, and structured notes editing without blocking transcript review
 - Show retry affordance only when the API marks a failed job as retryable
 
 ### `apps/api`
@@ -62,10 +64,12 @@ salin/
 - Store original uploads in Cloudflare R2
 - Persist `Recording` and `ProcessingJob` rows
 - Persist `GeneratedNotes` rows separately from transcript segments
+- Return dashboard recording rows through `GET /recordings`
 - Return recording/job state and transcript segments
 - Return synthesized idle notes state when notes have not been generated yet
 - Reset retryable failed jobs and re-enqueue them
 - Queue manual notes generation requests against stored transcript data
+- Persist structured notes edits through `PUT /recordings/{id}/notes`
 - Export OpenAPI schema for the shared TypeScript client/types workflow
 
 ### `apps/worker`
@@ -145,6 +149,8 @@ For this milestone, `speaker_label` is always `"Speaker"` and `speaker_estimated
 
 The transcript job remains transcript-only. Notes generation is queued manually after transcript completion, and the last successful notes remain visible during regeneration attempts.
 
+Structured notes edits are saved back into the same `generated_notes` row shape so note cleanup does not require regeneration.
+
 ## Provider Boundaries
 
 The worker owns provider-specific logic behind explicit interfaces:
@@ -171,4 +177,5 @@ Current rules:
 - Transcript work is reusable after downstream failures because raw artifacts and transcript segments persist separately.
 - Notes generation is a separate persisted lifecycle and does not mutate transcript job stages.
 - Notes failures do not require retranscription and do not delete transcript segments.
+- Recording `updated_at` is intentionally touched by transcript and notes lifecycle changes so the dashboard history reflects recent workspace activity rather than upload time alone.
 - Chunking is intentionally deferred. Oversized normalized audio fails with a clear milestone-boundary error.

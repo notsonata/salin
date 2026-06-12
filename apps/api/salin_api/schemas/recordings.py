@@ -119,6 +119,16 @@ class RecordingDetailResponse(BaseModel):
     notes: GeneratedNotesSummary
 
 
+class RecordingListItemSummary(BaseModel):
+    recording: RecordingSummary
+    job: ProcessingJobSummary
+    notes: GeneratedNotesSummary
+
+
+class RecordingListResponse(BaseModel):
+    recordings: list[RecordingListItemSummary]
+
+
 class RetryResponse(BaseModel):
     recording_id: str
     job: ProcessingJobSummary
@@ -127,3 +137,11 @@ class RetryResponse(BaseModel):
 class NotesGenerationResponse(BaseModel):
     recording_id: str
     notes: GeneratedNotesSummary
+
+
+class NotesUpdateRequest(BaseModel):
+    summary: str | None
+    key_points: list[str]
+    decisions: list[str]
+    action_items: list[str]
+    questions: list[str]

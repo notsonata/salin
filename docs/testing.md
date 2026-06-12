@@ -18,8 +18,10 @@ Use the lowest level that gives credible confidence:
 - Recording routes return CORS headers for the configured browser origin
 - Supported upload persists metadata and enqueues a job
 - Unsupported file type returns the expected validation error
+- `GET /recordings` returns recent dashboard rows
 - Recording detail synthesizes idle notes state before the first notes run
 - Manual notes queueing enforces transcript-complete and no-duplicate-in-flight rules
+- `PUT /recordings/{id}/notes` persists structured edits and refreshes dashboard recency
 
 ### Worker integration
 
@@ -35,8 +37,10 @@ Use the lowest level that gives credible confidence:
 
 `apps/web/tests/e2e/upload.spec.ts`
 
+- Dashboard renders upload-first hierarchy plus recent recordings history
 - Supported upload redirects into the transcript workspace, renders normalized playback, supports transcript search, and exports transcript TXT
 - Manual notes generation renders completed structured notes
+- Structured notes edits save successfully from the notes tab
 - Notes failure keeps transcript review available and allows regeneration
 - Unsupported upload surfaces the API error in the form
 
@@ -70,6 +74,7 @@ pnpm --filter @salin/web build
 ```
 
 Playwright defaults to port `3100` so browser E2E does not collide with the Dockerized local stack on `3000`.
+If local browser automation cannot bind a port in the current environment, fall back to web typecheck plus `pnpm --filter @salin/web build` and note the skipped E2E run explicitly.
 
 Container smoke:
 

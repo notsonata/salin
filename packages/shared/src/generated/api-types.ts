@@ -11,7 +11,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** List Recordings */
+        get: operations["list_recordings_recordings_get"];
         put?: never;
         /** Create Recording */
         post: operations["create_recording_recordings_post"];
@@ -66,6 +67,23 @@ export interface paths {
         put?: never;
         /** Generate Notes */
         post: operations["generate_notes_recordings__recording_id__notes_generate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/recordings/{recording_id}/notes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update Notes */
+        put: operations["update_notes_recordings__recording_id__notes_put"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -143,6 +161,19 @@ export interface components {
          * @enum {string}
          */
         NotesStatus: "idle" | "queued" | "generating" | "completed" | "failed";
+        /** NotesUpdateRequest */
+        NotesUpdateRequest: {
+            /** Summary */
+            summary: string | null;
+            /** Key Points */
+            key_points: string[];
+            /** Decisions */
+            decisions: string[];
+            /** Action Items */
+            action_items: string[];
+            /** Questions */
+            questions: string[];
+        };
         /** ProcessingJobSummary */
         ProcessingJobSummary: {
             /** Id */
@@ -191,6 +222,17 @@ export interface components {
             transcript_segments: components["schemas"]["TranscriptSegmentSummary"][];
             artifact_urls?: components["schemas"]["ArtifactUrls"] | null;
             notes: components["schemas"]["GeneratedNotesSummary"];
+        };
+        /** RecordingListItemSummary */
+        RecordingListItemSummary: {
+            recording: components["schemas"]["RecordingSummary"];
+            job: components["schemas"]["ProcessingJobSummary"];
+            notes: components["schemas"]["GeneratedNotesSummary"];
+        };
+        /** RecordingListResponse */
+        RecordingListResponse: {
+            /** Recordings */
+            recordings: components["schemas"]["RecordingListItemSummary"][];
         };
         /** RecordingSummary */
         RecordingSummary: {
@@ -270,6 +312,26 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    list_recordings_recordings_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecordingListResponse"];
+                };
+            };
+        };
+    };
     create_recording_recordings_post: {
         parameters: {
             query?: never;
@@ -378,6 +440,41 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotesGenerationResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_notes_recordings__recording_id__notes_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                recording_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NotesUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };

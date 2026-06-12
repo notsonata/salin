@@ -7,6 +7,22 @@
   },
   "paths": {
     "/recordings": {
+      "get": {
+        "summary": "List Recordings",
+        "operationId": "list_recordings_recordings_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecordingListResponse"
+                }
+              }
+            }
+          }
+        }
+      },
       "post": {
         "summary": "Create Recording",
         "operationId": "create_recording_recordings_post",
@@ -139,6 +155,55 @@
         ],
         "responses": {
           "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotesGenerationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/recordings/{recording_id}/notes": {
+      "put": {
+        "summary": "Update Notes",
+        "operationId": "update_notes_recordings__recording_id__notes_put",
+        "parameters": [
+          {
+            "name": "recording_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Recording Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NotesUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
@@ -403,6 +468,58 @@
         ],
         "title": "NotesStatus"
       },
+      "NotesUpdateRequest": {
+        "properties": {
+          "summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary"
+          },
+          "key_points": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Key Points"
+          },
+          "decisions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Decisions"
+          },
+          "action_items": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Action Items"
+          },
+          "questions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Questions"
+          }
+        },
+        "type": "object",
+        "required": [
+          "summary",
+          "key_points",
+          "decisions",
+          "action_items",
+          "questions"
+        ],
+        "title": "NotesUpdateRequest"
+      },
       "ProcessingJobSummary": {
         "properties": {
           "id": {
@@ -558,6 +675,42 @@
           "notes"
         ],
         "title": "RecordingDetailResponse"
+      },
+      "RecordingListItemSummary": {
+        "properties": {
+          "recording": {
+            "$ref": "#/components/schemas/RecordingSummary"
+          },
+          "job": {
+            "$ref": "#/components/schemas/ProcessingJobSummary"
+          },
+          "notes": {
+            "$ref": "#/components/schemas/GeneratedNotesSummary"
+          }
+        },
+        "type": "object",
+        "required": [
+          "recording",
+          "job",
+          "notes"
+        ],
+        "title": "RecordingListItemSummary"
+      },
+      "RecordingListResponse": {
+        "properties": {
+          "recordings": {
+            "items": {
+              "$ref": "#/components/schemas/RecordingListItemSummary"
+            },
+            "type": "array",
+            "title": "Recordings"
+          }
+        },
+        "type": "object",
+        "required": [
+          "recordings"
+        ],
+        "title": "RecordingListResponse"
       },
       "RecordingSummary": {
         "properties": {

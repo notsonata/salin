@@ -79,6 +79,69 @@ function completedDetail(notes = idleNotes()) {
   };
 }
 
+function recordingsListRow({
+  id,
+  filename,
+  stage = "completed",
+}: {
+  id: string;
+  filename: string;
+  stage?: "uploaded" | "preprocessing" | "transcribing" | "completed" | "failed";
+}) {
+  return {
+    recording: {
+      id,
+      filename,
+      content_type: "audio/mpeg",
+      file_size: 4000,
+      language: "auto",
+      processing_mode: "accurate",
+      speaker_count: "auto",
+      created_at: now(),
+      updated_at: now(),
+    },
+    job: {
+      id: `job_${id}`,
+      recording_id: id,
+      stage,
+      retryable: false,
+      retry_count: 0,
+      error_message: null,
+      last_provider: stage === "completed" ? "groq" : null,
+      created_at: now(),
+      updated_at: now(),
+      started_at: now(),
+      completed_at: stage === "completed" ? now() : null,
+    },
+    notes: idleNotes(),
+  };
+}
+
+test("dashboard home shows upload composer and recent recordings", async ({ page }) => {
+  await page.route("http://localhost:8000/recordings", async (route) => {
+    await route.fulfill({
+      status: 200,
+      headers: {
+        "access-control-allow-origin": "*",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        recordings: [
+          recordingsListRow({ id: "rec_1", filename: "lecture.mp3" }),
+          recordingsListRow({ id: "rec_2", filename: "client-call.mp3", stage: "transcribing" }),
+        ],
+      }),
+    });
+  });
+
+  await page.goto("/");
+
+  await expect(page.getByRole("heading", { name: "New recording", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Recent recordings" })).toBeVisible();
+  await expect(page.getByRole("cell", { name: "lecture.mp3" })).toBeVisible();
+  await expect(page.getByRole("cell", { name: "client-call.mp3" })).toBeVisible();
+});
+
 test("supported upload transitions into the interactive transcript workspace", async ({
   page,
 }) => {
@@ -94,6 +157,20 @@ test("supported upload transitions into the interactive transcript workspace", a
   });
 
   await page.route("http://localhost:8000/recordings", async (route) => {
+    if (route.request().method() === "GET") {
+      await route.fulfill({
+        status: 200,
+        headers: {
+          "access-control-allow-origin": "*",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          recordings: [recordingsListRow({ id: "rec_existing", filename: "previous.mp3" })],
+        }),
+      });
+      return;
+    }
+
     await route.fulfill({
       status: 201,
       headers: {
@@ -156,6 +233,8 @@ test("supported upload transitions into the interactive transcript workspace", a
   });
 
   await page.goto("/");
+  await expect(page.getByRole("heading", { name: "New recording", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Recent recordings" })).toBeVisible();
   await page.setInputFiles('input[type="file"]', {
     name: "lecture.mp3",
     mimeType: "audio/mpeg",
@@ -166,6 +245,9 @@ test("supported upload transitions into the interactive transcript workspace", a
   await page.getByRole("button", { name: "Start processing" }).click();
 
   await expect(page).toHaveURL(/\/recordings\/rec_1$/);
+  await expect(page.getByRole("link", { name: "Back to dashboard" })).toBeVisible();
+  await expect(page.getByRole("tab", { name: "Transcript" })).toBeVisible();
+  await expect(page.getByRole("tab", { name: "Notes" })).toBeVisible();
   await expect(page.getByText("Transcript ready").first()).toBeVisible();
   await expect(page.getByRole("heading", { name: "lecture.mp3" })).toBeVisible();
   await expect(page.getByText("Kamusta sa transcript workspace.")).toBeVisible();
@@ -269,15 +351,15 @@ test("manual notes generation renders the completed structured notes", async ({ 
 
   await page.goto("/recordings/rec_1");
 
+  await page.getByRole("tab", { name: "Notes" }).click();
   await expect(page.getByRole("button", { name: "Generate notes" })).toBeVisible();
   await page.getByRole("button", { name: "Generate notes" }).click();
 
-  await expect(page.getByText("Notes generation is in progress.")).toBeVisible();
-  await expect(page.getByText("Clear summary")).toBeVisible();
-  await expect(page.getByText("Key point", { exact: true })).toBeVisible();
-  await expect(page.getByText("Decision", { exact: true })).toBeVisible();
-  await expect(page.getByText("Action item", { exact: true })).toBeVisible();
-  await expect(page.getByText("Question", { exact: true })).toBeVisible();
+  await expect(page.getByLabel("Summary")).toHaveValue("Clear summary");
+  await expect(page.getByLabel("Key points 1")).toHaveValue("Key point");
+  await expect(page.getByLabel("Decisions 1")).toHaveValue("Decision");
+  await expect(page.getByLabel("Action items 1")).toHaveValue("Action item");
+  await expect(page.getByLabel("Questions 1")).toHaveValue("Question");
   await expect(page.getByRole("button", { name: "Regenerate notes" })).toBeVisible();
 });
 
@@ -325,15 +407,94 @@ test("notes failure keeps the transcript visible and allows regeneration", async
   });
 
   await page.goto("/recordings/rec_1");
+  await page.getByRole("tab", { name: "Notes" }).click();
   await page.getByRole("button", { name: "Generate notes" }).click();
 
   await expect(page.getByText("OpenRouter failed")).toBeVisible();
-  await expect(page.getByText("Kamusta sa transcript workspace.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Regenerate notes" })).toBeVisible();
+  await page.getByRole("tab", { name: "Transcript" }).click();
+  await expect(page.getByText("Kamusta sa transcript workspace.")).toBeVisible();
+});
+
+test("notes edits save through the structured editor", async ({ page }) => {
+  await page.route("http://localhost:8000/recordings/rec_1", async (route) => {
+    await route.fulfill({
+      status: 200,
+      headers: {
+        "access-control-allow-origin": "*",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(
+        completedDetail({
+          status: "completed",
+          summary: "Initial summary",
+          key_points: ["Initial key point"],
+          decisions: ["Initial decision"],
+          action_items: ["Initial action item"],
+          questions: ["Initial question"],
+          error_message: null,
+          source_provider: "openrouter:test-model",
+          generation_count: 1,
+          started_at: now(),
+          completed_at: now(),
+          updated_at: now(),
+        }),
+      ),
+    });
+  });
+
+  await page.route("http://localhost:8000/recordings/rec_1/notes", async (route) => {
+    await route.fulfill({
+      status: 200,
+      headers: {
+        "access-control-allow-origin": "*",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        recording_id: "rec_1",
+        notes: {
+          status: "completed",
+          summary: "Updated summary",
+          key_points: ["Initial key point"],
+          decisions: ["Initial decision"],
+          action_items: ["Initial action item"],
+          questions: ["Initial question"],
+          error_message: null,
+          source_provider: "openrouter:test-model",
+          generation_count: 1,
+          started_at: now(),
+          completed_at: now(),
+          updated_at: now(),
+        },
+      }),
+    });
+  });
+
+  await page.goto("/recordings/rec_1");
+  await page.getByRole("tab", { name: "Notes" }).click();
+  await page.getByLabel("Summary").fill("Updated summary");
+  await page.getByRole("button", { name: "Save edits" }).click();
+
+  await expect(page.getByText("Notes saved.")).toBeVisible();
+  await expect(page.getByLabel("Summary")).toHaveValue("Updated summary");
 });
 
 test("unsupported upload shows the API validation message", async ({ page }) => {
   await page.route("http://localhost:8000/recordings", async (route) => {
+    if (route.request().method() === "GET") {
+      await route.fulfill({
+        status: 200,
+        headers: {
+          "access-control-allow-origin": "*",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          recordings: [],
+        }),
+      });
+      return;
+    }
+
     await route.fulfill({
       status: 400,
       headers: {

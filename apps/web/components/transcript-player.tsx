@@ -1,6 +1,6 @@
 "use client";
 
-import type { Ref } from "react";
+import type { RefObject } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -11,7 +11,7 @@ export function TranscriptPlayer({
   normalizedUrl,
   originalUrl,
 }: {
-  audioRef: Ref<HTMLAudioElement>;
+  audioRef: RefObject<HTMLAudioElement | null>;
   filename: string;
   normalizedUrl?: string;
   originalUrl?: string;
@@ -20,7 +20,7 @@ export function TranscriptPlayer({
     <Card className="grid gap-4 p-5">
       <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
         <div className="grid gap-2">
-          <h2 className="text-lg font-semibold tracking-[-0.02em] text-ink">
+          <h2 className="font-mono text-lg tracking-[-0.04em] text-ink">
             Audio review
           </h2>
           <p className="text-sm leading-6 text-muted">
@@ -45,7 +45,7 @@ export function TranscriptPlayer({
 
       {normalizedUrl ? (
         <audio
-          ref={audioRef}
+          ref={audioRef as RefObject<HTMLAudioElement>}
           aria-label={`Normalized review audio for ${filename}`}
           className="w-full"
           controls

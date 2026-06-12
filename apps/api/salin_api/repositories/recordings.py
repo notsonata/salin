@@ -69,6 +69,15 @@ class RecordingRepository:
         statement = select(ProcessingJob).where(ProcessingJob.recording_id == recording_id)
         return self.session.scalar(statement)
 
+    def list_recordings(self) -> list[tuple[Recording, ProcessingJob, GeneratedNotes | None]]:
+        statement = (
+            select(Recording, ProcessingJob, GeneratedNotes)
+            .join(ProcessingJob, ProcessingJob.recording_id == Recording.id)
+            .outerjoin(GeneratedNotes, GeneratedNotes.recording_id == Recording.id)
+            .order_by(Recording.updated_at.desc())
+        )
+        return list(self.session.execute(statement).all())
+
     def list_segments(self, recording_id: str) -> list[TranscriptSegment]:
         statement = (
             select(TranscriptSegment)
@@ -89,16 +98,21 @@ class RecordingRepository:
         retryable: bool,
     ) -> ProcessingJob:
         job = self.require_job(recording_id)
+        recording = self.require_recording(recording_id)
+        now = datetime.now(timezone.utc)
         job.stage = "failed"
         job.error_message = error_message
         job.retryable = retryable
-        job.completed_at = datetime.now(timezone.utc)
+        job.completed_at = now
+        recording.updated_at = now
         self.session.commit()
         self.session.refresh(job)
         return job
 
     def reset_failed_job(self, recording_id: str) -> ProcessingJob:
         job = self.require_job(recording_id)
+        recording = self.require_recording(recording_id)
+        recording.updated_at = datetime.now(timezone.utc)
         job.stage = "uploaded"
         job.retry_count += 1
         job.error_message = None
@@ -119,16 +133,19 @@ class RecordingRepository:
         last_provider: str | None = None,
     ) -> ProcessingJob:
         job = self.require_job(recording_id)
+        recording = self.require_recording(recording_id)
+        now = datetime.now(timezone.utc)
         if stage == "preprocessing" and job.started_at is None:
-            job.started_at = datetime.now(timezone.utc)
+            job.started_at = now
         if stage == "completed":
-            job.completed_at = datetime.now(timezone.utc)
+            job.completed_at = now
         job.stage = stage
         job.error_message = error_message
         if retryable is not None:
             job.retryable = retryable
         if last_provider is not None:
             job.last_provider = last_provider
+        recording.updated_at = now
         self.session.commit()
         self.session.refresh(job)
         return job
@@ -136,12 +153,15 @@ class RecordingRepository:
     def update_normalized_key(self, recording_id: str, normalized_object_key: str) -> Recording:
         recording = self.require_recording(recording_id)
         recording.normalized_object_key = normalized_object_key
+        recording.updated_at = datetime.now(timezone.utc)
         self.session.commit()
         self.session.refresh(recording)
         return recording
 
     def queue_notes_generation(self, recording_id: str) -> GeneratedNotes:
         notes = self._ensure_generated_notes(recording_id)
+        recording = self.require_recording(recording_id)
+        recording.updated_at = datetime.now(timezone.utc)
         notes.status = "queued"
         notes.error_message = None
         notes.started_at = None
@@ -151,9 +171,12 @@ class RecordingRepository:
 
     def start_notes_generation(self, recording_id: str) -> GeneratedNotes:
         notes = self._ensure_generated_notes(recording_id)
+        recording = self.require_recording(recording_id)
+        now = datetime.now(timezone.utc)
         notes.status = "generating"
         notes.error_message = None
-        notes.started_at = datetime.now(timezone.utc)
+        notes.started_at = now
+        recording.updated_at = now
         self.session.commit()
         self.session.refresh(notes)
         return notes
@@ -170,6 +193,8 @@ class RecordingRepository:
         source_provider: str,
     ) -> GeneratedNotes:
         notes = self._ensure_generated_notes(recording_id)
+        recording = self.require_recording(recording_id)
+        now = datetime.now(timezone.utc)
         notes.status = "completed"
         notes.summary = summary
         notes.key_points_json = json.dumps(key_points)
@@ -180,16 +205,44 @@ class RecordingRepository:
         notes.source_provider = source_provider
         notes.generation_count += 1
         if notes.started_at is None:
-            notes.started_at = datetime.now(timezone.utc)
-        notes.completed_at = datetime.now(timezone.utc)
+            notes.started_at = now
+        notes.completed_at = now
+        recording.updated_at = now
         self.session.commit()
         self.session.refresh(notes)
         return notes
 
     def fail_notes_generation(self, recording_id: str, *, error_message: str) -> GeneratedNotes:
         notes = self._ensure_generated_notes(recording_id)
+        recording = self.require_recording(recording_id)
         notes.status = "failed"
         notes.error_message = error_message
+        recording.updated_at = datetime.now(timezone.utc)
+        self.session.commit()
+        self.session.refresh(notes)
+        return notes
+
+    def save_notes_edits(
+        self,
+        recording_id: str,
+        *,
+        summary: str | None,
+        key_points: list[str],
+        decisions: list[str],
+        action_items: list[str],
+        questions: list[str],
+    ) -> GeneratedNotes:
+        notes = self._ensure_generated_notes(recording_id)
+        recording = self.require_recording(recording_id)
+        now = datetime.now(timezone.utc)
+        notes.status = "completed"
+        notes.summary = summary
+        notes.key_points_json = json.dumps(key_points)
+        notes.decisions_json = json.dumps(decisions)
+        notes.action_items_json = json.dumps(action_items)
+        notes.questions_json = json.dumps(questions)
+        notes.error_message = None
+        recording.updated_at = now
         self.session.commit()
         self.session.refresh(notes)
         return notes
@@ -199,6 +252,7 @@ class RecordingRepository:
         recording_id: str,
         segments: list[TranscriptSegmentInput],
     ) -> list[TranscriptSegment]:
+        recording = self.require_recording(recording_id)
         self.session.execute(
             delete(TranscriptSegment).where(TranscriptSegment.recording_id == recording_id)
         )
@@ -217,6 +271,7 @@ class RecordingRepository:
             self.session.add(model)
             persisted.append(model)
 
+        recording.updated_at = datetime.now(timezone.utc)
         self.session.commit()
         for model in persisted:
             self.session.refresh(model)

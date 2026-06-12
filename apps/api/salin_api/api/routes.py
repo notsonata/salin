@@ -13,10 +13,13 @@ from salin_api.schemas.recordings import (
     GeneratedNotesSummary,
     LanguageOption,
     NotesGenerationResponse,
+    NotesUpdateRequest,
     NotesStatus,
     ProcessingMode,
     RecordingCreateResponse,
     RecordingDetailResponse,
+    RecordingListItemSummary,
+    RecordingListResponse,
     ProcessingJobSummary,
     RecordingSummary,
     RetryResponse,
@@ -145,6 +148,24 @@ async def create_recording(
     )
 
 
+@router.get("/recordings", response_model=RecordingListResponse)
+def list_recordings(
+    session: Session = Depends(get_session),
+) -> RecordingListResponse:
+    repository = RecordingRepository(session)
+    rows = repository.list_recordings()
+    return RecordingListResponse(
+        recordings=[
+            RecordingListItemSummary(
+                recording=RecordingSummary.model_validate(recording),
+                job=ProcessingJobSummary.model_validate(job),
+                notes=build_notes_summary(notes),
+            )
+            for recording, job, notes in rows
+        ]
+    )
+
+
 @router.get("/recordings/{recording_id}", response_model=RecordingDetailResponse)
 def get_recording(
     recording_id: str,
@@ -258,4 +279,29 @@ def generate_notes(
     return NotesGenerationResponse(
         recording_id=recording_id,
         notes=build_notes_summary(queued_notes),
+    )
+
+
+@router.put("/recordings/{recording_id}/notes", response_model=NotesGenerationResponse)
+def update_notes(
+    recording_id: str,
+    payload: NotesUpdateRequest,
+    session: Session = Depends(get_session),
+) -> NotesGenerationResponse:
+    repository = RecordingRepository(session)
+    recording = repository.get_recording(recording_id)
+    if recording is None:
+        raise HTTPException(status_code=404, detail="Recording not found.")
+
+    saved_notes = repository.save_notes_edits(
+        recording_id,
+        summary=payload.summary,
+        key_points=payload.key_points,
+        decisions=payload.decisions,
+        action_items=payload.action_items,
+        questions=payload.questions,
+    )
+    return NotesGenerationResponse(
+        recording_id=recording_id,
+        notes=build_notes_summary(saved_notes),
     )

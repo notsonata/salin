@@ -20,10 +20,12 @@ export default function RootLayout({
           <header className="mb-6 grid gap-4 border-b border-[#d7ccbb] pb-4 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-end">
             <div className="grid gap-2">
               <div className="flex items-center gap-3 text-sm text-muted">
-                <span className="font-semibold text-ink">Salin</span>
+                <span className="font-mono text-[12px] uppercase tracking-[0.12em] text-ink">
+                  Salin
+                </span>
                 <span>Uploaded recordings</span>
               </div>
-              <h1 className="text-xl font-semibold tracking-[-0.02em] text-ink sm:text-2xl">
+              <h1 className="font-mono text-xl tracking-[-0.04em] text-ink sm:text-2xl">
                 Review the transcript, verify timestamps, and turn the recording into notes.
               </h1>
             </div>
