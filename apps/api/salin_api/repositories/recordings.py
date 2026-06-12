@@ -1,12 +1,13 @@
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from datetime import datetime, timezone
 
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
-from salin_api.models import ProcessingJob, Recording, TranscriptSegment
+from salin_api.models import GeneratedNotes, ProcessingJob, Recording, TranscriptSegment
 
 
 @dataclass(slots=True)
@@ -76,6 +77,10 @@ class RecordingRepository:
         )
         return list(self.session.scalars(statement))
 
+    def get_generated_notes(self, recording_id: str) -> GeneratedNotes | None:
+        statement = select(GeneratedNotes).where(GeneratedNotes.recording_id == recording_id)
+        return self.session.scalar(statement)
+
     def mark_job_failed(
         self,
         recording_id: str,
@@ -135,6 +140,60 @@ class RecordingRepository:
         self.session.refresh(recording)
         return recording
 
+    def queue_notes_generation(self, recording_id: str) -> GeneratedNotes:
+        notes = self._ensure_generated_notes(recording_id)
+        notes.status = "queued"
+        notes.error_message = None
+        notes.started_at = None
+        self.session.commit()
+        self.session.refresh(notes)
+        return notes
+
+    def start_notes_generation(self, recording_id: str) -> GeneratedNotes:
+        notes = self._ensure_generated_notes(recording_id)
+        notes.status = "generating"
+        notes.error_message = None
+        notes.started_at = datetime.now(timezone.utc)
+        self.session.commit()
+        self.session.refresh(notes)
+        return notes
+
+    def complete_notes_generation(
+        self,
+        recording_id: str,
+        *,
+        summary: str,
+        key_points: list[str],
+        decisions: list[str],
+        action_items: list[str],
+        questions: list[str],
+        source_provider: str,
+    ) -> GeneratedNotes:
+        notes = self._ensure_generated_notes(recording_id)
+        notes.status = "completed"
+        notes.summary = summary
+        notes.key_points_json = json.dumps(key_points)
+        notes.decisions_json = json.dumps(decisions)
+        notes.action_items_json = json.dumps(action_items)
+        notes.questions_json = json.dumps(questions)
+        notes.error_message = None
+        notes.source_provider = source_provider
+        notes.generation_count += 1
+        if notes.started_at is None:
+            notes.started_at = datetime.now(timezone.utc)
+        notes.completed_at = datetime.now(timezone.utc)
+        self.session.commit()
+        self.session.refresh(notes)
+        return notes
+
+    def fail_notes_generation(self, recording_id: str, *, error_message: str) -> GeneratedNotes:
+        notes = self._ensure_generated_notes(recording_id)
+        notes.status = "failed"
+        notes.error_message = error_message
+        self.session.commit()
+        self.session.refresh(notes)
+        return notes
+
     def replace_segments(
         self,
         recording_id: str,
@@ -174,3 +233,28 @@ class RecordingRepository:
         if job is None:
             raise LookupError("Processing job not found")
         return job
+
+    def require_generated_notes(self, recording_id: str) -> GeneratedNotes:
+        notes = self.get_generated_notes(recording_id)
+        if notes is None:
+            raise LookupError("Generated notes not found")
+        return notes
+
+    def _ensure_generated_notes(self, recording_id: str) -> GeneratedNotes:
+        notes = self.get_generated_notes(recording_id)
+        if notes is not None:
+            return notes
+
+        notes = GeneratedNotes(
+            recording_id=recording_id,
+            status="idle",
+            summary=None,
+            key_points_json="[]",
+            decisions_json="[]",
+            action_items_json="[]",
+            questions_json="[]",
+            generation_count=0,
+        )
+        self.session.add(notes)
+        self.session.flush()
+        return notes

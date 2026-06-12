@@ -15,18 +15,21 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="bg-canvas text-ink">
-        <div className="mx-auto min-h-screen max-w-[1440px] px-4 py-5 sm:px-6 lg:px-8">
-          <header className="mb-6 flex items-center justify-between border-b border-line pb-4">
-            <div className="grid gap-1">
-              <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted">
-                Salin
-              </p>
-              <h1 className="text-lg font-semibold text-ink">
-                Uploaded recording workspace
+      <body className="bg-[#ece4d8] text-ink antialiased">
+        <div className="mx-auto min-h-screen max-w-[1560px] px-4 py-4 sm:px-6 lg:px-8">
+          <header className="mb-6 grid gap-4 border-b border-[#d7ccbb] pb-4 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-end">
+            <div className="grid gap-2">
+              <div className="flex items-center gap-3 text-sm text-muted">
+                <span className="font-semibold text-ink">Salin</span>
+                <span>Uploaded recordings</span>
+              </div>
+              <h1 className="text-xl font-semibold tracking-[-0.02em] text-ink sm:text-2xl">
+                Review the transcript, verify timestamps, and turn the recording into notes.
               </h1>
             </div>
-            <p className="text-sm text-muted">Groq transcript pipeline, local single-user mode</p>
+            <p className="text-sm leading-6 text-muted">
+              Groq-first transcription, normalized audio review, and manual notes generation from stored transcript data.
+            </p>
           </header>
           {children}
         </div>

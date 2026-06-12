@@ -1,11 +1,12 @@
 import type {
   LanguageOption,
+  NotesGenerationResponse,
   ProcessingMode,
   RecordingCreateResponse,
   RecordingDetailResponse,
   RetryResponse,
   SpeakerCount,
-} from "./generated/api-types";
+} from "./api-types";
 
 export interface CreateRecordingInput {
   file: File;
@@ -57,5 +58,13 @@ export class SalinApiClient {
     });
 
     return parseResponse<RetryResponse>(response);
+  }
+
+  async generateNotes(recordingId: string): Promise<NotesGenerationResponse> {
+    const response = await fetch(`${this.baseUrl}/recordings/${recordingId}/notes/generate`, {
+      method: "POST",
+    });
+
+    return parseResponse<NotesGenerationResponse>(response);
   }
 }

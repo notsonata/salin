@@ -31,7 +31,7 @@ Acceptance criteria:
 
 - **Files**: `apps/web`, `apps/api`, `apps/worker`, `packages/shared`, `infra`, `docs/testing.md`, `docs/setup.md`, `docs/architecture.md`, `docs/ui.md`
 - **Context**: This proves the product’s transcript spine before diarization, notes, and export work.
-- **Status**: Active
+- **Status**: Done
 
 ### [P0] Verify the scaffolded local stack with installed dependencies
 
@@ -62,11 +62,11 @@ Acceptance criteria:
 
 - **Files**: `apps/web`, `packages/shared`, `docs/ui.md`, `docs/testing.md`
 - **Context**: Reviewability is the reason the transcript is useful.
-- **Status**: Blocked
+- **Status**: Done
 
 ### [P1] Generate structured notes from stored transcript data
 
-Produce summary, decisions, action items, questions, and detailed notes from saved transcript data rather than raw audio.
+Produce summary, key points, decisions, action items, and questions from saved transcript data rather than raw audio.
 
 Acceptance criteria:
 
@@ -77,7 +77,7 @@ Acceptance criteria:
 
 - **Files**: `apps/api`, `apps/worker`, `apps/web`, `packages/shared`, `docs/architecture.md`
 - **Context**: Notes are a major user-facing value layer, but must stay downstream of transcript persistence.
-- **Status**: Blocked
+- **Status**: Done
 
 ### [P1] Add estimated speaker diarization and correction workflows
 

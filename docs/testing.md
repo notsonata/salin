@@ -18,6 +18,8 @@ Use the lowest level that gives credible confidence:
 - Recording routes return CORS headers for the configured browser origin
 - Supported upload persists metadata and enqueues a job
 - Unsupported file type returns the expected validation error
+- Recording detail synthesizes idle notes state before the first notes run
+- Manual notes queueing enforces transcript-complete and no-duplicate-in-flight rules
 
 ### Worker integration
 
@@ -25,12 +27,17 @@ Use the lowest level that gives credible confidence:
 
 - Canonical transcript segments persist from the Groq path
 - Groq failure falls back to `faster-whisper` without changing the stored segment shape
+- Notes generation persists structured sections from stored transcript data
+- Notes failures keep transcript data intact
+- Notes regeneration replaces content only after a successful rerun
 
 ### Web E2E
 
 `apps/web/tests/e2e/upload.spec.ts`
 
-- Supported upload redirects into the transcript workspace and renders completed transcript content
+- Supported upload redirects into the transcript workspace, renders normalized playback, supports transcript search, and exports transcript TXT
+- Manual notes generation renders completed structured notes
+- Notes failure keeps transcript review available and allows regeneration
 - Unsupported upload surfaces the API error in the form
 
 The current web E2E uses API interception so the frontend flow can be tested without live provider calls.
@@ -62,6 +69,8 @@ pnpm --filter @salin/web test:e2e
 pnpm --filter @salin/web build
 ```
 
+Playwright defaults to port `3100` so browser E2E does not collide with the Dockerized local stack on `3000`.
+
 Container smoke:
 
 ```bash
@@ -76,6 +85,6 @@ docker compose -f infra/docker-compose.yml build
 
 ## Known Limits
 
-- Real provider-backed end-to-end validation still depends on live Groq, R2, and Redis/Postgres availability.
-- Diarization, notes generation, export, search, and timestamp seeking do not exist yet, so they should not appear in current test expectations.
-- Chunking is intentionally absent in phase 1, so large-file behavior is currently a bounded failure path rather than a success path.
+- Real provider-backed end-to-end validation still depends on live Groq, OpenRouter, R2, and Redis/Postgres availability.
+- Diarization, speaker editing, notes TXT export, PDF export, and combined export do not exist yet, so they should not appear in current test expectations.
+- Chunking is intentionally absent in the current slice, so large-file behavior is currently a bounded failure path rather than a success path.

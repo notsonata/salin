@@ -28,6 +28,8 @@ Use a systematic repeated-use product UI:
 
 The transcript is the primary artifact. Notes and future controls must stay visually secondary.
 
+For the current workspace UI, "secondary" means transcript-first in content priority, not hidden in the layout. Notes generation must remain immediately discoverable, with a dedicated visible destination for generated sections.
+
 ## Current Screens
 
 ### Upload screen
@@ -50,25 +52,39 @@ Route: `/recordings/[id]`
 
 Current layout:
 
-- top summary card with filename and job state
-- main transcript column with timestamped blocks
-- right rail with recording metadata, processing summary, and notes placeholder
+- top summary band with filename, transcript state, and workspace guidance
+- dedicated notes column that is visible before the transcript on mobile and sticky on desktop
+- audio review card with normalized playback and source link
+- transcript surface with search, TXT export, timestamp buttons, and active-segment highlighting
+- compact recording metadata rail below the notes workspace
 
 Current transcript block contents:
 
-- visible timestamp
+- clickable timestamp
 - generic estimated speaker label
 - provider badge
 - transcript text
 
-Phase 1 intentionally does **not** render:
+Current notes panel states:
 
-- audio controls
-- clickable timestamp seeking
-- transcript search
+- idle
+- queued
+- generating
+- completed
+- failed
+
+Current notes panel requirements:
+
+- a primary visible notes action without hunting through metadata cards
+- a clear empty state that shows where generated notes will appear
+- persistent section containers for summary, key points, decisions, action items, and questions
+
+Still intentionally deferred:
+
 - speaker editing controls
-- notes generation controls
-- export controls
+- notes TXT export
+- PDF export
+- combined export controls
 
 ## State Design
 
@@ -92,8 +108,6 @@ Every major screen should cover:
 
 Later milestones should add, in order:
 
-1. audio playback and timestamp seeking
-2. transcript search
-3. notes generation from stored transcript data
-4. estimated speaker correction workflows
-5. export controls
+1. estimated speaker correction workflows
+2. notes and transcript export expansion
+3. PDF and combined export controls

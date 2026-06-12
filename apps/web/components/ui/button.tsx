@@ -2,7 +2,7 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
-type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
+type ButtonVariant = "primary" | "secondary" | "ghost" | "danger" | "accent";
 
 const variantClasses: Record<ButtonVariant, string> = {
   primary:
@@ -13,6 +13,8 @@ const variantClasses: Record<ButtonVariant, string> = {
     "bg-transparent text-ink hover:bg-[#efe9df] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
   danger:
     "bg-danger text-panel hover:bg-[#7b3121] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-danger",
+  accent:
+    "bg-accent text-panel hover:bg-[#254b44] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent",
 };
 
 export interface ButtonProps

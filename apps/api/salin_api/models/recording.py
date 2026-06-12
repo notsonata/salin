@@ -32,6 +32,7 @@ class Recording(Base):
     )
 
     job = relationship("ProcessingJob", back_populates="recording", uselist=False)
+    generated_notes = relationship("GeneratedNotes", back_populates="recording", uselist=False)
     transcript_segments = relationship(
         "TranscriptSegment",
         back_populates="recording",

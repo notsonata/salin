@@ -8,7 +8,7 @@ from salin_api.core.container import ApiServices, build_services
 from salin_api.core.settings import Settings, get_settings
 from salin_api.db.base import Base
 from salin_api.db.session import create_engine_for_url, create_session_factory
-from salin_api.models import ProcessingJob, Recording, TranscriptSegment  # noqa: F401
+from salin_api.models import GeneratedNotes, ProcessingJob, Recording, TranscriptSegment  # noqa: F401
 
 
 def create_app(

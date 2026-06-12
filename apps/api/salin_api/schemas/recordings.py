@@ -34,6 +34,14 @@ class JobStage(StrEnum):
     FAILED = "failed"
 
 
+class NotesStatus(StrEnum):
+    IDLE = "idle"
+    QUEUED = "queued"
+    GENERATING = "generating"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+
 class RecordingSummary(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -83,6 +91,21 @@ class ArtifactUrls(BaseModel):
     normalized: str | None = None
 
 
+class GeneratedNotesSummary(BaseModel):
+    status: NotesStatus
+    summary: str | None
+    key_points: list[str]
+    decisions: list[str]
+    action_items: list[str]
+    questions: list[str]
+    error_message: str | None
+    source_provider: str | None
+    generation_count: int
+    started_at: datetime | None
+    completed_at: datetime | None
+    updated_at: datetime | None
+
+
 class RecordingCreateResponse(BaseModel):
     recording: RecordingSummary
     job: ProcessingJobSummary
@@ -93,8 +116,14 @@ class RecordingDetailResponse(BaseModel):
     job: ProcessingJobSummary
     transcript_segments: list[TranscriptSegmentSummary]
     artifact_urls: ArtifactUrls | None = None
+    notes: GeneratedNotesSummary
 
 
 class RetryResponse(BaseModel):
     recording_id: str
     job: ProcessingJobSummary
+
+
+class NotesGenerationResponse(BaseModel):
+    recording_id: str
+    notes: GeneratedNotesSummary

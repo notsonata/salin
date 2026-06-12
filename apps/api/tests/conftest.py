@@ -31,14 +31,25 @@ class FakeStorage:
 class FakeQueue:
     def __init__(self) -> None:
         self.enqueued_recordings: list[str] = []
+        self.enqueued_notes: list[str] = []
 
     def enqueue_recording(self, recording_id: str) -> None:
         self.enqueued_recordings.append(recording_id)
 
+    def enqueue_notes(self, recording_id: str) -> None:
+        self.enqueued_notes.append(recording_id)
+
 
 class FakeNotesProvider:
-    def generate_notes(self, recording_id: str) -> dict:
-        return {"recording_id": recording_id}
+    def generate_notes(self, *, request) -> dict:
+        return {
+            "summary": "Generated summary",
+            "key_points": ["Point one"],
+            "decisions": ["Decision one"],
+            "action_items": ["Action one"],
+            "questions": ["Question one"],
+            "source_provider": "fake-notes",
+        }
 
 
 @pytest.fixture()

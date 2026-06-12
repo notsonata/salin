@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 from salin_api.core.settings import get_settings
+from salin_api.services.notes import OpenRouterNotesProvider
 from salin_api.storage.r2 import S3ObjectStorage
 from salin_worker.providers.faster_whisper_provider import FasterWhisperTranscriptionProvider
 from salin_worker.providers.groq_provider import GroqTranscriptionProvider
+from salin_worker.services.notes import RecordingNotesGenerator
 from salin_worker.services.processing import RecordingProcessor
 
 
@@ -25,3 +27,15 @@ def process_recording(recording_id: str) -> None:
         ),
     )
     processor.process(recording_id)
+
+
+def generate_notes(recording_id: str) -> None:
+    settings = get_settings()
+    generator = RecordingNotesGenerator(
+        settings=settings,
+        notes_provider=OpenRouterNotesProvider(
+            api_key=settings.openrouter_api_key,
+            models=settings.openrouter_models,
+        ),
+    )
+    generator.generate(recording_id)

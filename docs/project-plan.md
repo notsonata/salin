@@ -40,9 +40,10 @@ After upload, a user should be able to:
 1. See processing progress
 2. Open a completed transcript
 3. Click timestamps to verify statements against the original audio
-4. Correct estimated speaker labels
+4. Search the transcript and export it as TXT
 5. Generate structured notes from the transcript
-6. Export transcript and notes
+6. Correct estimated speaker labels
+7. Export transcript and notes
 
 ## Product Promise
 
@@ -178,6 +179,7 @@ The canonical transcript representation should remain provider-agnostic.
 - Transcript search
 - Transcript block layout
 - TXT export
+- Status: Done
 
 ### Phase 3: Notes Generation
 
@@ -187,6 +189,7 @@ The canonical transcript representation should remain provider-agnostic.
 - Action items
 - Questions
 - Regenerate notes control
+- Status: Done
 
 ### Phase 4: Speaker Diarization
 

@@ -6,7 +6,8 @@ from pathlib import Path
 from salin_api.core.settings import Settings
 from salin_api.db.base import Base
 from salin_api.db.session import create_engine_for_url, create_session_factory
-from salin_api.repositories.recordings import RecordingRepository
+from salin_api.repositories.recordings import RecordingRepository, TranscriptSegmentInput
+from salin_api.services.notes import NotesGenerationResult
 from salin_worker.providers.base import ProviderSegment, TranscriptionResult
 from salin_worker.services.processing import RecordingProcessor
 
@@ -46,6 +47,18 @@ class FakeProvider:
         return self.result
 
 
+class FakeNotesProvider:
+    def __init__(self, *, result: NotesGenerationResult | None = None, error: Exception | None = None):
+        self.result = result
+        self.error = error
+
+    def generate_notes(self, *, request) -> dict:
+        if self.error is not None:
+            raise self.error
+        assert self.result is not None
+        return self.result
+
+
 def build_result(source_provider: str) -> TranscriptionResult:
     return TranscriptionResult(
         source_provider=source_provider,
@@ -71,6 +84,35 @@ def seed_recording(session_factory, storage: FakeStorage) -> str:
     )
     session.close()
     storage.objects["recordings/recording-1/original/lecture.mp3"] = b"fake-audio"
+    return recording_id
+
+
+def seed_completed_transcript(session_factory, storage: FakeStorage) -> str:
+    recording_id = seed_recording(session_factory, storage)
+    session = session_factory()
+    repository = RecordingRepository(session)
+    repository.replace_segments(
+        recording_id,
+        [
+            TranscriptSegmentInput(
+                index=0,
+                start_ms=0,
+                end_ms=1200,
+                text="Kamusta sa notes milestone.",
+                speaker_label="Speaker",
+                speaker_estimated=True,
+                source_provider="groq",
+            )
+        ],
+    )
+    repository.update_job_stage(
+        recording_id,
+        stage="completed",
+        retryable=False,
+        error_message=None,
+        last_provider="groq",
+    )
+    session.close()
     return recording_id
 
 
@@ -137,3 +179,132 @@ def test_processing_falls_back_to_local_provider(tmp_path: Path) -> None:
     assert job.stage == "completed"
     assert job.last_provider == "faster-whisper"
     assert segments[0].source_provider == "faster-whisper"
+
+
+def test_notes_generation_persists_structured_sections(tmp_path: Path) -> None:
+    from salin_worker.services.notes import RecordingNotesGenerator
+
+    database_url = f"sqlite:///{tmp_path / 'worker-notes.db'}"
+    engine = create_engine_for_url(database_url)
+    Base.metadata.create_all(engine)
+    session_factory = create_session_factory(database_url)
+    storage = FakeStorage()
+    recording_id = seed_completed_transcript(session_factory, storage)
+    generator = RecordingNotesGenerator(
+        settings=Settings(DATABASE_URL=database_url),
+        notes_provider=FakeNotesProvider(
+            result=NotesGenerationResult(
+                summary="Summary text",
+                key_points=["Key point"],
+                decisions=["Decision"],
+                action_items=["Action item"],
+                questions=["Question"],
+                source_provider="openrouter:test-model",
+            )
+        ),
+        session_factory=session_factory,
+    )
+
+    generator.generate(recording_id)
+
+    session = session_factory()
+    repository = RecordingRepository(session)
+    notes = repository.require_generated_notes(recording_id)
+    session.close()
+
+    assert notes.status == "completed"
+    assert notes.summary == "Summary text"
+    assert json.loads(notes.key_points_json) == ["Key point"]
+    assert json.loads(notes.decisions_json) == ["Decision"]
+    assert json.loads(notes.action_items_json) == ["Action item"]
+    assert json.loads(notes.questions_json) == ["Question"]
+    assert notes.source_provider == "openrouter:test-model"
+    assert notes.generation_count == 1
+
+
+def test_notes_generation_failure_keeps_transcript_intact(tmp_path: Path) -> None:
+    from salin_worker.services.notes import RecordingNotesGenerator
+
+    database_url = f"sqlite:///{tmp_path / 'worker-notes-failure.db'}"
+    engine = create_engine_for_url(database_url)
+    Base.metadata.create_all(engine)
+    session_factory = create_session_factory(database_url)
+    storage = FakeStorage()
+    recording_id = seed_completed_transcript(session_factory, storage)
+    generator = RecordingNotesGenerator(
+        settings=Settings(DATABASE_URL=database_url),
+        notes_provider=FakeNotesProvider(error=RuntimeError("OpenRouter failed")),
+        session_factory=session_factory,
+    )
+
+    try:
+        generator.generate(recording_id)
+    except RuntimeError:
+        pass
+
+    session = session_factory()
+    repository = RecordingRepository(session)
+    job = repository.require_job(recording_id)
+    segments = repository.list_segments(recording_id)
+    notes = repository.require_generated_notes(recording_id)
+    session.close()
+
+    assert job.stage == "completed"
+    assert len(segments) == 1
+    assert notes.status == "failed"
+    assert notes.error_message == "OpenRouter failed"
+    assert notes.summary is None
+    assert notes.generation_count == 0
+
+
+def test_notes_regeneration_replaces_content_after_success(tmp_path: Path) -> None:
+    from salin_worker.services.notes import RecordingNotesGenerator
+
+    database_url = f"sqlite:///{tmp_path / 'worker-notes-regenerate.db'}"
+    engine = create_engine_for_url(database_url)
+    Base.metadata.create_all(engine)
+    session_factory = create_session_factory(database_url)
+    storage = FakeStorage()
+    recording_id = seed_completed_transcript(session_factory, storage)
+    first_generator = RecordingNotesGenerator(
+        settings=Settings(DATABASE_URL=database_url),
+        notes_provider=FakeNotesProvider(
+            result=NotesGenerationResult(
+                summary="First summary",
+                key_points=["First point"],
+                decisions=["First decision"],
+                action_items=["First action"],
+                questions=["First question"],
+                source_provider="openrouter:model-a",
+            )
+        ),
+        session_factory=session_factory,
+    )
+    second_generator = RecordingNotesGenerator(
+        settings=Settings(DATABASE_URL=database_url),
+        notes_provider=FakeNotesProvider(
+            result=NotesGenerationResult(
+                summary="Second summary",
+                key_points=["Second point"],
+                decisions=["Second decision"],
+                action_items=["Second action"],
+                questions=["Second question"],
+                source_provider="openrouter:model-b",
+            )
+        ),
+        session_factory=session_factory,
+    )
+
+    first_generator.generate(recording_id)
+    second_generator.generate(recording_id)
+
+    session = session_factory()
+    repository = RecordingRepository(session)
+    notes = repository.require_generated_notes(recording_id)
+    session.close()
+
+    assert notes.status == "completed"
+    assert notes.summary == "Second summary"
+    assert json.loads(notes.key_points_json) == ["Second point"]
+    assert notes.source_provider == "openrouter:model-b"
+    assert notes.generation_count == 2

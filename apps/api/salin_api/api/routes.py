@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from uuid import uuid4
 
@@ -9,7 +10,10 @@ from sqlalchemy.orm import Session
 from salin_api.repositories.recordings import RecordingRepository
 from salin_api.schemas.recordings import (
     ArtifactUrls,
+    GeneratedNotesSummary,
     LanguageOption,
+    NotesGenerationResponse,
+    NotesStatus,
     ProcessingMode,
     RecordingCreateResponse,
     RecordingDetailResponse,
@@ -45,6 +49,39 @@ def ensure_supported_file(filename: str) -> None:
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Unsupported file type. Supported formats: {supported}.",
         )
+
+
+def build_notes_summary(notes) -> GeneratedNotesSummary:
+    if notes is None:
+        return GeneratedNotesSummary(
+            status=NotesStatus.IDLE,
+            summary=None,
+            key_points=[],
+            decisions=[],
+            action_items=[],
+            questions=[],
+            error_message=None,
+            source_provider=None,
+            generation_count=0,
+            started_at=None,
+            completed_at=None,
+            updated_at=None,
+        )
+
+    return GeneratedNotesSummary(
+        status=NotesStatus(notes.status),
+        summary=notes.summary,
+        key_points=json.loads(notes.key_points_json),
+        decisions=json.loads(notes.decisions_json),
+        action_items=json.loads(notes.action_items_json),
+        questions=json.loads(notes.questions_json),
+        error_message=notes.error_message,
+        source_provider=notes.source_provider,
+        generation_count=notes.generation_count,
+        started_at=notes.started_at,
+        completed_at=notes.completed_at,
+        updated_at=notes.updated_at,
+    )
 
 
 @router.post(
@@ -121,6 +158,7 @@ def get_recording(
         raise HTTPException(status_code=404, detail="Recording not found.")
 
     segments = repository.list_segments(recording_id)
+    notes = repository.get_generated_notes(recording_id)
     artifact_urls = ArtifactUrls(
         original=request.app.state.services.storage.presign_get(recording.original_object_key),
         normalized=(
@@ -139,6 +177,7 @@ def get_recording(
             TranscriptSegmentSummary.model_validate(segment) for segment in segments
         ],
         artifact_urls=artifact_urls,
+        notes=build_notes_summary(notes),
     )
 
 
@@ -168,4 +207,55 @@ def retry_recording(
     return RetryResponse(
         recording_id=recording_id,
         job=ProcessingJobSummary.model_validate(updated_job),
+    )
+
+
+@router.post(
+    "/recordings/{recording_id}/notes/generate",
+    response_model=NotesGenerationResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+def generate_notes(
+    recording_id: str,
+    request: Request,
+    session: Session = Depends(get_session),
+) -> NotesGenerationResponse:
+    repository = RecordingRepository(session)
+    recording = repository.get_recording(recording_id)
+    job = repository.get_job(recording_id)
+    if recording is None or job is None:
+        raise HTTPException(status_code=404, detail="Recording not found.")
+    if job.stage != "completed":
+        raise HTTPException(
+            status_code=409,
+            detail="Transcription must be completed before generating notes.",
+        )
+
+    segments = repository.list_segments(recording_id)
+    if not segments:
+        raise HTTPException(
+            status_code=409,
+            detail="Transcript segments are required before generating notes.",
+        )
+
+    existing_notes = repository.get_generated_notes(recording_id)
+    if existing_notes and existing_notes.status in {"queued", "generating"}:
+        raise HTTPException(
+            status_code=409,
+            detail="Notes generation is already in progress.",
+        )
+
+    queued_notes = repository.queue_notes_generation(recording_id)
+    try:
+        request.app.state.services.job_queue.enqueue_notes(recording_id)
+    except Exception as exc:  # pragma: no cover - exercised via integration behavior
+        queued_notes = repository.fail_notes_generation(
+            recording_id,
+            error_message="Notes requested but could not be queued for generation.",
+        )
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+    return NotesGenerationResponse(
+        recording_id=recording_id,
+        notes=build_notes_summary(queued_notes),
     )
