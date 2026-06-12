@@ -48,6 +48,23 @@ Acceptance criteria:
 - **Context**: The repo now contains the real scaffold, but dependency-backed verification must be kept explicit.
 - **Status**: Active
 
+### [P0] Rebuild the web app into an upload-first dashboard and recording detail workspace
+
+Replace the current upload-only home screen and dead-end recording page with a real dashboard plus a tabbed recording detail workflow.
+
+Acceptance criteria:
+
+- `/` becomes an upload-first dashboard with recent recordings history
+- `/recordings/[id]` gains obvious dashboard return navigation
+- recording detail splits into `Transcript` and `Notes` tabs
+- notes become editable and savable in their structured section form
+- API and shared client support recordings listing and notes updates
+- focused API and web E2E coverage document the new workflow
+
+- **Files**: `apps/web`, `apps/api`, `packages/shared`, `docs/ui.md`, `docs/testing.md`, `docs/architecture.md`, `docs/tasks.md`
+- **Context**: The current flow feels like a disconnected demo. The product needs a durable home, repeat-use navigation, and a usable notes workflow.
+- **Status**: Active
+
 ### [P1] Build the interactive transcript workspace
 
 Extend the transcript view into a real review workspace.
