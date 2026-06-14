@@ -118,6 +118,12 @@ Start the full local stack:
 docker compose -f infra/docker-compose.yml up --build
 ```
 
+Use the default repo startup script:
+
+```bash
+./run.sh
+```
+
 Stop it:
 
 ```bash
@@ -131,6 +137,9 @@ pnpm --filter @salin/web dev
 uv run --package salin-api uvicorn salin_api.main:app --reload --host 0.0.0.0 --port 8000
 uv run --package salin-worker rq worker salin-recordings --url redis://localhost:6379/0
 ```
+
+On macOS, `./run.sh` starts `web`, `api`, `postgres`, and `redis` in Docker and runs the worker directly on the host so diarization can use host-only backends like `mps`. That host-worker path uses RQ's `rq.worker.SpawnWorker` to avoid macOS `fork()` crashes from Objective-C backed libraries. On non-macOS hosts, `./run.sh` keeps using the full Docker Compose stack.
+For the macOS host worker, `./run.sh` prefers `uv`, then `python3 -m uv`, and finally falls back to `.venv-tooling/bin/rq` if that repo-local tooling environment exists. When `DIARIZATION_PROVIDER=pyannote`, that fallback path will bootstrap the worker dependencies into `.venv-tooling` if `pyannote.audio` is missing.
 
 ## API Surface
 

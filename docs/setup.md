@@ -76,6 +76,12 @@ Full stack through Docker Compose:
 docker compose -f infra/docker-compose.yml up --build
 ```
 
+Default repo startup script:
+
+```bash
+./run.sh
+```
+
 Stop the stack:
 
 ```bash
@@ -115,6 +121,12 @@ pnpm --filter @salin/shared generate
 - `PYANNOTE_DEVICE=auto` prefers `cuda`, then `mps`, then `cpu`.
 - On Apple Silicon Macs, `mps` support only applies when the worker runs directly on the macOS host. The Docker Compose worker runs in a Linux container and cannot use Apple's `mps` backend, so diarization remains CPU-only there.
 - If you want Apple GPU acceleration for diarization on macOS, run the worker directly from the host toolchain and leave `PYANNOTE_DEVICE=auto` or set `PYANNOTE_DEVICE=mps`.
+- On macOS, `./run.sh` now automates that split mode: it starts `web`, `api`, `postgres`, and `redis` in Docker, then runs the worker directly on the host with `localhost` overrides for Postgres and Redis.
+- The macOS host-worker path uses RQ's `rq.worker.SpawnWorker` to avoid `fork()`-based work-horse crashes from Objective-C backed libraries.
+- For the macOS host worker, `./run.sh` prefers `uv`, then `python3 -m uv`, and finally falls back to the repo-local `.venv-tooling/bin/rq` script if present.
+- If `DIARIZATION_PROVIDER=pyannote` and that repo-local fallback environment does not yet have `pyannote.audio`, `./run.sh` bootstraps `apps/api` and `apps/worker` into `.venv-tooling` before starting the host worker.
+- On non-macOS hosts, `./run.sh` still starts the full Docker Compose stack, including the worker container.
+- On macOS, `./run.sh` is now a fixed default startup path. For custom Docker Compose arguments or service selection, use `docker compose` directly.
 - Recording processing jobs use `RECORDING_JOB_TIMEOUT_SECONDS` because local transcription and diarization can exceed RQ's default 180 second timeout on CPU-only machines. Notes generation uses `NOTES_JOB_TIMEOUT_SECONDS`.
 
 ## Troubleshooting Focus

@@ -128,6 +128,40 @@ Acceptance criteria:
 - **Context**: The current local stack runs the worker in a Linux container on macOS, so Apple GPU acceleration is unavailable unless the worker runs directly on the host.
 - **Status**: Done
 
+### [P1] Run the worker directly on macOS through `run.sh`
+
+Make the default repo startup path use a host-run worker on macOS while keeping the existing Docker-only path on other platforms.
+
+Acceptance criteria:
+
+- On macOS, `./run.sh` starts `web`, `api`, `postgres`, and `redis` in Docker and runs the worker directly on the host
+- The macOS host-worker path avoids RQ's default `fork()` work-horse behavior
+- The host-run worker receives `localhost`-safe Postgres and Redis URLs instead of Compose-only service hostnames
+- On non-macOS hosts, `./run.sh` still starts the full Docker Compose stack
+- Script-level regression coverage documents both branches
+
+- **Files**: `run.sh`, `docs/setup.md`, `docs/testing.md`, `docs/tasks.md`, `README.md`, `apps/worker/tests/test_run_sh.py`
+- **Context**: Apple GPU support for diarization requires the worker to run on the macOS host, but the rest of the stack can stay containerized.
+- **Status**: Done
+
+### [P1] Make macOS `run.sh` resilient when `uv` is not on `PATH`
+
+Prevent the default macOS startup path from failing at host worker launch when `uv` is not installed globally.
+
+Acceptance criteria:
+
+- `./run.sh` on macOS still launches the host worker when `uv` is available
+- `./run.sh` falls back to `python3 -m uv` when that path exists
+- `./run.sh` falls back to the repo-local `.venv-tooling/bin/rq` when neither `uv` path is available
+- The macOS host-worker path uses `rq.worker.SpawnWorker` instead of the default forking worker
+- The repo-local fallback bootstraps worker dependencies when pyannote diarization is enabled and `pyannote.audio` is missing
+- The failure message stays actionable if no supported host worker runner exists
+- Script-level regression coverage documents the fallback path
+
+- **Files**: `run.sh`, `apps/worker/tests/test_run_sh.py`, `docs/setup.md`, `docs/testing.md`, `README.md`, `docs/tasks.md`
+- **Context**: The host-worker macOS path is required for Apple diarization acceleration, so the startup script cannot assume a globally installed `uv` binary.
+- **Status**: Done
+
 ### [P2] Add export outputs for transcript and notes
 
 Support TXT and PDF output without requiring full reprocessing.

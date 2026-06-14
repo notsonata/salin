@@ -49,6 +49,14 @@ Use the lowest level that gives credible confidence:
 - Apple Silicon host runtimes prefer `mps` when `PYANNOTE_DEVICE=auto`, and explicit unavailable `mps` requests fail clearly
 - pyannote task wiring stays disabled until provider and token settings are present
 
+`apps/worker/tests/test_run_sh.py`
+
+- `run.sh` starts Docker without the worker and launches a host worker on macOS
+- `run.sh` uses `rq.worker.SpawnWorker` for the macOS host-worker path
+- `run.sh` falls back to the repo-local tooling `rq` script when `uv` is unavailable on macOS
+- `run.sh` bootstraps repo-local worker dependencies for the tooling fallback when pyannote diarization is enabled
+- `run.sh` keeps the full Docker stack on non-macOS hosts
+
 ### Web E2E
 
 `apps/web/tests/e2e/upload.spec.ts`
