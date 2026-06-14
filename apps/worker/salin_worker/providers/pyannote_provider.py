@@ -70,10 +70,25 @@ class PyannoteDiarizationProvider:
 
         normalized_device = self.device.strip().lower()
         if normalized_device == "auto":
-            normalized_device = "cuda" if torch.cuda.is_available() else "cpu"
+            if torch.cuda.is_available():
+                normalized_device = "cuda"
+            elif self._mps_is_available(torch):
+                normalized_device = "mps"
+            else:
+                normalized_device = "cpu"
         if not normalized_device:
             return None
+        if normalized_device == "cuda" and not torch.cuda.is_available():
+            raise ValueError("PYANNOTE_DEVICE=cuda is unavailable in this runtime.")
+        if normalized_device == "mps" and not self._mps_is_available(torch):
+            raise ValueError("PYANNOTE_DEVICE=mps is unavailable in this runtime.")
         return torch.device(normalized_device)
+
+    @staticmethod
+    def _mps_is_available(torch) -> bool:
+        backends = getattr(torch, "backends", None)
+        mps_backend = getattr(backends, "mps", None)
+        return bool(mps_backend) and bool(mps_backend.is_available())
 
     def _load_audio(self, audio_path: Path) -> dict[str, Any]:
         if self.audio_loader is not None:

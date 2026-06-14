@@ -51,7 +51,7 @@ Optional diarization values:
 - `DIARIZATION_PROVIDER`: use `none` or `pyannote`
 - `PYANNOTE_AUTH_TOKEN`: required only when `DIARIZATION_PROVIDER=pyannote`
 - `PYANNOTE_MODEL`: defaults to `pyannote/speaker-diarization-community-1`
-- `PYANNOTE_DEVICE`: use `auto`, `cpu`, or `cuda`
+- `PYANNOTE_DEVICE`: use `auto`, `cpu`, `cuda`, or `mps`
 - `PYANNOTE_METRICS_ENABLED`: defaults to `0` in the template
 
 ## Install
@@ -112,6 +112,9 @@ pnpm --filter @salin/shared generate
 - Cloudflare R2 remains the source of truth for original, normalized, and raw-provider artifacts.
 - The phase 1 worker supports Groq-first transcription with `faster-whisper` fallback.
 - Diarization is disabled by default. To enable pyannote-backed diarization, accept the selected model's Hugging Face conditions, create a token, set `DIARIZATION_PROVIDER=pyannote`, and set `PYANNOTE_AUTH_TOKEN`.
+- `PYANNOTE_DEVICE=auto` prefers `cuda`, then `mps`, then `cpu`.
+- On Apple Silicon Macs, `mps` support only applies when the worker runs directly on the macOS host. The Docker Compose worker runs in a Linux container and cannot use Apple's `mps` backend, so diarization remains CPU-only there.
+- If you want Apple GPU acceleration for diarization on macOS, run the worker directly from the host toolchain and leave `PYANNOTE_DEVICE=auto` or set `PYANNOTE_DEVICE=mps`.
 - Recording processing jobs use `RECORDING_JOB_TIMEOUT_SECONDS` because local transcription and diarization can exceed RQ's default 180 second timeout on CPU-only machines. Notes generation uses `NOTES_JOB_TIMEOUT_SECONDS`.
 
 ## Troubleshooting Focus

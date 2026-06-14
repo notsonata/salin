@@ -46,6 +46,7 @@ Use the lowest level that gives credible confidence:
 
 - pyannote annotation output normalizes into Salin diarization segments
 - known speaker count is forwarded as `num_speakers`
+- Apple Silicon host runtimes prefer `mps` when `PYANNOTE_DEVICE=auto`, and explicit unavailable `mps` requests fail clearly
 - pyannote task wiring stays disabled until provider and token settings are present
 
 ### Web E2E

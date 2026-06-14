@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import sys
 from pathlib import Path
+from types import SimpleNamespace
 
+import pytest
 from salin_api.core.settings import Settings
 from salin_worker.providers.pyannote_provider import PyannoteDiarizationProvider
 from salin_worker.tasks import build_diarization_provider
@@ -81,6 +84,43 @@ def test_pyannote_provider_supports_community_output_shape() -> None:
         "Speaker 1",
         "Speaker 2",
     ]
+
+
+def test_pyannote_provider_auto_prefers_mps_when_cuda_is_unavailable(monkeypatch) -> None:
+    provider = PyannoteDiarizationProvider(
+        auth_token="",
+        model_name="test-model",
+        device="auto",
+        pipeline=object(),
+        audio_loader=fake_audio_loader,
+    )
+    fake_torch = SimpleNamespace(
+        cuda=SimpleNamespace(is_available=lambda: False),
+        backends=SimpleNamespace(mps=SimpleNamespace(is_available=lambda: True)),
+        device=lambda name: f"device:{name}",
+    )
+    monkeypatch.setitem(sys.modules, "torch", fake_torch)
+
+    assert provider._resolved_device() == "device:mps"
+
+
+def test_pyannote_provider_rejects_unavailable_explicit_mps_device(monkeypatch) -> None:
+    provider = PyannoteDiarizationProvider(
+        auth_token="",
+        model_name="test-model",
+        device="mps",
+        pipeline=object(),
+        audio_loader=fake_audio_loader,
+    )
+    fake_torch = SimpleNamespace(
+        cuda=SimpleNamespace(is_available=lambda: False),
+        backends=SimpleNamespace(mps=SimpleNamespace(is_available=lambda: False)),
+        device=lambda name: f"device:{name}",
+    )
+    monkeypatch.setitem(sys.modules, "torch", fake_torch)
+
+    with pytest.raises(ValueError, match="PYANNOTE_DEVICE=mps is unavailable"):
+        provider._resolved_device()
 
 
 def test_build_diarization_provider_defaults_to_disabled() -> None:

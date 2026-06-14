@@ -113,6 +113,21 @@ Acceptance criteria:
 - **Provider**: `pyannote.audio` through `pyannote/speaker-diarization-community-1` when `DIARIZATION_PROVIDER=pyannote` and `PYANNOTE_AUTH_TOKEN` are configured.
 - **Status**: Done
 
+### [P1] Add Apple Silicon host support for pyannote diarization
+
+Enable `mps` device selection for host-run diarization on Apple Silicon Macs, and make the Docker Compose limitation explicit.
+
+Acceptance criteria:
+
+- `PYANNOTE_DEVICE=auto` prefers `mps` when CUDA is unavailable and the host runtime exposes Apple's Metal backend
+- Explicit `PYANNOTE_DEVICE=mps` fails clearly when the runtime does not expose `mps`
+- Setup docs explain that Docker Compose on macOS remains CPU-only for pyannote diarization
+- Worker provider tests cover the Apple Silicon device-selection path
+
+- **Files**: `apps/worker`, `.env.example`, `docs/setup.md`, `docs/testing.md`, `docs/tasks.md`
+- **Context**: The current local stack runs the worker in a Linux container on macOS, so Apple GPU acceleration is unavailable unless the worker runs directly on the host.
+- **Status**: Done
+
 ### [P2] Add export outputs for transcript and notes
 
 Support TXT and PDF output without requiring full reprocessing.
