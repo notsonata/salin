@@ -139,3 +139,4 @@ wait_for_tcp_port "127.0.0.1" "6379" "Redis"
 
 cd "$SCRIPT_DIR"
 run_host_worker
+f

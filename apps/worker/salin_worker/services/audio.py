@@ -8,6 +8,7 @@ class AudioNormalizer:
     def normalize(self, *, source_path: Path, destination_path: Path) -> Path:
         command = [
             "ffmpeg",
+            "-nostdin",
             "-y",
             "-i",
             str(source_path),
@@ -17,5 +18,10 @@ class AudioNormalizer:
             "16000",
             str(destination_path),
         ]
-        subprocess.run(command, check=True, capture_output=True)
+        subprocess.run(
+            command,
+            check=True,
+            capture_output=True,
+            stdin=subprocess.DEVNULL,
+        )
         return destination_path

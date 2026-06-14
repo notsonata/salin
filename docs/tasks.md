@@ -162,6 +162,20 @@ Acceptance criteria:
 - **Context**: The host-worker macOS path is required for Apple diarization acceleration, so the startup script cannot assume a globally installed `uv` binary.
 - **Status**: Done
 
+### [P1] Keep macOS host-worker normalization non-interactive
+
+Prevent the macOS host worker from hanging in `preprocessing` when `ffmpeg` runs under `rq.worker.SpawnWorker`.
+
+Acceptance criteria:
+
+- The worker's `ffmpeg` normalization path does not read from stdin
+- macOS host-worker jobs no longer stop in `preprocessing` because `ffmpeg` is suspended by terminal input
+- Worker regression coverage locks the non-interactive `ffmpeg` invocation in place
+
+- **Files**: `apps/worker/salin_worker/services/audio.py`, `apps/worker/tests/test_audio.py`, `docs/testing.md`, `docs/tasks.md`
+- **Context**: On macOS, the spawned RQ work-horse runs in its own process group, so an interactive `ffmpeg` subprocess can be stopped by the OS when it tries to read from stdin.
+- **Status**: Done
+
 ### [P2] Add export outputs for transcript and notes
 
 Support TXT and PDF output without requiring full reprocessing.

@@ -57,6 +57,10 @@ Use the lowest level that gives credible confidence:
 - `run.sh` bootstraps repo-local worker dependencies for the tooling fallback when pyannote diarization is enabled
 - `run.sh` keeps the full Docker stack on non-macOS hosts
 
+`apps/worker/tests/test_audio.py`
+
+- The worker normalizer runs `ffmpeg` with `-nostdin` and `stdin=subprocess.DEVNULL` so macOS host-worker jobs cannot be suspended by terminal input
+
 ### Web E2E
 
 `apps/web/tests/e2e/upload.spec.ts`
