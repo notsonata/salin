@@ -105,8 +105,7 @@ class OpenRouterNotesProvider:
 
     def _build_prompt(self, request: NotesGenerationRequest) -> str:
         transcript_lines = "\n".join(
-            f"[{self._format_timestamp(segment.start_ms)}-{self._format_timestamp(segment.end_ms)}] "
-            f"{segment.speaker_label}: {segment.text}"
+            self._format_transcript_line(segment)
             for segment in request.transcript_segments
         )
         return (
@@ -121,11 +120,11 @@ class OpenRouterNotesProvider:
     def _extract_json_payload(self, content: str) -> dict:
         try:
             return json.loads(content)
-        except json.JSONDecodeError:
+        except json.JSONDecodeError as exc:
             start = content.find("{")
             end = content.rfind("}")
             if start == -1 or end == -1 or end <= start:
-                raise ValueError("OpenRouter returned a non-JSON notes payload.")
+                raise ValueError("OpenRouter returned a non-JSON notes payload.") from exc
             return json.loads(content[start : end + 1])
 
     def _normalize_list(self, value: object) -> list[str]:
@@ -143,3 +142,8 @@ class OpenRouterNotesProvider:
         minutes = total_seconds // 60
         seconds = total_seconds % 60
         return f"{minutes:02d}:{seconds:02d}"
+
+    def _format_transcript_line(self, segment: NotesTranscriptSegment) -> str:
+        start = self._format_timestamp(segment.start_ms)
+        end = self._format_timestamp(segment.end_ms)
+        return f"[{start}-{end}] {segment.speaker_label}: {segment.text}"

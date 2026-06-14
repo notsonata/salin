@@ -23,7 +23,11 @@ def build_services(*, redis_url: str, settings) -> ApiServices:
             secret_access_key=settings.r2_secret_access_key,
             region_name=settings.r2_region,
         ),
-        job_queue=RQJobQueue(redis_url=redis_url),
+        job_queue=RQJobQueue(
+            redis_url=redis_url,
+            recording_job_timeout_seconds=settings.recording_job_timeout_seconds,
+            notes_job_timeout_seconds=settings.notes_job_timeout_seconds,
+        ),
         notes_provider=OpenRouterNotesProvider(
             api_key=settings.openrouter_api_key,
             models=settings.openrouter_models,

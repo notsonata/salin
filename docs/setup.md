@@ -38,11 +38,21 @@ Required values:
 - `GROQ_TRANSCRIPTION_MODEL`
 - `GROQ_FAST_MODEL`
 - `LOCAL_TRANSCRIPTION_MODEL`
-- `OPENROUTER_API_KEY`
-- `OPENROUTER_MODELS`
+- `RECORDING_JOB_TIMEOUT_SECONDS`
+- `NOTES_JOB_TIMEOUT_SECONDS`
 - `MAX_UPLOAD_MB`
 - `NEXT_PUBLIC_API_BASE_URL`
 - `SALIN_API_INTERNAL_BASE_URL`
+- `OPENROUTER_API_KEY`
+- `OPENROUTER_MODELS`
+
+Optional diarization values:
+
+- `DIARIZATION_PROVIDER`: use `none` or `pyannote`
+- `PYANNOTE_AUTH_TOKEN`: required only when `DIARIZATION_PROVIDER=pyannote`
+- `PYANNOTE_MODEL`: defaults to `pyannote/speaker-diarization-community-1`
+- `PYANNOTE_DEVICE`: use `auto`, `cpu`, or `cuda`
+- `PYANNOTE_METRICS_ENABLED`: defaults to `0` in the template
 
 ## Install
 
@@ -101,6 +111,8 @@ pnpm --filter @salin/shared generate
 - `CORS_ALLOWED_ORIGINS` must include the browser-facing web origin, which is `http://localhost:3000` for the default Docker Compose setup.
 - Cloudflare R2 remains the source of truth for original, normalized, and raw-provider artifacts.
 - The phase 1 worker supports Groq-first transcription with `faster-whisper` fallback.
+- Diarization is disabled by default. To enable pyannote-backed diarization, accept the selected model's Hugging Face conditions, create a token, set `DIARIZATION_PROVIDER=pyannote`, and set `PYANNOTE_AUTH_TOKEN`.
+- Recording processing jobs use `RECORDING_JOB_TIMEOUT_SECONDS` because local transcription and diarization can exceed RQ's default 180 second timeout on CPU-only machines. Notes generation uses `NOTES_JOB_TIMEOUT_SECONDS`.
 
 ## Troubleshooting Focus
 
@@ -109,4 +121,5 @@ pnpm --filter @salin/shared generate
 - Browser cannot reach the API because `CORS_ALLOWED_ORIGINS` does not include the active web origin
 - API or worker cannot authenticate to Cloudflare R2
 - Worker cannot import `groq` or `faster-whisper`
+- Recording fails with `Task exceeded maximum timeout value`: raise `RECORDING_JOB_TIMEOUT_SECONDS` and retry the failed recording
 - Browser-facing API base URL and server-side internal API base URL diverge

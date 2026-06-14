@@ -20,7 +20,33 @@ function idleNotes(): GeneratedNotesSummary {
   };
 }
 
-function completedDetail(notes = idleNotes()) {
+function completedDetail(
+  notes = idleNotes(),
+  transcriptSegments = [
+    {
+      id: "seg_1",
+      recording_id: "rec_1",
+      index: 0,
+      start_ms: 0,
+      end_ms: 1200,
+      text: "Kamusta sa transcript workspace.",
+      speaker_label: "Speaker",
+      speaker_estimated: true,
+      source_provider: "groq",
+    },
+    {
+      id: "seg_2",
+      recording_id: "rec_1",
+      index: 1,
+      start_ms: 5300,
+      end_ms: 8000,
+      text: "Search and notes should stay useful.",
+      speaker_label: "Speaker",
+      speaker_estimated: true,
+      source_provider: "groq",
+    },
+  ],
+) {
   return {
     recording: {
       id: "rec_1",
@@ -46,30 +72,7 @@ function completedDetail(notes = idleNotes()) {
       started_at: now(),
       completed_at: now(),
     },
-    transcript_segments: [
-      {
-        id: "seg_1",
-        recording_id: "rec_1",
-        index: 0,
-        start_ms: 0,
-        end_ms: 1200,
-        text: "Kamusta sa transcript workspace.",
-        speaker_label: "Speaker",
-        speaker_estimated: true,
-        source_provider: "groq",
-      },
-      {
-        id: "seg_2",
-        recording_id: "rec_1",
-        index: 1,
-        start_ms: 5300,
-        end_ms: 8000,
-        text: "Search and notes should stay useful.",
-        speaker_label: "Speaker",
-        speaker_estimated: true,
-        source_provider: "groq",
-      },
-    ],
+    transcript_segments: transcriptSegments,
     artifact_urls: {
       original: "https://storage.invalid/recordings/rec_1/original/lecture.mp3",
       normalized:
@@ -244,8 +247,10 @@ test("supported upload transitions into the interactive transcript workspace", a
   await page.getByLabel("Processing mode").selectOption("accurate");
   await page.getByRole("button", { name: "Start processing" }).click();
 
-  await expect(page).toHaveURL(/\/recordings\/rec_1$/);
-  await expect(page.getByRole("link", { name: "Back to dashboard" })).toBeVisible();
+  await page.waitForURL("**/recordings/rec_1", { timeout: 15_000 });
+  await expect(page.getByRole("link", { name: "Back to dashboard" })).toBeVisible({
+    timeout: 15_000,
+  });
   await expect(page.getByRole("tab", { name: "Transcript" })).toBeVisible();
   await expect(page.getByRole("tab", { name: "Notes" })).toBeVisible();
   await expect(page.getByText("Transcript ready").first()).toBeVisible();
@@ -283,6 +288,91 @@ test("supported upload transitions into the interactive transcript workspace", a
     .locator("audio")
     .evaluate((node) => (node as HTMLAudioElement).currentTime);
   expect(currentTimeValue).toBeGreaterThanOrEqual(5);
+});
+
+test("speaker labels can be renamed and reassigned from the transcript", async ({
+  page,
+}) => {
+  let detail = completedDetail();
+
+  await page.route("http://localhost:8000/recordings/rec_1", async (route) => {
+    await route.fulfill({
+      status: 200,
+      headers: {
+        "access-control-allow-origin": "*",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(detail),
+    });
+  });
+
+  await page.route(
+    "http://localhost:8000/recordings/rec_1/speakers/rename",
+    async (route) => {
+      const updatedSegments = detail.transcript_segments.map((segment) => ({
+        ...segment,
+        speaker_label: "Teacher",
+        speaker_estimated: false,
+      }));
+      detail = {
+        ...detail,
+        transcript_segments: updatedSegments,
+      };
+      await route.fulfill({
+        status: 200,
+        headers: {
+          "access-control-allow-origin": "*",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          recording_id: "rec_1",
+          transcript_segments: updatedSegments,
+        }),
+      });
+    },
+  );
+
+  await page.route(
+    "http://localhost:8000/recordings/rec_1/transcript-segments/seg_1/speaker",
+    async (route) => {
+      const updatedSegments = detail.transcript_segments.map((segment) =>
+        segment.id === "seg_1"
+          ? { ...segment, speaker_label: "Student", speaker_estimated: false }
+          : segment,
+      );
+      detail = {
+        ...detail,
+        transcript_segments: updatedSegments,
+      };
+      await route.fulfill({
+        status: 200,
+        headers: {
+          "access-control-allow-origin": "*",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          recording_id: "rec_1",
+          transcript_segments: updatedSegments,
+        }),
+      });
+    },
+  );
+
+  await page.goto("/recordings/rec_1");
+
+  await expect(page.getByText("Estimated").first()).toBeVisible();
+  await page.getByLabel("Corrected speaker name").fill("Teacher");
+  await page.getByRole("button", { name: "Rename speaker" }).click();
+
+  await expect(page.getByText("Speaker labels updated.")).toBeVisible();
+  await expect(page.getByLabel("Speaker label for 00:00")).toHaveValue("Teacher");
+  await expect(page.getByText("Edited").first()).toBeVisible();
+
+  await page.getByLabel("Speaker label for 00:00").fill("Student");
+  await page.getByRole("button", { name: "Apply speaker" }).first().click();
+
+  await expect(page.getByText("Speaker label updated.")).toBeVisible();
+  await expect(page.getByLabel("Speaker label for 00:00")).toHaveValue("Student");
 });
 
 test("manual notes generation renders the completed structured notes", async ({ page }) => {

@@ -9,6 +9,7 @@ from salin_api.db.session import create_engine_for_url, create_session_factory
 from salin_api.repositories.recordings import RecordingRepository, TranscriptSegmentInput
 from salin_api.services.notes import NotesGenerationResult
 from salin_worker.providers.base import ProviderSegment, TranscriptionResult
+from salin_worker.providers.diarization import DiarizationResult, DiarizationSegment
 from salin_worker.services.processing import RecordingProcessor
 
 
@@ -36,11 +37,22 @@ class FakeNormalizer:
 
 
 class FakeProvider:
-    def __init__(self, *, result: TranscriptionResult | None = None, error: Exception | None = None):
+    def __init__(
+        self,
+        *,
+        result: TranscriptionResult | None = None,
+        error: Exception | None = None,
+    ):
         self.result = result
         self.error = error
 
-    def transcribe(self, *, audio_path: Path, language: str, model_name: str) -> TranscriptionResult:
+    def transcribe(
+        self,
+        *,
+        audio_path: Path,
+        language: str,
+        model_name: str,
+    ) -> TranscriptionResult:
         if self.error is not None:
             raise self.error
         assert self.result is not None
@@ -48,11 +60,38 @@ class FakeProvider:
 
 
 class FakeNotesProvider:
-    def __init__(self, *, result: NotesGenerationResult | None = None, error: Exception | None = None):
+    def __init__(
+        self,
+        *,
+        result: NotesGenerationResult | None = None,
+        error: Exception | None = None,
+    ):
         self.result = result
         self.error = error
 
     def generate_notes(self, *, request) -> dict:
+        if self.error is not None:
+            raise self.error
+        assert self.result is not None
+        return self.result
+
+
+class FakeDiarizationProvider:
+    def __init__(
+        self,
+        *,
+        result: DiarizationResult | None = None,
+        error: Exception | None = None,
+    ):
+        self.result = result
+        self.error = error
+
+    def diarize(
+        self,
+        *,
+        audio_path: Path,
+        speaker_count: str,
+    ) -> DiarizationResult:
         if self.error is not None:
             raise self.error
         assert self.result is not None
@@ -64,6 +103,17 @@ def build_result(source_provider: str) -> TranscriptionResult:
         source_provider=source_provider,
         raw_payload={"provider": source_provider, "segments": [{"text": "Kamusta"}]},
         segments=[ProviderSegment(start_ms=0, end_ms=1200, text="Kamusta")],
+    )
+
+
+def build_multi_segment_result(source_provider: str) -> TranscriptionResult:
+    return TranscriptionResult(
+        source_provider=source_provider,
+        raw_payload={"provider": source_provider, "segments": [{"text": "A"}, {"text": "B"}]},
+        segments=[
+            ProviderSegment(start_ms=0, end_ms=1_000, text="Kamusta"),
+            ProviderSegment(start_ms=1_000, end_ms=2_000, text="Salamat"),
+        ],
     )
 
 
@@ -179,6 +229,83 @@ def test_processing_falls_back_to_local_provider(tmp_path: Path) -> None:
     assert job.stage == "completed"
     assert job.last_provider == "faster-whisper"
     assert segments[0].source_provider == "faster-whisper"
+
+
+def test_processing_aligns_diarization_segments_when_provider_is_configured(
+    tmp_path: Path,
+) -> None:
+    database_url = f"sqlite:///{tmp_path / 'worker-diarization.db'}"
+    engine = create_engine_for_url(database_url)
+    Base.metadata.create_all(engine)
+    session_factory = create_session_factory(database_url)
+    storage = FakeStorage()
+    recording_id = seed_recording(session_factory, storage)
+    processor = RecordingProcessor(
+        settings=Settings(DATABASE_URL=database_url),
+        storage=storage,
+        groq_provider=FakeProvider(result=build_multi_segment_result("groq")),
+        local_provider=FakeProvider(result=build_result("faster-whisper")),
+        diarization_provider=FakeDiarizationProvider(
+            result=DiarizationResult(
+                source_provider="test-diarizer",
+                raw_payload={"segments": [{"speaker": "Speaker 1"}, {"speaker": "Speaker 2"}]},
+                segments=[
+                    DiarizationSegment(start_ms=0, end_ms=900, speaker_label="Speaker 1"),
+                    DiarizationSegment(start_ms=900, end_ms=2_000, speaker_label="Speaker 2"),
+                ],
+            )
+        ),
+        audio_normalizer=FakeNormalizer(),
+        session_factory=session_factory,
+        groq_retry_delays=(),
+    )
+
+    processor.process(recording_id)
+
+    session = session_factory()
+    repository = RecordingRepository(session)
+    job = repository.require_job(recording_id)
+    segments = repository.list_segments(recording_id)
+    session.close()
+
+    assert job.stage == "completed"
+    assert [segment.speaker_label for segment in segments] == ["Speaker 1", "Speaker 2"]
+    assert all(segment.speaker_estimated for segment in segments)
+    assert (
+        "recordings/recording-1/artifacts/test-diarizer-diarization-raw.json"
+        in storage.objects
+    )
+
+
+def test_processing_keeps_transcript_when_diarization_fails(tmp_path: Path) -> None:
+    database_url = f"sqlite:///{tmp_path / 'worker-diarization-failure.db'}"
+    engine = create_engine_for_url(database_url)
+    Base.metadata.create_all(engine)
+    session_factory = create_session_factory(database_url)
+    storage = FakeStorage()
+    recording_id = seed_recording(session_factory, storage)
+    processor = RecordingProcessor(
+        settings=Settings(DATABASE_URL=database_url),
+        storage=storage,
+        groq_provider=FakeProvider(result=build_multi_segment_result("groq")),
+        local_provider=FakeProvider(result=build_result("faster-whisper")),
+        diarization_provider=FakeDiarizationProvider(error=RuntimeError("Diarizer unavailable")),
+        audio_normalizer=FakeNormalizer(),
+        session_factory=session_factory,
+        groq_retry_delays=(),
+    )
+
+    processor.process(recording_id)
+
+    session = session_factory()
+    repository = RecordingRepository(session)
+    job = repository.require_job(recording_id)
+    segments = repository.list_segments(recording_id)
+    session.close()
+
+    assert job.stage == "completed"
+    assert [segment.speaker_label for segment in segments] == ["Speaker", "Speaker"]
+    assert "recordings/recording-1/artifacts/diarization-error.json" in storage.objects
 
 
 def test_notes_generation_persists_structured_sections(tmp_path: Path) -> None:

@@ -6,7 +6,6 @@ from faster_whisper import WhisperModel
 
 from salin_worker.providers.base import ProviderSegment, TranscriptionResult
 
-
 LANGUAGE_MAP = {"tl": "tl", "en": "en", "auto": None}
 
 

@@ -10,7 +10,7 @@ Salin now has the transcript spine plus the first review-and-notes layer as a re
 - `packages/shared`: generated-type boundary plus typed fetch client for the web app
 - `infra/docker-compose.yml`: local orchestration for `web`, `api`, `worker`, `postgres`, and `redis`
 
-This slice now covers an upload-first dashboard, persistent jobs, canonical transcript segments, normalized-audio review, transcript search, transcript TXT export, manual notes generation, and structured notes editing. It still does not implement diarization, speaker editing, notes TXT export, PDF export, or combined export flows.
+This slice now covers an upload-first dashboard, persistent jobs, canonical transcript segments, normalized-audio review, transcript search, transcript TXT export, manual notes generation, structured notes editing, basic speaker correction workflows, and configurable pyannote-backed diarization. It still does not implement notes TXT export, PDF export, or combined export flows.
 
 ## System Overview
 
@@ -28,6 +28,7 @@ This slice now covers an upload-first dashboard, persistent jobs, canonical tran
                                +--> ffmpeg
                                +--> Groq Whisper
                                +--> faster-whisper fallback
+                               +--> pyannote.audio diarization (optional)
 ```
 
 ## Repository Shape
@@ -54,6 +55,7 @@ salin/
 - Poll `GET /recordings/{id}` every 2 seconds until the transcript job and notes lifecycle reach terminal states
 - Render recording detail header plus transcript/notes tabs
 - Render normalized-audio review, timestamp seeking, transcript search, and transcript TXT export inside the transcript tab
+- Render estimated/edited speaker state, speaker rename, and per-block speaker reassignment controls inside the transcript tab
 - Render manual notes generation, regeneration, and structured notes editing without blocking transcript review
 - Show retry affordance only when the API marks a failed job as retryable
 
@@ -70,6 +72,7 @@ salin/
 - Reset retryable failed jobs and re-enqueue them
 - Queue manual notes generation requests against stored transcript data
 - Persist structured notes edits through `PUT /recordings/{id}/notes`
+- Persist speaker rename and per-block speaker correction edits against transcript segments
 - Export OpenAPI schema for the shared TypeScript client/types workflow
 
 ### `apps/worker`
@@ -79,7 +82,11 @@ salin/
 - Upload normalized audio artifact back to R2
 - Retry Groq transcription with bounded backoff
 - Fall back to `faster-whisper` when Groq fails
-- Persist raw provider artifact JSON and canonical transcript segments
+- Persist raw transcription provider artifact JSON
+- Optionally run pyannote diarization after transcription
+- Persist raw diarization artifact JSON when a provider is configured
+- Persist canonical transcript segments with aligned estimated speaker labels when diarization succeeds
+- Keep generic estimated speaker labels when diarization is not configured or fails
 - Mark job state transitions in Postgres
 - Generate structured notes from stored transcript segments through the OpenRouter provider boundary
 - Preserve completed transcript data even when notes generation fails
@@ -98,7 +105,7 @@ Current tables:
 - `transcript_segments`
 - `generated_notes`
 
-The current schema still omits diarization, speaker-edit operations, export, and chunk metadata tables.
+The current schema still omits diarization, export, and chunk metadata tables. Basic speaker corrections are stored directly on transcript segment rows rather than in a separate speaker table.
 
 The API currently initializes tables with `Base.metadata.create_all(...)` on startup. Proper migrations can be added once the schema stabilizes beyond the transcript spine.
 
@@ -128,7 +135,9 @@ Each transcript segment persists:
 - `speaker_estimated`
 - `source_provider`
 
-For this milestone, `speaker_label` is always `"Speaker"` and `speaker_estimated` is always `true`.
+When no diarization provider is configured, the processing path writes `"Speaker"` with `speaker_estimated` set to `true`. When a provider returns diarization spans, the worker applies a deterministic largest-overlap alignment helper and persists the aligned estimated speaker labels.
+
+User speaker corrections update transcript segment rows directly and set `speaker_estimated` to `false`. Renaming a speaker label across the recording can also merge duplicate labels by renaming one label to an existing one.
 
 ## Notes Lifecycle
 
@@ -157,9 +166,13 @@ The worker owns provider-specific logic behind explicit interfaces:
 
 - `GroqTranscriptionProvider`
 - `FasterWhisperTranscriptionProvider`
+- `DiarizationProvider`
+- `PyannoteDiarizationProvider`
 - `OpenRouterNotesProvider`
 
 The rest of the system only consumes canonical transcript segments and job state, not provider response shapes.
+
+The diarization boundary defines provider-neutral speaker spans, artifact persistence, and transcript alignment. The first model-backed provider is `pyannote.audio`, using `pyannote/speaker-diarization-community-1` by default when `DIARIZATION_PROVIDER=pyannote` and `PYANNOTE_AUTH_TOKEN` are configured.
 
 ## Job Lifecycle
 
@@ -178,4 +191,6 @@ Current rules:
 - Notes generation is a separate persisted lifecycle and does not mutate transcript job stages.
 - Notes failures do not require retranscription and do not delete transcript segments.
 - Recording `updated_at` is intentionally touched by transcript and notes lifecycle changes so the dashboard history reflects recent workspace activity rather than upload time alone.
+- Recording jobs are enqueued with an explicit long-running timeout through `RECORDING_JOB_TIMEOUT_SECONDS` so local fallback transcription and optional diarization are not killed by RQ's 180 second default.
+- Notes jobs use a separate `NOTES_JOB_TIMEOUT_SECONDS` timeout because they are downstream and should remain shorter-lived.
 - Chunking is intentionally deferred. Oversized normalized audio fails with a clear milestone-boundary error.

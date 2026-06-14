@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from salin_api.repositories.recordings import RecordingRepository, TranscriptSegmentInput
 
@@ -56,7 +56,13 @@ def test_unsupported_upload_is_rejected(client) -> None:
     assert "Unsupported file type" in response.json()["detail"]
 
 
-def create_completed_recording(client, app, *, filename: str = "lecture.mp3") -> str:
+def create_completed_recording(
+    client,
+    app,
+    *,
+    filename: str = "lecture.mp3",
+    segments: list[TranscriptSegmentInput] | None = None,
+) -> str:
     response = client.post(
         "/recordings",
         data={
@@ -73,7 +79,8 @@ def create_completed_recording(client, app, *, filename: str = "lecture.mp3") ->
     repository = RecordingRepository(session)
     repository.replace_segments(
         recording_id,
-        [
+        segments
+        or [
             TranscriptSegmentInput(
                 index=0,
                 start_ms=0,
@@ -100,7 +107,7 @@ def set_recording_updated_at(app, recording_id: str, *, seconds_from_now: int) -
     session = app.state.session_factory()
     repository = RecordingRepository(session)
     recording = repository.require_recording(recording_id)
-    recording.updated_at = datetime.now(timezone.utc) + timedelta(seconds=seconds_from_now)
+    recording.updated_at = datetime.now(UTC) + timedelta(seconds=seconds_from_now)
     session.commit()
     session.close()
 
@@ -215,6 +222,99 @@ def test_update_notes_persists_structured_edits(client, app) -> None:
     assert payload["notes"]["decisions"] == ["Decision A"]
     assert payload["notes"]["action_items"] == ["Action A"]
     assert payload["notes"]["questions"] == ["Question A"]
+
+
+def test_rename_speaker_updates_matching_transcript_segments(client, app) -> None:
+    recording_id = create_completed_recording(
+        client,
+        app,
+        segments=[
+            TranscriptSegmentInput(
+                index=0,
+                start_ms=0,
+                end_ms=1200,
+                text="Teacher starts the discussion.",
+                speaker_label="Speaker 1",
+                speaker_estimated=True,
+                source_provider="groq",
+            ),
+            TranscriptSegmentInput(
+                index=1,
+                start_ms=1200,
+                end_ms=2200,
+                text="Student responds.",
+                speaker_label="Speaker 2",
+                speaker_estimated=True,
+                source_provider="groq",
+            ),
+            TranscriptSegmentInput(
+                index=2,
+                start_ms=2200,
+                end_ms=3000,
+                text="Teacher closes.",
+                speaker_label="Speaker 1",
+                speaker_estimated=True,
+                source_provider="groq",
+            ),
+        ],
+    )
+
+    response = client.put(
+        f"/recordings/{recording_id}/speakers/rename",
+        json={"from_label": "Speaker 1", "to_label": "Teacher"},
+    )
+
+    assert response.status_code == 200
+    segments = response.json()["transcript_segments"]
+    assert [segment["speaker_label"] for segment in segments] == [
+        "Teacher",
+        "Speaker 2",
+        "Teacher",
+    ]
+    assert [segment["speaker_estimated"] for segment in segments] == [
+        False,
+        True,
+        False,
+    ]
+
+
+def test_update_segment_speaker_changes_one_transcript_block(client, app) -> None:
+    recording_id = create_completed_recording(
+        client,
+        app,
+        segments=[
+            TranscriptSegmentInput(
+                index=0,
+                start_ms=0,
+                end_ms=1200,
+                text="First block.",
+                speaker_label="Speaker 1",
+                speaker_estimated=True,
+                source_provider="groq",
+            ),
+            TranscriptSegmentInput(
+                index=1,
+                start_ms=1200,
+                end_ms=2200,
+                text="Second block.",
+                speaker_label="Speaker 2",
+                speaker_estimated=True,
+                source_provider="groq",
+            ),
+        ],
+    )
+    detail_response = client.get(f"/recordings/{recording_id}")
+    segment_id = detail_response.json()["transcript_segments"][0]["id"]
+
+    response = client.put(
+        f"/recordings/{recording_id}/transcript-segments/{segment_id}/speaker",
+        json={"speaker_label": "Student"},
+    )
+
+    assert response.status_code == 200
+    segments = response.json()["transcript_segments"]
+    assert [segment["speaker_label"] for segment in segments] == ["Student", "Speaker 2"]
+    assert [segment["speaker_estimated"] for segment in segments] == [False, True]
 
 
 def test_update_notes_refreshes_dashboard_recency(client, app) -> None:

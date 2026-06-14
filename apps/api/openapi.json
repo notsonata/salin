@@ -225,6 +225,113 @@
           }
         }
       }
+    },
+    "/recordings/{recording_id}/speakers/rename": {
+      "put": {
+        "summary": "Rename Speaker",
+        "operationId": "rename_speaker_recordings__recording_id__speakers_rename_put",
+        "parameters": [
+          {
+            "name": "recording_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Recording Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SpeakerRenameRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranscriptSegmentsUpdateResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/recordings/{recording_id}/transcript-segments/{segment_id}/speaker": {
+      "put": {
+        "summary": "Update Segment Speaker",
+        "operationId": "update_segment_speaker_recordings__recording_id__transcript_segments__segment_id__speaker_put",
+        "parameters": [
+          {
+            "name": "recording_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Recording Id"
+            }
+          },
+          {
+            "name": "segment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Segment Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SegmentSpeakerUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranscriptSegmentsUpdateResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -781,6 +888,21 @@
         ],
         "title": "RetryResponse"
       },
+      "SegmentSpeakerUpdateRequest": {
+        "properties": {
+          "speaker_label": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Speaker Label"
+          }
+        },
+        "type": "object",
+        "required": [
+          "speaker_label"
+        ],
+        "title": "SegmentSpeakerUpdateRequest"
+      },
       "SpeakerCount": {
         "type": "string",
         "enum": [
@@ -792,6 +914,28 @@
           "5_plus"
         ],
         "title": "SpeakerCount"
+      },
+      "SpeakerRenameRequest": {
+        "properties": {
+          "from_label": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "From Label"
+          },
+          "to_label": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "To Label"
+          }
+        },
+        "type": "object",
+        "required": [
+          "from_label",
+          "to_label"
+        ],
+        "title": "SpeakerRenameRequest"
       },
       "TranscriptSegmentSummary": {
         "properties": {
@@ -845,6 +989,27 @@
           "source_provider"
         ],
         "title": "TranscriptSegmentSummary"
+      },
+      "TranscriptSegmentsUpdateResponse": {
+        "properties": {
+          "recording_id": {
+            "type": "string",
+            "title": "Recording Id"
+          },
+          "transcript_segments": {
+            "items": {
+              "$ref": "#/components/schemas/TranscriptSegmentSummary"
+            },
+            "type": "array",
+            "title": "Transcript Segments"
+          }
+        },
+        "type": "object",
+        "required": [
+          "recording_id",
+          "transcript_segments"
+        ],
+        "title": "TranscriptSegmentsUpdateResponse"
       },
       "ValidationError": {
         "properties": {

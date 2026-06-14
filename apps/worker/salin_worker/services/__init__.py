@@ -1,1 +1,1 @@
-__all__ = ["audio", "notes", "processing"]
+__all__ = ["audio", "diarization", "notes", "processing"]

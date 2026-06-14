@@ -2,7 +2,8 @@
 
 Salin is a recording-to-notes workspace for uploaded audio and video files, focused on Tagalog, English, and Taglish recordings.
 
-The current implementation is the phase 1 transcript spine:
+The current implementation includes the transcript spine plus the first review and
+notes workspace:
 
 - Upload one supported recording
 - Persist the original file in Cloudflare R2
@@ -10,25 +11,28 @@ The current implementation is the phase 1 transcript spine:
 - Normalize audio with `ffmpeg`
 - Transcribe through Groq first, with `faster-whisper` as fallback
 - Persist canonical timestamped transcript segments
-- Render a poll-based transcript workspace in the web app
+- Render an upload-first dashboard with recent recordings
+- Render a tabbed recording detail workspace with transcript and notes sections
+- Review normalized audio through clickable transcript timestamps
+- Search and export the transcript as TXT
+- Generate, edit, and save structured notes from stored transcript data
 
 ## Current Scope
 
 Implemented now:
 
-- Next.js web app for upload and transcript review
-- FastAPI API for upload, status, transcript fetch, and retry
-- Python worker for background preprocessing and transcription
+- Next.js web app for upload, dashboard history, transcript review, and notes editing
+- FastAPI API for upload, status, transcript fetch, retry, recordings list, notes generation, and notes edits
+- Python worker for background preprocessing, transcription, and notes generation
 - Shared TypeScript API client and generated types boundary
 - Docker Compose stack for `web`, `api`, `worker`, `postgres`, and `redis`
 
 Deferred to later milestones:
 
 - Diarization and speaker editing workflows
-- Notes generation through OpenRouter
-- Audio playback and timestamp seeking
-- Transcript search
-- TXT/PDF export
+- Notes TXT export
+- Transcript and notes PDF export
+- Combined export flows
 - Chunking for long recordings
 
 ## Stack
@@ -133,8 +137,11 @@ uv run --package salin-worker rq worker salin-recordings --url redis://localhost
 Current endpoints:
 
 - `POST /recordings`
+- `GET /recordings`
 - `GET /recordings/{recording_id}`
 - `POST /recordings/{recording_id}/retry`
+- `POST /recordings/{recording_id}/notes/generate`
+- `PUT /recordings/{recording_id}/notes`
 
 Supported upload formats:
 
@@ -164,24 +171,25 @@ docker compose -f infra/docker-compose.yml build
 
 The repo includes:
 
-- API integration tests for upload validation and job creation
-- Worker integration tests for canonical transcript persistence and Groq fallback
-- Playwright coverage for the upload-to-transcript web flow
+- API integration tests for upload validation, job creation, dashboard history, notes queueing, and notes edits
+- Worker integration tests for canonical transcript persistence, Groq fallback, and notes generation failure isolation
+- Playwright coverage for the dashboard, upload-to-transcript flow, timestamp seeking, transcript export, notes generation, notes failure, notes edits, and unsupported upload
 
-See [docs/testing.md](/Users/angelo/Projects/Personal/salin/docs/testing.md) for current commands and known environment limits.
+See [docs/testing.md](docs/testing.md) for current commands and known environment limits.
 
 ## Important Notes
 
 - Transcript segments are canonicalized before persistence.
 - Phase 1 speaker labels are always generic and marked as estimated.
-- Notes are intentionally not generated yet, but the provider boundary is reserved for OpenRouter.
+- Notes are generated from stored transcript segments through the OpenRouter provider boundary.
+- Notes failures do not require retranscription and do not delete transcript data.
 - Long recordings are not chunked yet; oversized normalized audio fails with a milestone-boundary error.
 
 ## Docs
 
-- [Project Plan](/Users/angelo/Projects/Personal/salin/docs/project-plan.md)
-- [Architecture](/Users/angelo/Projects/Personal/salin/docs/architecture.md)
-- [Setup](/Users/angelo/Projects/Personal/salin/docs/setup.md)
-- [Testing](/Users/angelo/Projects/Personal/salin/docs/testing.md)
-- [UI Conventions](/Users/angelo/Projects/Personal/salin/docs/ui.md)
-- [Tasks](/Users/angelo/Projects/Personal/salin/docs/tasks.md)
+- [Project Plan](docs/project-plan.md)
+- [Architecture](docs/architecture.md)
+- [Setup](docs/setup.md)
+- [Testing](docs/testing.md)
+- [UI Conventions](docs/ui.md)
+- [Tasks](docs/tasks.md)

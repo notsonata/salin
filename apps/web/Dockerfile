@@ -4,17 +4,14 @@ WORKDIR /workspace
 
 RUN corepack enable
 
-COPY package.json pnpm-workspace.yaml tsconfig.base.json ./
-COPY apps/web/package.json ./apps/web/package.json
-COPY packages/shared/package.json ./packages/shared/package.json
-
-RUN pnpm install --no-frozen-lockfile
-
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml tsconfig.base.json ./
 COPY apps/web ./apps/web
 COPY packages/shared ./packages/shared
 
-WORKDIR /workspace/apps/web
+RUN pnpm install --no-frozen-lockfile
 
-RUN pnpm build
+WORKDIR /workspace
 
-CMD ["pnpm", "dev", "--hostname", "0.0.0.0", "--port", "3000"]
+RUN pnpm --filter @salin/web exec next build
+
+CMD ["pnpm", "--filter", "@salin/web", "exec", "next", "dev", "--hostname", "0.0.0.0", "--port", "3000"]

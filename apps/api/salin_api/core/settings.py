@@ -37,6 +37,23 @@ class Settings(BaseSettings):
         default="small",
         alias="LOCAL_TRANSCRIPTION_MODEL",
     )
+    recording_job_timeout_seconds: int = Field(
+        default=3600,
+        ge=1,
+        alias="RECORDING_JOB_TIMEOUT_SECONDS",
+    )
+    notes_job_timeout_seconds: int = Field(
+        default=600,
+        ge=1,
+        alias="NOTES_JOB_TIMEOUT_SECONDS",
+    )
+    diarization_provider: str = Field(default="none", alias="DIARIZATION_PROVIDER")
+    pyannote_auth_token: str = Field(default="", alias="PYANNOTE_AUTH_TOKEN")
+    pyannote_model: str = Field(
+        default="pyannote/speaker-diarization-community-1",
+        alias="PYANNOTE_MODEL",
+    )
+    pyannote_device: str = Field(default="auto", alias="PYANNOTE_DEVICE")
     max_upload_mb: int = Field(default=100, alias="MAX_UPLOAD_MB")
     next_public_api_base_url: str = Field(
         default="http://localhost:8000",

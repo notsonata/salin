@@ -69,9 +69,15 @@ Current layout:
 Current transcript block contents:
 
 - clickable timestamp
-- generic estimated speaker label
+- estimated or edited speaker label badge
+- per-block speaker label edit control
 - provider badge
 - transcript text
+
+Current transcript-level speaker controls:
+
+- rename one speaker label across the recording
+- merge duplicate speaker labels by renaming one label to an existing label
 
 Current notes panel states:
 
@@ -94,7 +100,6 @@ Current notes tab requirements:
 
 Still intentionally deferred:
 
-- speaker editing controls
 - notes TXT export
 - PDF export
 - combined export controls
@@ -121,6 +126,6 @@ Every major screen should cover:
 
 Later milestones should add, in order:
 
-1. estimated speaker correction workflows
+1. model-backed diarization provider wiring
 2. notes and transcript export expansion
 3. PDF and combined export controls

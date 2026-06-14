@@ -6,6 +6,7 @@ requires-python = ">=3.12"
 dependencies = [
   "faster-whisper>=1.0.3",
   "groq>=0.11.0",
+  "pyannote.audio>=3.1.0",
   "redis>=5.2.0",
   "rq>=1.16.2",
   "salin-api"

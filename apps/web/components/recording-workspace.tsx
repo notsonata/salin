@@ -43,6 +43,7 @@ export function RecordingWorkspace({
   const [retrying, setRetrying] = useState(false);
   const [generatingNotes, setGeneratingNotes] = useState(false);
   const [savingNotes, setSavingNotes] = useState(false);
+  const [speakerSavingTarget, setSpeakerSavingTarget] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeSegmentId, setActiveSegmentId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"transcript" | "notes">("transcript");
@@ -52,6 +53,7 @@ export function RecordingWorkspace({
   );
   const [notesDirty, setNotesDirty] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [speakerMessage, setSpeakerMessage] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const notesDirtyRef = useRef(false);
   const stage = data?.job.stage;
@@ -129,6 +131,16 @@ export function RecordingWorkspace({
       return haystack.includes(normalizedQuery);
     });
   }, [data, searchQuery]);
+
+  const speakerLabels = useMemo(() => {
+    if (!data) {
+      return [];
+    }
+
+    return Array.from(
+      new Set(data.transcript_segments.map((segment) => segment.speaker_label)),
+    ).sort((left, right) => left.localeCompare(right));
+  }, [data]);
 
   if (!data) {
     return (
@@ -212,6 +224,57 @@ export function RecordingWorkspace({
     }
   }
 
+  async function renameSpeaker(fromLabel: string, toLabel: string) {
+    setSpeakerSavingTarget("rename");
+    setError(null);
+    setSpeakerMessage(null);
+    try {
+      const response = await apiClient.renameSpeaker(recordingId, {
+        from_label: fromLabel,
+        to_label: toLabel,
+      });
+      setData((current) =>
+        current
+          ? { ...current, transcript_segments: response.transcript_segments }
+          : current,
+      );
+      setSpeakerMessage("Speaker labels updated.");
+    } catch (speakerError) {
+      setError(
+        speakerError instanceof Error
+          ? speakerError.message
+          : "Could not update speaker labels.",
+      );
+    } finally {
+      setSpeakerSavingTarget(null);
+    }
+  }
+
+  async function updateSegmentSpeaker(segmentId: string, speakerLabel: string) {
+    setSpeakerSavingTarget(segmentId);
+    setError(null);
+    setSpeakerMessage(null);
+    try {
+      const response = await apiClient.updateSegmentSpeaker(recordingId, segmentId, {
+        speaker_label: speakerLabel,
+      });
+      setData((current) =>
+        current
+          ? { ...current, transcript_segments: response.transcript_segments }
+          : current,
+      );
+      setSpeakerMessage("Speaker label updated.");
+    } catch (speakerError) {
+      setError(
+        speakerError instanceof Error
+          ? speakerError.message
+          : "Could not update the speaker label.",
+      );
+    } finally {
+      setSpeakerSavingTarget(null);
+    }
+  }
+
   function seekToSegment(segment: TranscriptSegment) {
     setActiveSegmentId(segment.id);
     if (!audioRef.current) {
@@ -254,7 +317,7 @@ export function RecordingWorkspace({
   }
 
   return (
-    <div className="grid min-h-[calc(100vh-7rem)] gap-6">
+    <div className="grid min-h-[calc(100vh-7rem)] auto-rows-max content-start gap-6">
       <RecordingDetailHeader data={data} retrying={retrying} onRetry={retryJob} />
       <RecordingWorkspaceTabs activeTab={activeTab} onTabChange={setActiveTab} />
       {activeTab === "transcript" ? (
@@ -266,10 +329,15 @@ export function RecordingWorkspace({
           filteredSegments={filteredSegments}
           query={searchQuery}
           retrying={retrying}
+          speakerLabels={speakerLabels}
+          speakerMessage={speakerMessage}
+          speakerSavingTarget={speakerSavingTarget}
           onExport={exportTranscript}
           onQueryChange={setSearchQuery}
+          onRenameSpeaker={renameSpeaker}
           onRetry={retryJob}
           onSeek={seekToSegment}
+          onUpdateSegmentSpeaker={updateSegmentSpeaker}
         />
       ) : (
         <NotesEditorTab

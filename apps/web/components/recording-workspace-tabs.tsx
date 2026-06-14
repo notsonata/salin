@@ -17,7 +17,7 @@ export function RecordingWorkspaceTabs({
   return (
     <div
       aria-label="Recording workspace sections"
-      className="inline-flex w-fit rounded-lg border border-line bg-panel p-1"
+      className="inline-flex h-11 w-fit items-center self-start rounded-lg border border-line bg-panel p-1"
       role="tablist"
     >
       {tabCopy.map((tab) => (
@@ -25,7 +25,7 @@ export function RecordingWorkspaceTabs({
           aria-controls={`${tab.id}-panel`}
           aria-selected={activeTab === tab.id}
           className={cn(
-            "rounded-md px-4 py-2 font-mono text-[12px] uppercase tracking-[0.1em] transition-colors",
+            "flex h-9 items-center rounded-md px-4 font-mono text-[12px] uppercase tracking-[0.1em] transition-colors",
             activeTab === tab.id
               ? "bg-ink text-panel"
               : "text-muted hover:bg-[#f3ede2] hover:text-ink",

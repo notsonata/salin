@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from enum import StrEnum
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class LanguageOption(StrEnum):
@@ -145,3 +145,17 @@ class NotesUpdateRequest(BaseModel):
     decisions: list[str]
     action_items: list[str]
     questions: list[str]
+
+
+class SpeakerRenameRequest(BaseModel):
+    from_label: str = Field(min_length=1, max_length=255)
+    to_label: str = Field(min_length=1, max_length=255)
+
+
+class SegmentSpeakerUpdateRequest(BaseModel):
+    speaker_label: str = Field(min_length=1, max_length=255)
+
+
+class TranscriptSegmentsUpdateResponse(BaseModel):
+    recording_id: str
+    transcript_segments: list[TranscriptSegmentSummary]

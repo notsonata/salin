@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Annotated
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile, status
@@ -13,18 +14,21 @@ from salin_api.schemas.recordings import (
     GeneratedNotesSummary,
     LanguageOption,
     NotesGenerationResponse,
-    NotesUpdateRequest,
     NotesStatus,
+    NotesUpdateRequest,
+    ProcessingJobSummary,
     ProcessingMode,
     RecordingCreateResponse,
     RecordingDetailResponse,
     RecordingListItemSummary,
     RecordingListResponse,
-    ProcessingJobSummary,
     RecordingSummary,
     RetryResponse,
+    SegmentSpeakerUpdateRequest,
     SpeakerCount,
+    SpeakerRenameRequest,
     TranscriptSegmentSummary,
+    TranscriptSegmentsUpdateResponse,
 )
 
 SUPPORTED_EXTENSIONS = {".mp3", ".wav", ".m4a", ".aac", ".mp4", ".mov", ".webm"}
@@ -38,6 +42,13 @@ def get_session(request: Request) -> Session:
         yield session
     finally:
         session.close()
+
+
+SessionDep = Annotated[Session, Depends(get_session)]
+RecordingFile = Annotated[UploadFile, File(...)]
+LanguageForm = Annotated[LanguageOption, Form(...)]
+ProcessingModeForm = Annotated[ProcessingMode, Form(...)]
+SpeakerCountForm = Annotated[SpeakerCount, Form(...)]
 
 
 def sanitize_filename(filename: str) -> str:
@@ -94,11 +105,11 @@ def build_notes_summary(notes) -> GeneratedNotesSummary:
 )
 async def create_recording(
     request: Request,
-    file: UploadFile = File(...),
-    language: LanguageOption = Form(...),
-    processing_mode: ProcessingMode = Form(...),
-    speaker_count: SpeakerCount = Form(...),
-    session: Session = Depends(get_session),
+    file: RecordingFile,
+    language: LanguageForm,
+    processing_mode: ProcessingModeForm,
+    speaker_count: SpeakerCountForm,
+    session: SessionDep,
 ) -> RecordingCreateResponse:
     if not file.filename:
         raise HTTPException(status_code=400, detail="A filename is required.")
@@ -150,7 +161,7 @@ async def create_recording(
 
 @router.get("/recordings", response_model=RecordingListResponse)
 def list_recordings(
-    session: Session = Depends(get_session),
+    session: SessionDep,
 ) -> RecordingListResponse:
     repository = RecordingRepository(session)
     rows = repository.list_recordings()
@@ -170,7 +181,7 @@ def list_recordings(
 def get_recording(
     recording_id: str,
     request: Request,
-    session: Session = Depends(get_session),
+    session: SessionDep,
 ) -> RecordingDetailResponse:
     repository = RecordingRepository(session)
     recording = repository.get_recording(recording_id)
@@ -206,7 +217,7 @@ def get_recording(
 def retry_recording(
     recording_id: str,
     request: Request,
-    session: Session = Depends(get_session),
+    session: SessionDep,
 ) -> RetryResponse:
     repository = RecordingRepository(session)
     job = repository.get_job(recording_id)
@@ -239,7 +250,7 @@ def retry_recording(
 def generate_notes(
     recording_id: str,
     request: Request,
-    session: Session = Depends(get_session),
+    session: SessionDep,
 ) -> NotesGenerationResponse:
     repository = RecordingRepository(session)
     recording = repository.get_recording(recording_id)
@@ -286,7 +297,7 @@ def generate_notes(
 def update_notes(
     recording_id: str,
     payload: NotesUpdateRequest,
-    session: Session = Depends(get_session),
+    session: SessionDep,
 ) -> NotesGenerationResponse:
     repository = RecordingRepository(session)
     recording = repository.get_recording(recording_id)
@@ -304,4 +315,68 @@ def update_notes(
     return NotesGenerationResponse(
         recording_id=recording_id,
         notes=build_notes_summary(saved_notes),
+    )
+
+
+@router.put(
+    "/recordings/{recording_id}/speakers/rename",
+    response_model=TranscriptSegmentsUpdateResponse,
+)
+def rename_speaker(
+    recording_id: str,
+    payload: SpeakerRenameRequest,
+    session: SessionDep,
+) -> TranscriptSegmentsUpdateResponse:
+    repository = RecordingRepository(session)
+    from_label = payload.from_label.strip()
+    to_label = payload.to_label.strip()
+    if not from_label or not to_label:
+        raise HTTPException(status_code=400, detail="Speaker labels cannot be empty.")
+
+    try:
+        segments = repository.rename_speaker(
+            recording_id,
+            from_label=from_label,
+            to_label=to_label,
+        )
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    return TranscriptSegmentsUpdateResponse(
+        recording_id=recording_id,
+        transcript_segments=[
+            TranscriptSegmentSummary.model_validate(segment) for segment in segments
+        ],
+    )
+
+
+@router.put(
+    "/recordings/{recording_id}/transcript-segments/{segment_id}/speaker",
+    response_model=TranscriptSegmentsUpdateResponse,
+)
+def update_segment_speaker(
+    recording_id: str,
+    segment_id: str,
+    payload: SegmentSpeakerUpdateRequest,
+    session: SessionDep,
+) -> TranscriptSegmentsUpdateResponse:
+    repository = RecordingRepository(session)
+    speaker_label = payload.speaker_label.strip()
+    if not speaker_label:
+        raise HTTPException(status_code=400, detail="Speaker label cannot be empty.")
+
+    try:
+        segments = repository.update_segment_speaker(
+            recording_id,
+            segment_id=segment_id,
+            speaker_label=speaker_label,
+        )
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    return TranscriptSegmentsUpdateResponse(
+        recording_id=recording_id,
+        transcript_segments=[
+            TranscriptSegmentSummary.model_validate(segment) for segment in segments
+        ],
     )

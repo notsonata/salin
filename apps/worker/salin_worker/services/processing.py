@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import time
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -8,10 +9,14 @@ from tempfile import TemporaryDirectory
 from salin_api.core.settings import Settings
 from salin_api.db.session import create_session_factory
 from salin_api.repositories.recordings import RecordingRepository, TranscriptSegmentInput
+
 from salin_worker.providers.base import TranscriptionProvider, TranscriptionResult
+from salin_worker.providers.diarization import DiarizationProvider
 from salin_worker.services.audio import AudioNormalizer
+from salin_worker.services.diarization import align_speaker_labels
 
 MAX_NORMALIZED_AUDIO_BYTES = 95 * 1024 * 1024
+logger = logging.getLogger(__name__)
 
 
 class RecordingProcessor:
@@ -22,6 +27,7 @@ class RecordingProcessor:
         storage,
         groq_provider: TranscriptionProvider,
         local_provider: TranscriptionProvider,
+        diarization_provider: DiarizationProvider | None = None,
         audio_normalizer: AudioNormalizer | None = None,
         session_factory=None,
         groq_retry_delays: tuple[float, ...] = (1.0, 2.0),
@@ -31,6 +37,7 @@ class RecordingProcessor:
         self.storage = storage
         self.groq_provider = groq_provider
         self.local_provider = local_provider
+        self.diarization_provider = diarization_provider
         self.audio_normalizer = audio_normalizer or AudioNormalizer()
         self.session_factory = session_factory or create_session_factory(settings.database_url)
         self.groq_retry_delays = groq_retry_delays
@@ -79,21 +86,25 @@ class RecordingProcessor:
                     "application/json",
                 )
 
-                repository.replace_segments(
-                    recording_id,
-                    [
-                        TranscriptSegmentInput(
-                            index=index,
-                            start_ms=segment.start_ms,
-                            end_ms=segment.end_ms,
-                            text=segment.text,
-                            speaker_label="Speaker",
-                            speaker_estimated=True,
-                            source_provider=result.source_provider,
-                        )
-                        for index, segment in enumerate(result.segments)
-                    ],
+                transcript_segments = [
+                    TranscriptSegmentInput(
+                        index=index,
+                        start_ms=segment.start_ms,
+                        end_ms=segment.end_ms,
+                        text=segment.text,
+                        speaker_label="Speaker",
+                        speaker_estimated=True,
+                        source_provider=result.source_provider,
+                    )
+                    for index, segment in enumerate(result.segments)
+                ]
+                aligned_segments = self._align_with_diarization(
+                    recording_id=recording_id,
+                    audio_path=normalized_path,
+                    speaker_count=recording.speaker_count,
+                    transcript_segments=transcript_segments,
                 )
+                repository.replace_segments(recording_id, aligned_segments)
                 repository.update_job_stage(
                     recording_id,
                     stage="completed",
@@ -141,3 +152,56 @@ class RecordingProcessor:
             language=language,
             model_name=self.settings.local_transcription_model,
         )
+
+    def _align_with_diarization(
+        self,
+        *,
+        recording_id: str,
+        audio_path: Path,
+        speaker_count: str,
+        transcript_segments: list[TranscriptSegmentInput],
+    ) -> list[TranscriptSegmentInput]:
+        if self.diarization_provider is None:
+            return transcript_segments
+
+        try:
+            result = self.diarization_provider.diarize(
+                audio_path=audio_path,
+                speaker_count=speaker_count,
+            )
+        except Exception as exc:
+            logger.warning("Diarization failed for recording %s: %s", recording_id, exc)
+            self._upload_optional_json_artifact(
+                recording_id=recording_id,
+                artifact_name="diarization-error",
+                payload={"error": str(exc)},
+            )
+            return transcript_segments
+
+        self._upload_optional_json_artifact(
+            recording_id=recording_id,
+            artifact_name=f"{result.source_provider}-diarization-raw",
+            payload=result.raw_payload,
+        )
+        return align_speaker_labels(transcript_segments, result.segments)
+
+    def _upload_optional_json_artifact(
+        self,
+        *,
+        recording_id: str,
+        artifact_name: str,
+        payload: dict,
+    ) -> None:
+        try:
+            self.storage.upload_bytes(
+                f"recordings/{recording_id}/artifacts/{artifact_name}.json",
+                json.dumps(payload).encode("utf-8"),
+                "application/json",
+            )
+        except Exception as exc:
+            logger.warning(
+                "Could not upload optional artifact %s for recording %s: %s",
+                artifact_name,
+                recording_id,
+                exc,
+            )

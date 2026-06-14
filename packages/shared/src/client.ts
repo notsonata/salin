@@ -7,7 +7,10 @@ import type {
   RecordingDetailResponse,
   RecordingListResponse,
   RetryResponse,
+  SegmentSpeakerUpdateRequest,
   SpeakerCount,
+  SpeakerRenameRequest,
+  TranscriptSegmentsUpdateResponse,
 } from "./api-types";
 
 export interface CreateRecordingInput {
@@ -91,5 +94,39 @@ export class SalinApiClient {
     });
 
     return parseResponse<NotesGenerationResponse>(response);
+  }
+
+  async renameSpeaker(
+    recordingId: string,
+    payload: SpeakerRenameRequest,
+  ): Promise<TranscriptSegmentsUpdateResponse> {
+    const response = await fetch(`${this.baseUrl}/recordings/${recordingId}/speakers/rename`, {
+      method: "PUT",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    return parseResponse<TranscriptSegmentsUpdateResponse>(response);
+  }
+
+  async updateSegmentSpeaker(
+    recordingId: string,
+    segmentId: string,
+    payload: SegmentSpeakerUpdateRequest,
+  ): Promise<TranscriptSegmentsUpdateResponse> {
+    const response = await fetch(
+      `${this.baseUrl}/recordings/${recordingId}/transcript-segments/${segmentId}/speaker`,
+      {
+        method: "PUT",
+        headers: {
+          "content-type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      },
+    );
+
+    return parseResponse<TranscriptSegmentsUpdateResponse>(response);
   }
 }

@@ -5,7 +5,6 @@ from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
-
 from salin_api.core.container import ApiServices
 from salin_api.core.settings import Settings
 from salin_api.main import create_app

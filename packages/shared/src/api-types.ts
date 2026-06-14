@@ -15,5 +15,10 @@ export type RecordingListItemSummary = components["schemas"]["RecordingListItemS
 export type RecordingListResponse = components["schemas"]["RecordingListResponse"];
 export type RecordingSummary = components["schemas"]["RecordingSummary"];
 export type RetryResponse = components["schemas"]["RetryResponse"];
+export type SegmentSpeakerUpdateRequest =
+  components["schemas"]["SegmentSpeakerUpdateRequest"];
 export type SpeakerCount = components["schemas"]["SpeakerCount"];
+export type SpeakerRenameRequest = components["schemas"]["SpeakerRenameRequest"];
 export type TranscriptSegment = components["schemas"]["TranscriptSegmentSummary"];
+export type TranscriptSegmentsUpdateResponse =
+  components["schemas"]["TranscriptSegmentsUpdateResponse"];

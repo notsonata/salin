@@ -199,6 +199,7 @@ The canonical transcript representation should remain provider-agnostic.
 - Rename speaker
 - Change block speaker
 - Merge duplicate speaker labels
+- Status: Done
 
 ### Phase 5: Export and Reliability Polish
 
@@ -209,10 +210,10 @@ The canonical transcript representation should remain provider-agnostic.
 
 ## Open Questions
 
-- JS package manager: `TBD`
-- Python dependency manager: `TBD`
+- JS package manager: `pnpm`
+- Python dependency manager: `uv`
 - Prototype auth model: `TBD`
 - Initial deployment target: `TBD`
-- Initial diarization implementation: `pyannote.audio` or WhisperX for the first usable version
-- Local transcription engine for backup mode: `TBD`
-- Notes provider choice and prompt ownership: `TBD`
+- Initial diarization implementation: `pyannote.audio` with `pyannote/speaker-diarization-community-1`
+- Local transcription engine for backup mode: `faster-whisper`
+- Notes provider choice and prompt ownership: OpenRouter provider implemented; prompt ownership `TBD`

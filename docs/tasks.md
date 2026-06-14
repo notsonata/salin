@@ -46,7 +46,7 @@ Acceptance criteria:
 
 - **Files**: `infra`, `apps/web`, `apps/api`, `apps/worker`, `package.json`, `pyproject.toml`
 - **Context**: The repo now contains the real scaffold, but dependency-backed verification must be kept explicit.
-- **Status**: Active
+- **Status**: Done
 
 ### [P0] Rebuild the web app into an upload-first dashboard and recording detail workspace
 
@@ -110,7 +110,8 @@ Acceptance criteria:
 
 - **Files**: `apps/worker`, `apps/api`, `apps/web`, `packages/shared`, `docs/ui.md`, `docs/testing.md`
 - **Context**: Speaker separation improves usability, but operational complexity means it should land after the transcript spine is stable.
-- **Status**: Blocked
+- **Provider**: `pyannote.audio` through `pyannote/speaker-diarization-community-1` when `DIARIZATION_PROVIDER=pyannote` and `PYANNOTE_AUTH_TOKEN` are configured.
+- **Status**: Done
 
 ### [P2] Add export outputs for transcript and notes
 

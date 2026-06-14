@@ -32,8 +32,13 @@ export function TranscriptWorkspaceTab({
   retrying,
   onExport,
   onQueryChange,
+  onRenameSpeaker,
   onRetry,
   onSeek,
+  onUpdateSegmentSpeaker,
+  speakerLabels,
+  speakerMessage,
+  speakerSavingTarget,
 }: {
   activeSegmentId: string | null;
   audioRef: RefObject<HTMLAudioElement | null>;
@@ -42,10 +47,15 @@ export function TranscriptWorkspaceTab({
   filteredSegments: TranscriptSegment[];
   query: string;
   retrying: boolean;
+  speakerLabels: string[];
+  speakerMessage: string | null;
+  speakerSavingTarget: string | null;
   onExport: () => void;
   onQueryChange: (value: string) => void;
+  onRenameSpeaker: (fromLabel: string, toLabel: string) => Promise<void>;
   onRetry: () => void;
   onSeek: (segment: TranscriptSegment) => void;
+  onUpdateSegmentSpeaker: (segmentId: string, speakerLabel: string) => Promise<void>;
 }) {
   return (
     <section
@@ -92,9 +102,14 @@ export function TranscriptWorkspaceTab({
             filteredSegments={filteredSegments}
             matchCount={filteredSegments.length}
             query={query}
+            speakerLabels={speakerLabels}
+            speakerMessage={speakerMessage}
+            speakerSavingTarget={speakerSavingTarget}
             onExport={onExport}
             onQueryChange={onQueryChange}
+            onRenameSpeaker={onRenameSpeaker}
             onSeek={onSeek}
+            onUpdateSegmentSpeaker={onUpdateSegmentSpeaker}
           />
         </>
       )}
