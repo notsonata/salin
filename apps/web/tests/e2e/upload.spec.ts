@@ -89,7 +89,13 @@ function recordingsListRow({
 }: {
   id: string;
   filename: string;
-  stage?: "uploaded" | "preprocessing" | "transcribing" | "completed" | "failed";
+  stage?:
+    | "uploaded"
+    | "preprocessing"
+    | "transcribing"
+    | "diarizing"
+    | "completed"
+    | "failed";
 }) {
   return {
     recording: {
@@ -373,6 +379,36 @@ test("speaker labels can be renamed and reassigned from the transcript", async (
 
   await expect(page.getByText("Speaker label updated.")).toBeVisible();
   await expect(page.getByLabel("Speaker label for 00:00")).toHaveValue("Student");
+});
+
+test("transcript stays available while speaker labels are estimated", async ({ page }) => {
+  await page.route("http://localhost:8000/recordings/rec_1", async (route) => {
+    await route.fulfill({
+      status: 200,
+      headers: {
+        "access-control-allow-origin": "*",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        ...completedDetail(),
+        job: {
+          ...completedDetail().job,
+          stage: "diarizing",
+          error_message: "Groq transcription failed; using local backup.",
+          last_provider: "faster-whisper",
+          completed_at: null,
+        },
+      }),
+    });
+  });
+
+  await page.goto("/recordings/rec_1");
+
+  await expect(page.getByText("Transcript is ready.")).toBeVisible();
+  await expect(page.getByText("Speaker labels are still being estimated.")).toBeVisible();
+  await expect(page.getByText("Processing note:")).toBeVisible();
+  await expect(page.getByText("Kamusta sa transcript workspace.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Export transcript TXT" })).toBeVisible();
 });
 
 test("manual notes generation renders the completed structured notes", async ({ page }) => {

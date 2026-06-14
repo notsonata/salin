@@ -341,7 +341,7 @@ export function RecordingWorkspace({
         />
       ) : (
         <NotesEditorTab
-          canGenerate={data.job.stage === "completed" && data.transcript_segments.length > 0}
+          canGenerate={data.job.stage !== "failed" && data.transcript_segments.length > 0}
           dirty={notesDirty}
           draft={notesDraft ?? toNotesDraft(data.notes)}
           error={error}

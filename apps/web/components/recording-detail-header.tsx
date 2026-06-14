@@ -15,6 +15,8 @@ function stageCopy(stage: RecordingDetailResponse["job"]["stage"]) {
       return "Normalizing audio";
     case "transcribing":
       return "Building timestamped transcript";
+    case "diarizing":
+      return "Transcript ready, estimating speakers";
     case "completed":
       return "Transcript ready";
     case "failed":
@@ -59,6 +61,13 @@ export function RecordingDetailHeader({
           </Button>
         ) : null}
       </div>
+
+      {data.job.stage !== "failed" && data.job.error_message ? (
+        <div className="rounded-lg border border-[#dfd2bd] bg-[#fbf8f3] px-4 py-3 text-sm leading-6 text-muted">
+          <span className="font-medium text-ink">Processing note: </span>
+          {data.job.error_message}
+        </div>
+      ) : null}
 
       <dl className="grid gap-3 rounded-lg border border-line bg-[#faf6ee] px-4 py-4 text-sm sm:grid-cols-2 xl:grid-cols-5">
         <div className="grid gap-1">

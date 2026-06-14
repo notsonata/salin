@@ -163,7 +163,26 @@ def test_generate_notes_rejects_incomplete_transcript(client) -> None:
     generate_response = client.post(f"/recordings/{recording_id}/notes/generate")
 
     assert generate_response.status_code == 409
-    assert "Transcription must be completed" in generate_response.json()["detail"]
+    assert "Transcript segments must be available" in generate_response.json()["detail"]
+
+
+def test_generate_notes_allows_diarizing_transcript(client, app) -> None:
+    recording_id = create_completed_recording(client, app)
+    session = app.state.session_factory()
+    repository = RecordingRepository(session)
+    repository.update_job_stage(
+        recording_id,
+        stage="diarizing",
+        retryable=False,
+        error_message=None,
+        last_provider="groq",
+    )
+    session.close()
+
+    response = client.post(f"/recordings/{recording_id}/notes/generate")
+
+    assert response.status_code == 202
+    assert app.state.services.job_queue.enqueued_notes == [recording_id]
 
 
 def test_generate_notes_rejects_duplicate_in_flight_requests(client, app) -> None:

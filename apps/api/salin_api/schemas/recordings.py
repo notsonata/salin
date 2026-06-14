@@ -30,6 +30,7 @@ class JobStage(StrEnum):
     UPLOADED = "uploaded"
     PREPROCESSING = "preprocessing"
     TRANSCRIBING = "transcribing"
+    DIARIZING = "diarizing"
     COMPLETED = "completed"
     FAILED = "failed"
 

@@ -178,7 +178,7 @@ export interface components {
          * JobStage
          * @enum {string}
          */
-        JobStage: "uploaded" | "preprocessing" | "transcribing" | "completed" | "failed";
+        JobStage: "uploaded" | "preprocessing" | "transcribing" | "diarizing" | "completed" | "failed";
         /**
          * LanguageOption
          * @enum {string}

@@ -257,10 +257,10 @@ def generate_notes(
     job = repository.get_job(recording_id)
     if recording is None or job is None:
         raise HTTPException(status_code=404, detail="Recording not found.")
-    if job.stage != "completed":
+    if job.stage not in {"completed", "diarizing"}:
         raise HTTPException(
             status_code=409,
-            detail="Transcription must be completed before generating notes.",
+            detail="Transcript segments must be available before generating notes.",
         )
 
     segments = repository.list_segments(recording_id)
