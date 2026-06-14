@@ -65,6 +65,7 @@ Current layout:
 - tab switcher with `Transcript` and `Notes`
 - transcript tab for processing, playback, search, export, and transcript review
 - notes tab for generation, editing, and save actions
+- non-fatal processing notes for local-backup fallback or speaker-estimation failure
 
 Current transcript block contents:
 
@@ -111,6 +112,7 @@ Every major screen should cover:
 - empty file selection
 - active upload submission
 - processing poll state
+- transcript-ready while speaker estimation is still running
 - completed transcript state
 - retryable failure state
 - non-retryable load failure state
@@ -126,6 +128,6 @@ Every major screen should cover:
 
 Later milestones should add, in order:
 
-1. model-backed diarization provider wiring
+1. chunked long-recording transcription
 2. notes and transcript export expansion
 3. PDF and combined export controls

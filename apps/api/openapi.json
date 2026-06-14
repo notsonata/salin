@@ -533,6 +533,7 @@
           "uploaded",
           "preprocessing",
           "transcribing",
+          "diarizing",
           "completed",
           "failed"
         ],

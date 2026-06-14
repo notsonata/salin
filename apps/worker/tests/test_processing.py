@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 from pathlib import Path
 
 from salin_api.core.settings import Settings
@@ -42,9 +43,11 @@ class FakeProvider:
         *,
         result: TranscriptionResult | None = None,
         error: Exception | None = None,
+        on_transcribe: Callable[[], None] | None = None,
     ):
         self.result = result
         self.error = error
+        self.on_transcribe = on_transcribe
 
     def transcribe(
         self,
@@ -53,6 +56,8 @@ class FakeProvider:
         language: str,
         model_name: str,
     ) -> TranscriptionResult:
+        if self.on_transcribe is not None:
+            self.on_transcribe()
         if self.error is not None:
             raise self.error
         assert self.result is not None
@@ -82,9 +87,11 @@ class FakeDiarizationProvider:
         *,
         result: DiarizationResult | None = None,
         error: Exception | None = None,
+        on_diarize: Callable[[], None] | None = None,
     ):
         self.result = result
         self.error = error
+        self.on_diarize = on_diarize
 
     def diarize(
         self,
@@ -92,6 +99,8 @@ class FakeDiarizationProvider:
         audio_path: Path,
         speaker_count: str,
     ) -> DiarizationResult:
+        if self.on_diarize is not None:
+            self.on_diarize()
         if self.error is not None:
             raise self.error
         assert self.result is not None
@@ -208,11 +217,26 @@ def test_processing_falls_back_to_local_provider(tmp_path: Path) -> None:
     session_factory = create_session_factory(database_url)
     storage = FakeStorage()
     recording_id = seed_recording(session_factory, storage)
+
+    def assert_fallback_status_visible() -> None:
+        session = session_factory()
+        repository = RecordingRepository(session)
+        job = repository.require_job(recording_id)
+        session.close()
+
+        assert job.stage == "transcribing"
+        assert job.last_provider == "faster-whisper"
+        assert job.error_message is not None
+        assert "Groq transcription failed" in job.error_message
+
     processor = RecordingProcessor(
         settings=Settings(DATABASE_URL=database_url),
         storage=storage,
         groq_provider=FakeProvider(error=RuntimeError("Groq unavailable")),
-        local_provider=FakeProvider(result=build_result("faster-whisper")),
+        local_provider=FakeProvider(
+            result=build_result("faster-whisper"),
+            on_transcribe=assert_fallback_status_visible,
+        ),
         audio_normalizer=FakeNormalizer(),
         session_factory=session_factory,
         groq_retry_delays=(),
@@ -228,6 +252,8 @@ def test_processing_falls_back_to_local_provider(tmp_path: Path) -> None:
 
     assert job.stage == "completed"
     assert job.last_provider == "faster-whisper"
+    assert job.error_message is not None
+    assert "Groq transcription failed" in job.error_message
     assert segments[0].source_provider == "faster-whisper"
 
 
@@ -240,12 +266,25 @@ def test_processing_aligns_diarization_segments_when_provider_is_configured(
     session_factory = create_session_factory(database_url)
     storage = FakeStorage()
     recording_id = seed_recording(session_factory, storage)
+
+    def assert_transcript_saved_before_diarization() -> None:
+        session = session_factory()
+        repository = RecordingRepository(session)
+        job = repository.require_job(recording_id)
+        segments = repository.list_segments(recording_id)
+        session.close()
+
+        assert job.stage == "diarizing"
+        assert [segment.speaker_label for segment in segments] == ["Speaker", "Speaker"]
+        assert [segment.text for segment in segments] == ["Kamusta", "Salamat"]
+
     processor = RecordingProcessor(
         settings=Settings(DATABASE_URL=database_url),
         storage=storage,
         groq_provider=FakeProvider(result=build_multi_segment_result("groq")),
         local_provider=FakeProvider(result=build_result("faster-whisper")),
         diarization_provider=FakeDiarizationProvider(
+            on_diarize=assert_transcript_saved_before_diarization,
             result=DiarizationResult(
                 source_provider="test-diarizer",
                 raw_payload={"segments": [{"speaker": "Speaker 1"}, {"speaker": "Speaker 2"}]},
@@ -304,6 +343,8 @@ def test_processing_keeps_transcript_when_diarization_fails(tmp_path: Path) -> N
     session.close()
 
     assert job.stage == "completed"
+    assert job.error_message is not None
+    assert "Diarization failed" in job.error_message
     assert [segment.speaker_label for segment in segments] == ["Speaker", "Speaker"]
     assert "recordings/recording-1/artifacts/diarization-error.json" in storage.objects
 

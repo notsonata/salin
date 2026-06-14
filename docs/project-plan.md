@@ -81,7 +81,7 @@ This is the first slice that must work before the rest of the scope matters:
 - Groq Whisper transcription with timestamps
 - Local backup transcription mode using the same canonical transcript contract
 - Chunk caching and retry for failed transcription chunks
-- Estimated speaker diarization with editable labels
+- Estimated speaker diarization with editable labels that does not block transcript review after transcription succeeds
 - Clickable transcript timestamps linked to audio playback
 - Transcript search
 - Notes generation from transcript
@@ -116,11 +116,12 @@ This is the first slice that must work before the rest of the scope matters:
 4. System creates a processing job, stores metadata in local Postgres, and stores the original file in Cloudflare R2.
 5. Worker extracts audio, normalizes it, chunks if needed, and transcribes it.
 6. If Groq is unavailable or intentionally bypassed, worker can switch to local backup transcription mode.
-7. Worker runs diarization and aligns transcript data with speaker segments.
-8. System stores transcript blocks and generated notes separately.
-9. User opens the workspace, reviews transcript text, and seeks audio from timestamps.
-10. User edits speaker labels and regenerates notes if needed.
-11. User exports transcript and notes.
+7. System stores transcript blocks immediately after transcription.
+8. Worker runs diarization and updates speaker labels when it succeeds.
+9. System stores generated notes separately from transcript blocks.
+10. User opens the workspace, reviews transcript text, and seeks audio from timestamps.
+11. User edits speaker labels and regenerates notes if needed.
+12. User exports transcript and notes.
 
 ## Main Entities
 
@@ -152,6 +153,7 @@ The canonical transcript representation should remain provider-agnostic.
 - The system produces timestamped transcript blocks.
 - The user can click a timestamp and the audio seeks correctly.
 - The system can estimate speaker labels for multi-speaker recordings.
+- Transcript review remains available while speaker labels are still being estimated.
 - The user can rename speakers and reassign blocks.
 - The system can generate summary, decisions, action items, and questions.
 - A failed notes step does not require retranscription.
@@ -199,10 +201,12 @@ The canonical transcript representation should remain provider-agnostic.
 - Rename speaker
 - Change block speaker
 - Merge duplicate speaker labels
+- Transcript remains visible while diarization runs
 - Status: Done
 
 ### Phase 5: Export and Reliability Polish
 
+- Chunked long-recording transcription
 - PDF export
 - Combined export format
 - Retry flows for downstream failures

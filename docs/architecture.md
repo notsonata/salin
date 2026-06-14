@@ -10,7 +10,7 @@ Salin now has the transcript spine plus the first review-and-notes layer as a re
 - `packages/shared`: generated-type boundary plus typed fetch client for the web app
 - `infra/docker-compose.yml`: local orchestration for `web`, `api`, `worker`, `postgres`, and `redis`
 
-This slice now covers an upload-first dashboard, persistent jobs, canonical transcript segments, normalized-audio review, transcript search, transcript TXT export, manual notes generation, structured notes editing, basic speaker correction workflows, and configurable pyannote-backed diarization. It still does not implement notes TXT export, PDF export, or combined export flows.
+This slice now covers an upload-first dashboard, persistent jobs, canonical transcript segments, normalized-audio review, transcript search, transcript TXT export, manual notes generation, structured notes editing, basic speaker correction workflows, non-blocking transcript-first diarization, and configurable pyannote-backed diarization. It still does not implement notes TXT export, PDF export, combined export flows, or long-recording chunking.
 
 ## System Overview
 
@@ -55,6 +55,8 @@ salin/
 - Poll `GET /recordings/{id}` every 2 seconds until the transcript job and notes lifecycle reach terminal states
 - Render recording detail header plus transcript/notes tabs
 - Render normalized-audio review, timestamp seeking, transcript search, and transcript TXT export inside the transcript tab
+- Keep transcript review visible while the worker is in the `diarizing` stage
+- Render non-fatal processing notes such as local-backup fallback and diarization failure details
 - Render estimated/edited speaker state, speaker rename, and per-block speaker reassignment controls inside the transcript tab
 - Render manual notes generation, regeneration, and structured notes editing without blocking transcript review
 - Show retry affordance only when the API marks a failed job as retryable
@@ -70,7 +72,7 @@ salin/
 - Return recording/job state and transcript segments
 - Return synthesized idle notes state when notes have not been generated yet
 - Reset retryable failed jobs and re-enqueue them
-- Queue manual notes generation requests against stored transcript data
+- Queue manual notes generation requests against stored transcript data once segments exist, including during the `diarizing` stage
 - Persist structured notes edits through `PUT /recordings/{id}/notes`
 - Persist speaker rename and per-block speaker correction edits against transcript segments
 - Export OpenAPI schema for the shared TypeScript client/types workflow
@@ -83,9 +85,10 @@ salin/
 - Retry Groq transcription with bounded backoff
 - Fall back to `faster-whisper` when Groq fails
 - Persist raw transcription provider artifact JSON
-- Optionally run pyannote diarization after transcription
+- Persist canonical transcript segments immediately after transcription
+- Optionally run pyannote diarization after transcript persistence
 - Persist raw diarization artifact JSON when a provider is configured
-- Persist canonical transcript segments with aligned estimated speaker labels when diarization succeeds
+- Replace generic speaker labels with aligned estimated speaker labels when diarization succeeds
 - Keep generic estimated speaker labels when diarization is not configured or fails
 - Mark job state transitions in Postgres
 - Generate structured notes from stored transcript segments through the OpenRouter provider boundary
@@ -156,7 +159,7 @@ User speaker corrections update transcript segment rows directly and set `speake
 - `completed_at`
 - `updated_at`
 
-The transcript job remains transcript-only. Notes generation is queued manually after transcript completion, and the last successful notes remain visible during regeneration attempts.
+The transcript job remains transcript-only. Notes generation is queued manually after transcript segments exist, and the last successful notes remain visible during regeneration attempts.
 
 Structured notes edits are saved back into the same `generated_notes` row shape so note cleanup does not require regeneration.
 
@@ -181,13 +184,17 @@ Current stages:
 - `uploaded`
 - `preprocessing`
 - `transcribing`
+- `diarizing`
 - `completed`
 - `failed`
 
 Current rules:
 
 - Long-running work never runs inside the upload request.
+- Transcript segments persist before diarization starts, so transcript review does not wait for speaker estimation.
 - Transcript work is reusable after downstream failures because raw artifacts and transcript segments persist separately.
+- Groq fallback to local transcription is recorded as a non-fatal processing note on the job while the local provider runs and after completion.
+- Diarization failure is recorded as a non-fatal processing note and leaves the transcript completed with generic estimated speaker labels.
 - Notes generation is a separate persisted lifecycle and does not mutate transcript job stages.
 - Notes failures do not require retranscription and do not delete transcript segments.
 - Recording `updated_at` is intentionally touched by transcript and notes lifecycle changes so the dashboard history reflects recent workspace activity rather than upload time alone.

@@ -12,6 +12,8 @@ function stageCopy(stage: RecordingListItemSummary["job"]["stage"]) {
       return "Preprocessing";
     case "transcribing":
       return "Transcribing";
+    case "diarizing":
+      return "Estimating speakers";
     case "completed":
       return "Ready";
     case "failed":

@@ -162,6 +162,39 @@ Acceptance criteria:
 - **Context**: The host-worker macOS path is required for Apple diarization acceleration, so the startup script cannot assume a globally installed `uv` binary.
 - **Status**: Done
 
+### [P1] Make transcript readiness independent from diarization
+
+Keep transcript review available as soon as transcription succeeds, even when speaker estimation is still running or fails.
+
+Acceptance criteria:
+
+- Transcript segments persist before diarization starts
+- The worker moves into a visible `diarizing` stage after transcript persistence
+- Groq fallback to local transcription is recorded as a non-fatal processing note
+- Diarization failure keeps the transcript completed with generic estimated speaker labels
+- The web workspace renders transcript content during `diarizing`
+- Notes generation can be requested once transcript segments exist
+
+- **Files**: `apps/worker`, `apps/api`, `apps/web`, `packages/shared`, `docs/architecture.md`, `docs/testing.md`, `docs/ui.md`
+- **Context**: Long recordings must not look frozen just because speaker estimation is slow. Transcript review is the primary value and should not wait for diarization.
+- **Status**: Done
+
+### [P1] Add chunked long-recording transcription
+
+Split long normalized audio into retryable transcription chunks and merge them back into the canonical transcript contract.
+
+Acceptance criteria:
+
+- Long recordings are split into provider-safe chunks with small overlap
+- Chunk transcript timestamps merge back into recording-relative timestamps
+- Failed chunks can be retried without restarting completed chunks
+- Progress can report chunk counts such as `Transcribing chunk 3/12`
+- Chunking uses the Groq-first path and keeps local fallback behind the same contract
+
+- **Files**: `apps/worker`, `apps/api`, `apps/web`, `packages/shared`, `docs/architecture.md`, `docs/testing.md`
+- **Context**: Podcast-length uploads need chunking to avoid huge all-or-nothing jobs and to support useful progress.
+- **Status**: Planned
+
 ### [P2] Add export outputs for transcript and notes
 
 Support TXT and PDF output without requiring full reprocessing.

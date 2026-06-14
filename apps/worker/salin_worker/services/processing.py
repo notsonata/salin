@@ -71,11 +71,14 @@ class RecordingProcessor:
                 repository.update_normalized_key(recording_id, normalized_key)
                 repository.update_job_stage(recording_id, stage="transcribing", retryable=False)
 
-                result = self._transcribe_with_fallback(
+                result, fallback_message = self._transcribe_with_fallback(
+                    recording_id=recording_id,
+                    repository=repository,
                     audio_path=normalized_path,
                     language=recording.language,
                     processing_mode=recording.processing_mode,
                 )
+                processing_notes = [fallback_message] if fallback_message else []
 
                 artifact_key = (
                     f"recordings/{recording_id}/artifacts/{result.source_provider}-raw.json"
@@ -98,18 +101,26 @@ class RecordingProcessor:
                     )
                     for index, segment in enumerate(result.segments)
                 ]
-                aligned_segments = self._align_with_diarization(
+                repository.replace_segments(recording_id, transcript_segments)
+
+                aligned_segments, diarization_message = self._align_with_diarization(
                     recording_id=recording_id,
                     audio_path=normalized_path,
                     speaker_count=recording.speaker_count,
                     transcript_segments=transcript_segments,
+                    repository=repository,
+                    status_message=" ".join(processing_notes) or None,
                 )
-                repository.replace_segments(recording_id, aligned_segments)
+                if diarization_message:
+                    processing_notes.append(diarization_message)
+
+                if aligned_segments is not transcript_segments:
+                    repository.replace_segments(recording_id, aligned_segments)
                 repository.update_job_stage(
                     recording_id,
                     stage="completed",
                     retryable=False,
-                    error_message=None,
+                    error_message=" ".join(processing_notes) or None,
                     last_provider=result.source_provider,
                 )
             except Exception as exc:
@@ -126,31 +137,65 @@ class RecordingProcessor:
     def _transcribe_with_fallback(
         self,
         *,
+        recording_id: str,
+        repository: RecordingRepository,
         audio_path: Path,
         language: str,
         processing_mode: str,
-    ) -> TranscriptionResult:
+    ) -> tuple[TranscriptionResult, str | None]:
         groq_model = (
             self.settings.groq_fast_model
             if processing_mode == "fast"
             else self.settings.groq_transcription_model
         )
+        repository.update_job_stage(
+            recording_id,
+            stage="transcribing",
+            retryable=False,
+            error_message=None,
+            last_provider="groq",
+        )
+        last_groq_error: Exception | None = None
         for attempt_index in range(len(self.groq_retry_delays) + 1):
             try:
-                return self.groq_provider.transcribe(
-                    audio_path=audio_path,
-                    language=language,
-                    model_name=groq_model,
+                return (
+                    self.groq_provider.transcribe(
+                        audio_path=audio_path,
+                        language=language,
+                        model_name=groq_model,
+                    ),
+                    None,
                 )
-            except Exception:
+            except Exception as exc:
+                last_groq_error = exc
+                logger.warning(
+                    "Groq transcription attempt %s failed for recording %s: %s",
+                    attempt_index + 1,
+                    recording_id,
+                    exc,
+                )
                 if attempt_index >= len(self.groq_retry_delays):
                     break
                 self.sleep_fn(self.groq_retry_delays[attempt_index])
 
-        return self.local_provider.transcribe(
-            audio_path=audio_path,
-            language=language,
-            model_name=self.settings.local_transcription_model,
+        fallback_message = (
+            "Groq transcription failed; using local backup. "
+            f"{self._summarize_exception(last_groq_error)}"
+        )
+        repository.update_job_stage(
+            recording_id,
+            stage="transcribing",
+            retryable=False,
+            error_message=fallback_message,
+            last_provider="faster-whisper",
+        )
+        return (
+            self.local_provider.transcribe(
+                audio_path=audio_path,
+                language=language,
+                model_name=self.settings.local_transcription_model,
+            ),
+            fallback_message,
         )
 
     def _align_with_diarization(
@@ -160,9 +205,18 @@ class RecordingProcessor:
         audio_path: Path,
         speaker_count: str,
         transcript_segments: list[TranscriptSegmentInput],
-    ) -> list[TranscriptSegmentInput]:
+        repository: RecordingRepository,
+        status_message: str | None,
+    ) -> tuple[list[TranscriptSegmentInput], str | None]:
         if self.diarization_provider is None:
-            return transcript_segments
+            return transcript_segments, None
+
+        repository.update_job_stage(
+            recording_id,
+            stage="diarizing",
+            retryable=False,
+            error_message=status_message,
+        )
 
         try:
             result = self.diarization_provider.diarize(
@@ -171,19 +225,33 @@ class RecordingProcessor:
             )
         except Exception as exc:
             logger.warning("Diarization failed for recording %s: %s", recording_id, exc)
+            diarization_message = (
+                "Diarization failed; transcript remains available. "
+                f"{self._summarize_exception(exc)}"
+            )
             self._upload_optional_json_artifact(
                 recording_id=recording_id,
                 artifact_name="diarization-error",
                 payload={"error": str(exc)},
             )
-            return transcript_segments
+            return transcript_segments, diarization_message
 
         self._upload_optional_json_artifact(
             recording_id=recording_id,
             artifact_name=f"{result.source_provider}-diarization-raw",
             payload=result.raw_payload,
         )
-        return align_speaker_labels(transcript_segments, result.segments)
+        return align_speaker_labels(transcript_segments, result.segments), None
+
+    @staticmethod
+    def _summarize_exception(exc: Exception | None) -> str:
+        if exc is None:
+            return "The provider did not return an error message."
+
+        message = str(exc).strip()
+        if len(message) > 300:
+            message = f"{message[:297]}..."
+        return f"{type(exc).__name__}: {message}" if message else type(exc).__name__
 
     def _upload_optional_json_artifact(
         self,

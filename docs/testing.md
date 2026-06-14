@@ -22,7 +22,8 @@ Use the lowest level that gives credible confidence:
 - Recording detail synthesizes idle notes state before the first notes run
 - Speaker rename updates matching transcript segments and marks them edited
 - Per-block speaker reassignment updates only the selected transcript segment
-- Manual notes queueing enforces transcript-complete and no-duplicate-in-flight rules
+- Manual notes queueing enforces transcript availability and no-duplicate-in-flight rules
+- Notes can be queued while the recording is in the `diarizing` stage when transcript segments already exist
 - `PUT /recordings/{id}/notes` persists structured edits and refreshes dashboard recency
 
 ### Worker integration
@@ -30,9 +31,10 @@ Use the lowest level that gives credible confidence:
 `apps/worker/tests/test_processing.py`
 
 - Canonical transcript segments persist from the Groq path
-- Groq failure falls back to `faster-whisper` without changing the stored segment shape
-- Configured diarization results align estimated speaker labels before transcript persistence
-- Diarization failure keeps generic speaker labels and does not fail completed transcription
+- Groq failure falls back to `faster-whisper`, exposes a non-fatal fallback note, and keeps the stored segment shape
+- Transcript segments persist before configured diarization begins
+- Configured diarization results replace generic estimated speaker labels after transcript persistence
+- Diarization failure keeps generic speaker labels, stores a non-fatal note, and does not fail completed transcription
 - Notes generation persists structured sections from stored transcript data
 - Notes failures keep transcript data intact
 - Notes regeneration replaces content only after a successful rerun
@@ -63,6 +65,7 @@ Use the lowest level that gives credible confidence:
 
 - Dashboard renders upload-first hierarchy plus recent recordings history
 - Supported upload redirects into the transcript workspace, renders normalized playback, supports transcript search, and exports transcript TXT
+- Transcript content remains visible while speaker labels are still being estimated
 - Speaker labels can be renamed and reassigned from the transcript workspace
 - Manual notes generation renders completed structured notes
 - Structured notes edits save successfully from the notes tab

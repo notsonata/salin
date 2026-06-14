@@ -15,6 +15,8 @@ function stageCopy(stage: RecordingDetailResponse["job"]["stage"]) {
       return "Normalizing audio";
     case "transcribing":
       return "Building timestamped transcript";
+    case "diarizing":
+      return "Estimating speaker labels";
     case "completed":
       return "Transcript ready";
     case "failed":
@@ -57,6 +59,8 @@ export function TranscriptWorkspaceTab({
   onSeek: (segment: TranscriptSegment) => void;
   onUpdateSegmentSpeaker: (segmentId: string, speakerLabel: string) => Promise<void>;
 }) {
+  const transcriptAvailable = data.transcript_segments.length > 0;
+
   return (
     <section
       aria-labelledby="transcript-tab"
@@ -70,7 +74,7 @@ export function TranscriptWorkspaceTab({
         </Card>
       ) : null}
 
-      {data.job.stage !== "completed" ? (
+      {!transcriptAvailable ? (
         <Card className="grid gap-3 p-5">
           <p className="font-medium text-ink">{stageCopy(data.job.stage)}</p>
           <p className="text-sm leading-6 text-muted">
@@ -90,6 +94,28 @@ export function TranscriptWorkspaceTab({
         </Card>
       ) : (
         <>
+          {data.job.stage === "diarizing" ? (
+            <Card className="grid gap-2 border-[#dfd2bd] bg-[#fbf8f3] p-4">
+              <p className="text-sm font-medium text-ink">Transcript is ready.</p>
+              <p className="text-sm leading-6 text-muted">
+                Speaker labels are still being estimated. You can review, search,
+                and export the transcript while that finishes.
+              </p>
+            </Card>
+          ) : null}
+          {data.job.stage === "failed" && data.job.error_message ? (
+            <Card className="grid gap-3 border-[#d8b3ab] bg-[#f7ebe8] p-4">
+              <p className="text-sm font-medium text-danger">Processing stopped.</p>
+              <p className="text-sm leading-6 text-danger">{data.job.error_message}</p>
+              {data.job.retryable ? (
+                <div>
+                  <Button disabled={retrying} type="button" variant="secondary" onClick={onRetry}>
+                    {retrying ? "Retrying..." : "Retry processing"}
+                  </Button>
+                </div>
+              ) : null}
+            </Card>
+          ) : null}
           <TranscriptPlayer
             audioRef={audioRef}
             filename={data.recording.filename}
