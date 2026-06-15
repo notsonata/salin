@@ -10,7 +10,7 @@ Salin now has the transcript spine plus the first review-and-notes layer as a re
 - `packages/shared`: generated-type boundary plus typed fetch client for the web app
 - `infra/docker-compose.yml`: local orchestration for `web`, `api`, `worker`, `postgres`, and `redis`
 
-This slice now covers an upload-first dashboard, persistent jobs, canonical transcript segments, normalized-audio review, transcript search, transcript TXT export, manual notes generation, structured notes editing, basic speaker correction workflows, non-blocking transcript-first diarization, and configurable pyannote-backed diarization. It still does not implement notes TXT export, PDF export, combined export flows, or long-recording chunking.
+This slice now covers an upload-first dashboard, persistent jobs, canonical transcript segments, normalized-audio review, transcript search, transcript TXT/PDF export controls, manual notes generation, structured notes editing, basic speaker correction workflows, non-blocking transcript-first diarization, configurable pyannote-backed diarization, chunked long-recording transcription, and backend TXT/PDF exports for transcript, notes, and a combined bundle.
 
 ## System Overview
 
@@ -54,11 +54,12 @@ salin/
 - Redirect to `/recordings/[id]` after upload
 - Poll `GET /recordings/{id}` every 2 seconds until the transcript job and notes lifecycle reach terminal states
 - Render recording detail header plus transcript/notes tabs
-- Render normalized-audio review, timestamp seeking, transcript search, and transcript TXT export inside the transcript tab
+- Render normalized-audio review, timestamp seeking, transcript search, and transcript TXT/PDF export links inside the transcript tab
 - Keep transcript review visible while the worker is in the `diarizing` stage
 - Render non-fatal processing notes such as local-backup fallback and diarization failure details
 - Render estimated/edited speaker state, speaker rename, and per-block speaker reassignment controls inside the transcript tab
 - Render manual notes generation, regeneration, and structured notes editing without blocking transcript review
+- Render notes TXT/PDF and combined TXT/PDF export links once notes have completed
 - Show retry affordance only when the API marks a failed job as retryable
 
 ### `apps/api`
@@ -75,6 +76,7 @@ salin/
 - Queue manual notes generation requests against stored transcript data once segments exist, including during the `diarizing` stage
 - Persist structured notes edits through `PUT /recordings/{id}/notes`
 - Persist speaker rename and per-block speaker correction edits against transcript segments
+- Export transcript TXT/PDF, notes TXT/PDF, and combined TXT/PDF from stored database rows without reprocessing audio
 - Export OpenAPI schema for the shared TypeScript client/types workflow
 
 ### `apps/worker`
@@ -82,8 +84,11 @@ salin/
 - Download original upload from R2
 - Normalize audio to mono 16 kHz with `ffmpeg`
 - Upload normalized audio artifact back to R2
+- Split normalized audio into overlapped transcription chunks when the recording exceeds the configured chunk length
 - Retry Groq transcription with bounded backoff
 - Fall back to `faster-whisper` when Groq fails
+- Cache completed chunk transcript artifacts so retries can resume without retranscribing completed chunks
+- Merge chunk-relative timestamps back into recording-relative transcript segments
 - Persist raw transcription provider artifact JSON
 - Persist canonical transcript segments immediately after transcription
 - Optionally run pyannote diarization after transcript persistence
@@ -119,8 +124,11 @@ Current object keys:
 - `recordings/{id}/original/{filename}`
 - `recordings/{id}/normalized/audio.wav`
 - `recordings/{id}/artifacts/{provider}-raw.json`
+- `recordings/{id}/artifacts/transcription-chunks/chunk-{index}-result.json`
 
 Canonical persisted transcript segments stay in Postgres, not in provider-specific JSON.
+
+Chunk result artifacts store provider-neutral segment timestamps relative to each chunk plus the provider raw payload for that chunk. The final `{provider}-raw.json` artifact records the chunk map and source providers used for the merged transcript.
 
 Notes stay in Postgres as separate structured content so notes retries and failures do not disturb transcript rows.
 
@@ -197,7 +205,9 @@ Current rules:
 - Diarization failure is recorded as a non-fatal processing note and leaves the transcript completed with generic estimated speaker labels.
 - Notes generation is a separate persisted lifecycle and does not mutate transcript job stages.
 - Notes failures do not require retranscription and do not delete transcript segments.
+- TXT and PDF exports are synchronous API responses generated from stored transcript and notes rows. They do not enqueue worker jobs and do not call transcription or notes providers.
 - Recording `updated_at` is intentionally touched by transcript and notes lifecycle changes so the dashboard history reflects recent workspace activity rather than upload time alone.
 - Recording jobs are enqueued with an explicit long-running timeout through `RECORDING_JOB_TIMEOUT_SECONDS` so local fallback transcription and optional diarization are not killed by RQ's 180 second default.
 - Notes jobs use a separate `NOTES_JOB_TIMEOUT_SECONDS` timeout because they are downstream and should remain shorter-lived.
-- Chunking is intentionally deferred. Oversized normalized audio fails with a clear milestone-boundary error.
+- Long recordings use `TRANSCRIPTION_CHUNK_MINUTES` plus `TRANSCRIPTION_CHUNK_OVERLAP_SECONDS` to keep provider requests bounded. During processing, the job note can show progress such as `Transcribing chunk 3/12`.
+- If a chunk has already written its result artifact, a retry reuses that chunk and continues with the first missing chunk.

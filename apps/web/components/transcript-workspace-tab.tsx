@@ -4,6 +4,7 @@ import type { RecordingDetailResponse, TranscriptSegment } from "@salin/shared";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import type { ExportLinkItem } from "@/components/export-links";
 import { TranscriptPlayer } from "@/components/transcript-player";
 import { TranscriptPanel } from "@/components/transcript-panel";
 
@@ -29,10 +30,10 @@ export function TranscriptWorkspaceTab({
   audioRef,
   data,
   error,
+  exportLinks,
   filteredSegments,
   query,
   retrying,
-  onExport,
   onQueryChange,
   onRenameSpeaker,
   onRetry,
@@ -46,13 +47,13 @@ export function TranscriptWorkspaceTab({
   audioRef: RefObject<HTMLAudioElement | null>;
   data: RecordingDetailResponse;
   error: string | null;
+  exportLinks: ExportLinkItem[];
   filteredSegments: TranscriptSegment[];
   query: string;
   retrying: boolean;
   speakerLabels: string[];
   speakerMessage: string | null;
   speakerSavingTarget: string | null;
-  onExport: () => void;
   onQueryChange: (value: string) => void;
   onRenameSpeaker: (fromLabel: string, toLabel: string) => Promise<void>;
   onRetry: () => void;
@@ -125,13 +126,13 @@ export function TranscriptWorkspaceTab({
           <TranscriptPanel
             activeSegmentId={activeSegmentId}
             canSeek={Boolean(data.artifact_urls?.normalized)}
+            exportLinks={exportLinks}
             filteredSegments={filteredSegments}
             matchCount={filteredSegments.length}
             query={query}
             speakerLabels={speakerLabels}
             speakerMessage={speakerMessage}
             speakerSavingTarget={speakerSavingTarget}
-            onExport={onExport}
             onQueryChange={onQueryChange}
             onRenameSpeaker={onRenameSpeaker}
             onSeek={onSeek}

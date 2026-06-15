@@ -67,6 +67,11 @@ Current layout:
 - notes tab for generation, editing, and save actions
 - non-fatal processing notes for local-backup fallback or speaker-estimation failure
 
+Current export controls:
+
+- transcript tab shows backend-backed `Transcript TXT` and `Transcript PDF` links once transcript blocks are available
+- notes tab shows backend-backed `Notes TXT`, `Notes PDF`, `Combined TXT`, and `Combined PDF` links once notes are completed
+
 Current transcript block contents:
 
 - clickable timestamp
@@ -101,9 +106,7 @@ Current notes tab requirements:
 
 Still intentionally deferred:
 
-- notes TXT export
-- PDF export
-- combined export controls
+- export menu/presentation polish
 
 ## State Design
 
@@ -128,6 +131,6 @@ Every major screen should cover:
 
 Later milestones should add, in order:
 
-1. chunked long-recording transcription
-2. notes and transcript export expansion
-3. PDF and combined export controls
+1. export presentation polish
+2. broader retry/error-state polish
+3. richer processing progress presentation

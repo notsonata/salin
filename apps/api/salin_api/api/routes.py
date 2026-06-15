@@ -6,6 +6,7 @@ from typing import Annotated
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile, status
+from fastapi.responses import PlainTextResponse, Response
 from sqlalchemy.orm import Session
 
 from salin_api.repositories.recordings import RecordingRepository
@@ -29,6 +30,17 @@ from salin_api.schemas.recordings import (
     SpeakerRenameRequest,
     TranscriptSegmentSummary,
     TranscriptSegmentsUpdateResponse,
+)
+from salin_api.services.exports import (
+    BinaryExport,
+    TextExport,
+    build_combined_pdf,
+    build_combined_txt,
+    build_notes_pdf,
+    build_notes_txt,
+    build_transcript_pdf,
+    build_transcript_txt,
+    notes_is_exportable,
 )
 
 SUPPORTED_EXTENSIONS = {".mp3", ".wav", ".m4a", ".aac", ".mp4", ".mov", ".webm"}
@@ -95,6 +107,21 @@ def build_notes_summary(notes) -> GeneratedNotesSummary:
         started_at=notes.started_at,
         completed_at=notes.completed_at,
         updated_at=notes.updated_at,
+    )
+
+
+def build_text_export_response(export: TextExport) -> PlainTextResponse:
+    return PlainTextResponse(
+        export.content,
+        headers={"Content-Disposition": f'attachment; filename="{export.filename}"'},
+    )
+
+
+def build_binary_export_response(export: BinaryExport) -> Response:
+    return Response(
+        export.content,
+        media_type=export.media_type,
+        headers={"Content-Disposition": f'attachment; filename="{export.filename}"'},
     )
 
 
@@ -210,6 +237,130 @@ def get_recording(
         ],
         artifact_urls=artifact_urls,
         notes=build_notes_summary(notes),
+    )
+
+
+@router.get("/recordings/{recording_id}/exports/transcript.txt")
+def export_transcript_txt(recording_id: str, session: SessionDep) -> PlainTextResponse:
+    repository = RecordingRepository(session)
+    recording = repository.get_recording(recording_id)
+    if recording is None:
+        raise HTTPException(status_code=404, detail="Recording not found.")
+
+    segments = repository.list_segments(recording_id)
+    if not segments:
+        raise HTTPException(
+            status_code=409,
+            detail="Transcript segments are required before export.",
+        )
+
+    return build_text_export_response(
+        build_transcript_txt(recording=recording, segments=segments)
+    )
+
+
+@router.get("/recordings/{recording_id}/exports/transcript.pdf")
+def export_transcript_pdf(recording_id: str, session: SessionDep) -> Response:
+    repository = RecordingRepository(session)
+    recording = repository.get_recording(recording_id)
+    if recording is None:
+        raise HTTPException(status_code=404, detail="Recording not found.")
+
+    segments = repository.list_segments(recording_id)
+    if not segments:
+        raise HTTPException(
+            status_code=409,
+            detail="Transcript segments are required before export.",
+        )
+
+    return build_binary_export_response(
+        build_transcript_pdf(recording=recording, segments=segments)
+    )
+
+
+@router.get("/recordings/{recording_id}/exports/notes.txt")
+def export_notes_txt(recording_id: str, session: SessionDep) -> PlainTextResponse:
+    repository = RecordingRepository(session)
+    recording = repository.get_recording(recording_id)
+    if recording is None:
+        raise HTTPException(status_code=404, detail="Recording not found.")
+
+    notes = repository.get_generated_notes(recording_id)
+    if not notes_is_exportable(notes):
+        raise HTTPException(
+            status_code=409,
+            detail="Completed notes are required before export.",
+        )
+
+    return build_text_export_response(build_notes_txt(recording=recording, notes=notes))
+
+
+@router.get("/recordings/{recording_id}/exports/notes.pdf")
+def export_notes_pdf(recording_id: str, session: SessionDep) -> Response:
+    repository = RecordingRepository(session)
+    recording = repository.get_recording(recording_id)
+    if recording is None:
+        raise HTTPException(status_code=404, detail="Recording not found.")
+
+    notes = repository.get_generated_notes(recording_id)
+    if not notes_is_exportable(notes):
+        raise HTTPException(
+            status_code=409,
+            detail="Completed notes are required before export.",
+        )
+
+    return build_binary_export_response(build_notes_pdf(recording=recording, notes=notes))
+
+
+@router.get("/recordings/{recording_id}/exports/combined.txt")
+def export_combined_txt(recording_id: str, session: SessionDep) -> PlainTextResponse:
+    repository = RecordingRepository(session)
+    recording = repository.get_recording(recording_id)
+    if recording is None:
+        raise HTTPException(status_code=404, detail="Recording not found.")
+
+    segments = repository.list_segments(recording_id)
+    if not segments:
+        raise HTTPException(
+            status_code=409,
+            detail="Transcript segments are required before export.",
+        )
+
+    notes = repository.get_generated_notes(recording_id)
+    if not notes_is_exportable(notes):
+        raise HTTPException(
+            status_code=409,
+            detail="Completed notes are required before export.",
+        )
+
+    return build_text_export_response(
+        build_combined_txt(recording=recording, segments=segments, notes=notes)
+    )
+
+
+@router.get("/recordings/{recording_id}/exports/combined.pdf")
+def export_combined_pdf(recording_id: str, session: SessionDep) -> Response:
+    repository = RecordingRepository(session)
+    recording = repository.get_recording(recording_id)
+    if recording is None:
+        raise HTTPException(status_code=404, detail="Recording not found.")
+
+    segments = repository.list_segments(recording_id)
+    if not segments:
+        raise HTTPException(
+            status_code=409,
+            detail="Transcript segments are required before export.",
+        )
+
+    notes = repository.get_generated_notes(recording_id)
+    if not notes_is_exportable(notes):
+        raise HTTPException(
+            status_code=409,
+            detail="Completed notes are required before export.",
+        )
+
+    return build_binary_export_response(
+        build_combined_pdf(recording=recording, segments=segments, notes=notes)
     )
 
 

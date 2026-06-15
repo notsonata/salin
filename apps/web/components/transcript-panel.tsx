@@ -7,15 +7,16 @@ import type { TranscriptSegment } from "@salin/shared";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { ExportLinks, type ExportLinkItem } from "@/components/export-links";
 import { formatTimestamp } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 export function TranscriptPanel({
   activeSegmentId,
   canSeek,
+  exportLinks,
   filteredSegments,
   matchCount,
-  onExport,
   onQueryChange,
   onRenameSpeaker,
   onSeek,
@@ -27,12 +28,12 @@ export function TranscriptPanel({
 }: {
   activeSegmentId: string | null;
   canSeek: boolean;
+  exportLinks: ExportLinkItem[];
   filteredSegments: TranscriptSegment[];
   matchCount: number;
   speakerLabels: string[];
   speakerMessage: string | null;
   speakerSavingTarget: string | null;
-  onExport: () => void;
   onQueryChange: (value: string) => void;
   onRenameSpeaker: (fromLabel: string, toLabel: string) => Promise<void>;
   onSeek: (segment: TranscriptSegment) => void;
@@ -105,7 +106,7 @@ export function TranscriptPanel({
           </p>
         </div>
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
           <input
             className="h-10 min-w-[16rem] rounded-md border border-line bg-[#fbf8f3] px-3 text-sm text-ink"
             id="transcript-search"
@@ -113,9 +114,7 @@ export function TranscriptPanel({
             placeholder="Search transcript"
             value={query}
           />
-          <Button type="button" variant="secondary" onClick={onExport}>
-            Export transcript TXT
-          </Button>
+          <ExportLinks items={exportLinks} label="Exports" />
         </div>
       </div>
 

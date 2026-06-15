@@ -34,6 +34,30 @@ async function parseResponse<T>(response: Response): Promise<T> {
 export class SalinApiClient {
   constructor(private readonly baseUrl: string) {}
 
+  transcriptExportUrl(recordingId: string): string {
+    return `${this.baseUrl}/recordings/${recordingId}/exports/transcript.txt`;
+  }
+
+  transcriptPdfExportUrl(recordingId: string): string {
+    return `${this.baseUrl}/recordings/${recordingId}/exports/transcript.pdf`;
+  }
+
+  notesExportUrl(recordingId: string): string {
+    return `${this.baseUrl}/recordings/${recordingId}/exports/notes.txt`;
+  }
+
+  notesPdfExportUrl(recordingId: string): string {
+    return `${this.baseUrl}/recordings/${recordingId}/exports/notes.pdf`;
+  }
+
+  combinedExportUrl(recordingId: string): string {
+    return `${this.baseUrl}/recordings/${recordingId}/exports/combined.txt`;
+  }
+
+  combinedPdfExportUrl(recordingId: string): string {
+    return `${this.baseUrl}/recordings/${recordingId}/exports/combined.pdf`;
+  }
+
   async listRecordings(): Promise<RecordingListResponse> {
     const response = await fetch(`${this.baseUrl}/recordings`, {
       cache: "no-store",

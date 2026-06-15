@@ -193,7 +193,24 @@ Acceptance criteria:
 
 - **Files**: `apps/worker`, `apps/api`, `apps/web`, `packages/shared`, `docs/architecture.md`, `docs/testing.md`
 - **Context**: Podcast-length uploads need chunking to avoid huge all-or-nothing jobs and to support useful progress.
-- **Status**: Planned
+- **Status**: Done
+
+### [P1] Add macOS host-only presentation runner
+
+Run Salin locally on an Apple Silicon Mac without Docker so diarization can use
+host hardware backends and presentation setup stays lighter.
+
+Acceptance criteria:
+
+- `run-local.sh` starts the API, worker, and web app on the host
+- The script expects local Postgres and Redis on `localhost`
+- Compose-style `postgres` and `redis` hosts from `.env` are rewritten to `localhost`
+- The worker uses RQ's spawn worker class for macOS safety
+- Setup docs include Homebrew service and local database instructions
+
+- **Files**: `run-local.sh`, `docs/setup.md`, `README.md`
+- **Context**: The M4 presentation machine should not need Docker for the live demo path.
+- **Status**: Done
 
 ### [P2] Add export outputs for transcript and notes
 
@@ -208,4 +225,7 @@ Acceptance criteria:
 
 - **Files**: `apps/api`, `apps/worker`, `apps/web`, `packages/shared`
 - **Context**: Export matters to user workflow, but it is downstream of transcript and notes correctness.
-- **Status**: Blocked
+- **Backend status**: Transcript TXT/PDF, notes TXT/PDF, and combined TXT/PDF endpoints are implemented.
+- **Web status**: Current-style transcript, notes, and combined export controls are implemented in the recording workspace.
+- **Deferred**: Export presentation polish belongs with the later UI revamp.
+- **Status**: Done

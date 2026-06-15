@@ -12,7 +12,7 @@ import type {
 
 import { Card } from "@/components/ui/card";
 import { createBrowserClient } from "@/lib/api";
-import { formatTimestamp } from "@/lib/format";
+import type { ExportLinkItem } from "@/components/export-links";
 import { NotesEditorTab } from "@/components/notes-editor-tab";
 import { RecordingDetailHeader } from "@/components/recording-detail-header";
 import { RecordingWorkspaceTabs } from "@/components/recording-workspace-tabs";
@@ -58,6 +58,46 @@ export function RecordingWorkspace({
   const notesDirtyRef = useRef(false);
   const stage = data?.job.stage;
   const notesStatus = data?.notes.status;
+  const transcriptExportLinks = useMemo<ExportLinkItem[]>(
+    () => [
+      {
+        ariaLabel: "Export transcript TXT",
+        href: apiClient.transcriptExportUrl(recordingId),
+        label: "Transcript TXT",
+      },
+      {
+        ariaLabel: "Export transcript PDF",
+        href: apiClient.transcriptPdfExportUrl(recordingId),
+        label: "Transcript PDF",
+      },
+    ],
+    [recordingId],
+  );
+  const notesExportLinks = useMemo<ExportLinkItem[]>(
+    () => [
+      {
+        ariaLabel: "Export notes TXT",
+        href: apiClient.notesExportUrl(recordingId),
+        label: "Notes TXT",
+      },
+      {
+        ariaLabel: "Export notes PDF",
+        href: apiClient.notesPdfExportUrl(recordingId),
+        label: "Notes PDF",
+      },
+      {
+        ariaLabel: "Export combined TXT",
+        href: apiClient.combinedExportUrl(recordingId),
+        label: "Combined TXT",
+      },
+      {
+        ariaLabel: "Export combined PDF",
+        href: apiClient.combinedPdfExportUrl(recordingId),
+        label: "Combined PDF",
+      },
+    ],
+    [recordingId],
+  );
 
   useEffect(() => {
     notesDirtyRef.current = notesDirty;
@@ -285,26 +325,6 @@ export function RecordingWorkspace({
     void audioRef.current.play().catch(() => undefined);
   }
 
-  function exportTranscript() {
-    if (!data) {
-      return;
-    }
-
-    const content = data.transcript_segments
-      .map(
-        (segment) =>
-          `[${formatTimestamp(segment.start_ms)}] ${segment.speaker_label}: ${segment.text}`,
-      )
-      .join("\n");
-    const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `${data.recording.filename.replace(/\.[^.]+$/, "")}-transcript.txt`;
-    link.click();
-    URL.revokeObjectURL(url);
-  }
-
   const notesBusy =
     generatingNotes ||
     data.notes.status === "queued" ||
@@ -332,7 +352,7 @@ export function RecordingWorkspace({
           speakerLabels={speakerLabels}
           speakerMessage={speakerMessage}
           speakerSavingTarget={speakerSavingTarget}
-          onExport={exportTranscript}
+          exportLinks={transcriptExportLinks}
           onQueryChange={setSearchQuery}
           onRenameSpeaker={renameSpeaker}
           onRetry={retryJob}
@@ -345,6 +365,7 @@ export function RecordingWorkspace({
           dirty={notesDirty}
           draft={notesDraft ?? toNotesDraft(data.notes)}
           error={error}
+          exportLinks={notesExportLinks}
           notes={data.notes}
           notesBusy={notesBusy}
           saveBusy={savingNotes}

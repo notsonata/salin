@@ -5,6 +5,7 @@ import type { GeneratedNotesSummary, NotesUpdateRequest } from "@salin/shared";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { ExportLinks, type ExportLinkItem } from "@/components/export-links";
 
 type ListSectionKey = "key_points" | "decisions" | "action_items" | "questions";
 
@@ -60,6 +61,7 @@ export function NotesEditorTab({
   dirty,
   draft,
   error,
+  exportLinks,
   notes,
   notesBusy,
   saveBusy,
@@ -72,6 +74,7 @@ export function NotesEditorTab({
   dirty: boolean;
   draft: NotesUpdateRequest;
   error: string | null;
+  exportLinks: ExportLinkItem[];
   notes: GeneratedNotesSummary;
   notesBusy: boolean;
   saveBusy: boolean;
@@ -168,6 +171,10 @@ export function NotesEditorTab({
               </Button>
             </div>
           </div>
+
+          {notes.status === "completed" ? (
+            <ExportLinks items={exportLinks} label="Exports" />
+          ) : null}
         </div>
       </Card>
 
