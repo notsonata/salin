@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 import textwrap
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -60,6 +61,13 @@ def build_notes_txt(*, recording: Recording, notes: GeneratedNotes) -> TextExpor
     )
 
 
+def build_notes_md(*, recording: Recording, notes: GeneratedNotes) -> TextExport:
+    return TextExport(
+        filename=_export_filename(recording, "notes", "md"),
+        content=_join_lines(_format_notes(recording=recording, notes=notes, include_title=True)),
+    )
+
+
 def build_notes_pdf(*, recording: Recording, notes: GeneratedNotes) -> BinaryExport:
     text_export = build_notes_txt(recording=recording, notes=notes)
     return _build_pdf_export(
@@ -76,14 +84,12 @@ def build_combined_txt(
     notes: GeneratedNotes,
 ) -> TextExport:
     lines = [
-        "Salin Export",
-        f"Recording: {recording.filename}",
-        "",
-        "Notes",
+        "# Salin Export",
+        f"**Recording:** {recording.filename}",
         "",
         *_format_notes(recording=recording, notes=notes, include_title=False),
         "",
-        "Transcript",
+        "## Transcript",
         "",
         "Speaker labels are automatically estimated and can be edited.",
         "",
@@ -91,6 +97,30 @@ def build_combined_txt(
     ]
     return TextExport(
         filename=_export_filename(recording, "combined", "txt"),
+        content=_join_lines(lines),
+    )
+
+
+def build_combined_md(
+    *,
+    recording: Recording,
+    segments: Sequence[TranscriptSegment],
+    notes: GeneratedNotes,
+) -> TextExport:
+    lines = [
+        "# Salin Export",
+        f"**Recording:** {recording.filename}",
+        "",
+        *_format_notes(recording=recording, notes=notes, include_title=False),
+        "",
+        "## Transcript",
+        "",
+        "Speaker labels are automatically estimated and can be edited.",
+        "",
+        *_format_transcript_segments(segments),
+    ]
+    return TextExport(
+        filename=_export_filename(recording, "combined", "md"),
         content=_join_lines(lines),
     )
 
@@ -131,17 +161,12 @@ def _format_notes(
 ) -> list[str]:
     lines: list[str] = []
     if include_title:
-        lines.extend(["Notes", f"Recording: {recording.filename}", ""])
+        lines.extend(["# Notes", f"**Recording:** {recording.filename}", ""])
 
-    summary = (notes.summary or "").strip()
-    lines.extend(["Summary", summary or "No summary saved.", ""])
-    lines.extend(_format_list_section("Key Points", _load_list(notes.key_points_json)))
-    lines.append("")
-    lines.extend(_format_list_section("Decisions", _load_list(notes.decisions_json)))
-    lines.append("")
-    lines.extend(_format_list_section("Action Items", _load_list(notes.action_items_json)))
-    lines.append("")
-    lines.extend(_format_list_section("Questions", _load_list(notes.questions_json)))
+    if notes.content:
+        lines.extend(notes.content.splitlines())
+    else:
+        lines.append("No notes have been generated yet.")
     return lines
 
 
@@ -189,8 +214,29 @@ def _join_lines(lines: Sequence[str]) -> str:
     return "\n".join(lines).rstrip() + "\n"
 
 
+def _strip_markdown(text: str) -> str:
+    """Remove common markdown syntax so the PDF renderer gets plain text."""
+    # Headings: ## Title → Title
+    text = re.sub(r'^#{1,6}\s+', '', text, flags=re.MULTILINE)
+    # Bold/italic: **text** or *text* or __text__ or _text_
+    text = re.sub(r'\*{1,2}(.+?)\*{1,2}', r'\1', text)
+    text = re.sub(r'_{1,2}(.+?)_{1,2}', r'\1', text)
+    # Inline code: `code`
+    text = re.sub(r'`(.+?)`', r'\1', text)
+    # Unordered list markers: - item → item
+    text = re.sub(r'^[-*+]\s+', '', text, flags=re.MULTILINE)
+    # Ordered list markers: 1. item → item
+    text = re.sub(r'^\d+\.\s+', '', text, flags=re.MULTILINE)
+    # Horizontal rules
+    text = re.sub(r'^[-*_]{3,}\s*$', '', text, flags=re.MULTILINE)
+    # Links: [text](url) → text
+    text = re.sub(r'\[(.+?)\]\(.+?\)', r'\1', text)
+    return text
+
+
 def _build_pdf_export(*, filename: str, title: str, content: str) -> BinaryExport:
-    lines = _wrap_pdf_lines(content.splitlines())
+    plain = _strip_markdown(content)
+    lines = _wrap_pdf_lines(plain.splitlines())
     return BinaryExport(
         filename=filename,
         content=_render_pdf(title=title, lines=lines),
@@ -304,7 +350,7 @@ def _render_page_content(
             "ET",
         ]
     )
-    return "\n".join(commands).encode("ascii")
+    return "\n".join(commands).encode("latin-1", errors="replace")
 
 
 def _pdf_text_hex(value: str) -> str:

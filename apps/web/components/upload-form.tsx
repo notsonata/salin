@@ -7,6 +7,7 @@ import type { LanguageOption, ProcessingMode, SpeakerCount } from "@salin/shared
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Loader2 } from "lucide-react";
 import { createBrowserClient } from "@/lib/api";
 
 const apiClient = createBrowserClient();
@@ -50,7 +51,6 @@ export function UploadForm() {
           ? submissionError.message
           : "Upload failed.",
       );
-    } finally {
       setSubmitting(false);
     }
   }
@@ -64,7 +64,7 @@ export function UploadForm() {
           </label>
           <input
             id="recording-file"
-            className="block w-full rounded-md border border-accentSoft bg-field px-3 py-3 text-sm text-ink file:mr-4 file:rounded-md file:border-0 file:bg-accent file:px-3 file:py-2 file:text-sm file:font-medium file:text-panel"
+            className="block w-full rounded-md border border-accentSoft bg-field px-3 py-3 text-sm text-ink file:mr-4 file:cursor-pointer file:rounded-md file:border-0 file:bg-accent file:px-3 file:py-2 file:text-sm file:font-medium file:text-white"
             type="file"
             accept={supportedFormats.join(",")}
             onChange={(event) => setFile(event.target.files?.[0] ?? null)}
@@ -140,7 +140,14 @@ export function UploadForm() {
             transcript as soon as it is ready.
           </p>
           <Button disabled={submitting} type="submit" variant="accent">
-            {submitting ? "Starting..." : "Start processing"}
+            {submitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Starting...
+              </>
+            ) : (
+              "Start processing"
+            )}
           </Button>
         </div>
       </form>

@@ -15,3 +15,9 @@
 .salin-mdx-editor .mdxeditor-root-contenteditable {
   border: none !important;
 }
+
+.salin-mdx-editor input[type="checkbox"] {
+  accent-color: var(--accent);
+  position: relative;
+  top: 2px;
+}

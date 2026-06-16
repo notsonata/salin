@@ -52,7 +52,7 @@ function SidebarLinks({ pathname }: { pathname: string }) {
             className={cn(
               "h-10 justify-start gap-3 px-3",
               active
-                ? "border-ink/10 bg-ink text-panel hover:bg-brandDeep"
+                ? "bg-accent text-panel hover:bg-accent/90"
                 : "border-transparent bg-transparent text-muted hover:bg-hover hover:text-ink",
             )}
             key={item.href}

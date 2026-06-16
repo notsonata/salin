@@ -1,4 +1,4 @@
-FROM node:20-alpine
+FROM node:20-slim
 
 WORKDIR /workspace
 
@@ -9,6 +9,9 @@ COPY apps/web ./apps/web
 COPY packages/shared ./packages/shared
 
 RUN pnpm install --no-frozen-lockfile
+
+# Install Playwright's Chromium browser and its OS dependencies
+RUN pnpm --filter @salin/web exec playwright install chromium --with-deps
 
 WORKDIR /workspace
 

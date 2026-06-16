@@ -10,7 +10,7 @@ import type {
   TranscriptSegment,
 } from "@salin/shared";
 
-import type { ExportLinkItem } from "@/components/export-links";
+import type { ExportLinkItem, NotesExportContent } from "@/components/export-links";
 import { NotesEditorTab } from "@/components/notes-editor-tab";
 import { RecordingDetailHeader } from "@/components/recording-detail-header";
 import { RecordingWorkspaceTabs } from "@/components/recording-workspace-tabs";
@@ -76,30 +76,42 @@ export function RecordingWorkspace({
     [recordingId],
   );
 
-  const notesExportLinks = useMemo<ExportLinkItem[]>(
-    () => [
-      {
-        ariaLabel: "Export notes TXT",
-        href: apiClient.notesExportUrl(recordingId),
-        label: "Notes TXT",
+  const exportUrls = useMemo(
+    () => ({
+      notesUrls: {
+        md: apiClient.notesMarkdownExportUrl(recordingId),
+        txt: apiClient.notesExportUrl(recordingId),
       },
-      {
-        ariaLabel: "Export notes PDF",
-        href: apiClient.notesPdfExportUrl(recordingId),
-        label: "Notes PDF",
+      combinedUrls: {
+        md: apiClient.combinedMarkdownExportUrl(recordingId),
+        txt: apiClient.combinedExportUrl(recordingId),
       },
-      {
-        ariaLabel: "Export combined TXT",
-        href: apiClient.combinedExportUrl(recordingId),
-        label: "Combined TXT",
-      },
-      {
-        ariaLabel: "Export combined PDF",
-        href: apiClient.combinedPdfExportUrl(recordingId),
-        label: "Combined PDF",
-      },
-    ],
+    }),
     [recordingId],
+  );
+
+  const transcriptMarkdown = useMemo<string>(() => {
+    if (!data) return "";
+    return data.transcript_segments
+      .map((seg) => {
+        const ts = (ms: number) => {
+          const totalSec = Math.floor(ms / 1000);
+          const m = Math.floor(totalSec / 60).toString().padStart(2, "0");
+          const s = (totalSec % 60).toString().padStart(2, "0");
+          return `${m}:${s}`;
+        };
+        return `**${seg.speaker_label}** \`[${ts(seg.start_ms)} – ${ts(seg.end_ms)}]\`  \n${seg.text}`;
+      })
+      .join("\n\n");
+  }, [data]);
+
+  const exportContent = useMemo<NotesExportContent>(
+    () => ({
+      notesMarkdown: notesDraft?.content ?? data?.notes.content ?? "",
+      transcriptMarkdown,
+      recordingName: data?.recording.filename ?? "Salin Export",
+    }),
+    [notesDraft, data, transcriptMarkdown],
   );
 
   useEffect(() => {
@@ -344,7 +356,7 @@ export function RecordingWorkspace({
     setActiveSegmentId(segment.id);
     const targetId = segment.id;
     const startTime = segment.start_ms / 1000;
-    const targetTime = segment.end_ms / 1000;
+    const targetTime = (segment.end_ms / 1000) + 0.5; // 0.5 second padding
     targetPauseTimeRef.current = { id: targetId, time: targetTime };
 
     const isDesktop = window.innerWidth >= 1280;
@@ -433,7 +445,8 @@ export function RecordingWorkspace({
             dirty={notesDirty}
             draft={notesDraft ?? toNotesDraft(data.notes)}
             error={error}
-            exportLinks={notesExportLinks}
+            exportUrls={exportUrls}
+            exportContent={exportContent}
             notes={data.notes}
             notesBusy={notesBusy}
             saveBusy={savingNotes}
@@ -476,7 +489,8 @@ export function RecordingWorkspace({
               dirty={notesDirty}
               draft={notesDraft ?? toNotesDraft(data.notes)}
               error={error}
-              exportLinks={notesExportLinks}
+              exportUrls={exportUrls}
+              exportContent={exportContent}
               notes={data.notes}
               notesBusy={notesBusy}
               saveBusy={savingNotes}

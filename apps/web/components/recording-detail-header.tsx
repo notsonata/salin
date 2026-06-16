@@ -72,6 +72,37 @@ function notesCopy(status: RecordingDetailResponse["notes"]["status"]) {
   }
 }
 
+function languageCopy(language: RecordingDetailResponse["recording"]["language"]) {
+  switch (language) {
+    case "auto":
+      return "Auto";
+    case "tl":
+      return "Tagalog";
+    case "en":
+      return "English";
+  }
+}
+
+function processingModeCopy(mode: RecordingDetailResponse["recording"]["processing_mode"]) {
+  switch (mode) {
+    case "accurate":
+      return "Accurate";
+    case "fast":
+      return "Fast";
+  }
+}
+
+function speakerCountCopy(count: RecordingDetailResponse["recording"]["speaker_count"]) {
+  switch (count) {
+    case "auto":
+      return "Auto";
+    case "5_plus":
+      return "5+";
+    default:
+      return count;
+  }
+}
+
 export function RecordingDetailHeader({
   data,
   renaming,
@@ -210,26 +241,22 @@ export function RecordingDetailHeader({
       </div>
 
       <div className="border-t border-line/80 px-4 py-3 sm:px-5">
-        <dl className="grid gap-x-5 gap-y-2 text-sm text-muted sm:grid-cols-2 xl:grid-cols-5">
+        <dl className="grid gap-x-5 gap-y-2 text-sm text-muted sm:grid-cols-2 xl:grid-cols-4">
           <div className="flex items-center gap-2">
             <dt className="font-mono text-[10px] uppercase tracking-[0.18em]">Language</dt>
-            <dd className="text-ink">{data.recording.language}</dd>
+            <dd className="text-ink">{languageCopy(data.recording.language)}</dd>
           </div>
           <div className="flex items-center gap-2">
             <dt className="font-mono text-[10px] uppercase tracking-[0.18em]">Mode</dt>
-            <dd className="text-ink">{data.recording.processing_mode}</dd>
+            <dd className="text-ink">{processingModeCopy(data.recording.processing_mode)}</dd>
           </div>
           <div className="flex items-center gap-2">
             <dt className="font-mono text-[10px] uppercase tracking-[0.18em]">Size</dt>
             <dd className="text-ink">{formatBytes(data.recording.file_size)}</dd>
           </div>
           <div className="flex items-center gap-2">
-            <dt className="font-mono text-[10px] uppercase tracking-[0.18em]">Provider</dt>
-            <dd className="text-ink">{data.job.last_provider ?? "Pending"}</dd>
-          </div>
-          <div className="flex items-center gap-2">
             <dt className="font-mono text-[10px] uppercase tracking-[0.18em]">Speakers</dt>
-            <dd className="text-ink">{data.recording.speaker_count}</dd>
+            <dd className="text-ink">{speakerCountCopy(data.recording.speaker_count)}</dd>
           </div>
         </dl>
       </div>

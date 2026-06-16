@@ -8,7 +8,7 @@ import type {
   TranscriptSegment,
 } from "@salin/shared";
 
-import type { ExportLinkItem } from "@/components/export-links";
+import type { ExportLinkItem, ExportUrls, NotesExportContent } from "@/components/export-links";
 import { NotesEditorTab } from "@/components/notes-editor-tab";
 import { RecordingDetailHeader } from "@/components/recording-detail-header";
 import { RecordingWorkspaceTabs } from "@/components/recording-workspace-tabs";
@@ -74,31 +74,31 @@ export function DemoRecordingWorkspace() {
     [],
   );
 
-  const notesExportLinks = useMemo<ExportLinkItem[]>(
-    () => [
-      {
-        ariaLabel: "Export notes TXT",
-        href: demoExportHref("Notes TXT"),
-        label: "Notes TXT",
-      },
-      {
-        ariaLabel: "Export notes PDF",
-        href: demoExportHref("Notes PDF"),
-        label: "Notes PDF",
-      },
-      {
-        ariaLabel: "Export combined TXT",
-        href: demoExportHref("Combined TXT"),
-        label: "Combined TXT",
-      },
-      {
-        ariaLabel: "Export combined PDF",
-        href: demoExportHref("Combined PDF"),
-        label: "Combined PDF",
-      },
-    ],
+  const exportUrls = useMemo(
+    () => ({
+      notesUrls: {
+        md: demoExportHref("Notes MD"),
+        txt: demoExportHref("Notes TXT"),
+      } satisfies ExportUrls,
+      combinedUrls: {
+        md: demoExportHref("Combined MD"),
+        txt: demoExportHref("Combined TXT"),
+      } satisfies ExportUrls,
+    }),
     [],
   );
+
+  const exportContent = useMemo<NotesExportContent>(
+    () => ({
+      notesMarkdown: notesDraft.content ?? "",
+      transcriptMarkdown: data.transcript_segments
+        .map((seg) => `**${seg.speaker_label}**: ${seg.text}`)
+        .join("\n\n"),
+      recordingName: data.recording.filename,
+    }),
+    [notesDraft, data],
+  );
+
 
   function seekToSegment(segment: TranscriptSegment) {
     setActiveSegmentId(segment.id);
@@ -215,7 +215,8 @@ export function DemoRecordingWorkspace() {
             dirty={notesDirty}
             draft={notesDraft}
             error={null}
-            exportLinks={notesExportLinks}
+            exportUrls={exportUrls}
+            exportContent={exportContent}
             notes={data.notes}
             notesBusy={false}
             saveBusy={false}
@@ -258,7 +259,8 @@ export function DemoRecordingWorkspace() {
               dirty={notesDirty}
               draft={notesDraft}
               error={null}
-              exportLinks={notesExportLinks}
+              exportUrls={exportUrls}
+              exportContent={exportContent}
               notes={data.notes}
               notesBusy={false}
               saveBusy={false}

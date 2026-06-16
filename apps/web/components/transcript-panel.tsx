@@ -127,7 +127,7 @@ export function TranscriptPanel({
   const speakerBusy = speakerSavingTarget !== null;
 
   return (
-    <Card>
+    <Card className="overflow-hidden">
       <div
         className="border-b border-line/80 bg-panel"
         data-testid="transcript-toolbar"

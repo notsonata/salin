@@ -16,12 +16,21 @@ export function AudioVisualizer({
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
+  const [activeUrl, setActiveUrl] = useState(url);
   const wavesurferRef = useRef<WaveSurfer | null>(null);
+
+  useEffect(() => {
+    const currentBase = activeUrl.split("?")[0];
+    const newBase = url.split("?")[0];
+    if (currentBase !== newBase) {
+      setActiveUrl(url);
+    }
+  }, [url, activeUrl]);
 
   useEffect(() => {
     if (!containerRef.current) return;
 
-    const proxyUrl = `/api/proxy-audio?url=${encodeURIComponent(url)}`;
+    const proxyUrl = `/api/proxy-audio?url=${encodeURIComponent(activeUrl)}`;
 
     const ws = WaveSurfer.create({
       container: containerRef.current,
@@ -60,7 +69,7 @@ export function AudioVisualizer({
     return () => {
       ws.destroy();
     };
-  }, [url, audioRef]);
+  }, [activeUrl, audioRef]);
 
   const togglePlay = () => {
     if (wavesurferRef.current) {

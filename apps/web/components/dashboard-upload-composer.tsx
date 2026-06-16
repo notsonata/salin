@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, type FormEvent, type ReactNode } from "react";
-import { CircleAlert, Sparkles, UploadCloud } from "lucide-react";
+import { CircleAlert, Loader2, Sparkles, UploadCloud } from "lucide-react";
 
 import type { LanguageOption, ProcessingMode, SpeakerCount } from "@salin/shared";
 
@@ -79,7 +79,6 @@ export function DashboardUploadComposer() {
       setError(
         submissionError instanceof Error ? submissionError.message : "Upload failed.",
       );
-    } finally {
       setSubmitting(false);
     }
   }
@@ -108,11 +107,10 @@ export function DashboardUploadComposer() {
                 </span>
                 <div className="grid gap-2">
                   <h3 className="text-lg font-semibold tracking-[-0.03em] text-ink">
-                    Processing command deck
+                    Upload your media
                   </h3>
                   <p className="max-w-2xl text-sm leading-6 text-muted">
-                    Start the job here, then move straight into transcript review. No
-                    decorative cards, no second screen.
+                    Select an audio or video recording to begin. Once uploaded, you can review the transcript, edit speaker labels, and generate structured notes.
                   </p>
                 </div>
               </div>
@@ -122,7 +120,7 @@ export function DashboardUploadComposer() {
                 <Input
                   accept={supportedFormats.join(",")}
                   aria-label="Recording"
-                  className="h-auto min-h-12 px-3 py-2 file:mr-4 file:rounded-md file:border-0 file:bg-ink file:px-3 file:py-2 file:text-sm file:font-medium file:text-panel"
+                  className="h-auto min-h-12 px-3 py-2 file:mr-4 file:cursor-pointer file:rounded-md file:border-0 file:bg-accent file:px-3 file:py-2 file:text-sm file:font-medium file:text-panel file:hover:opacity-95"
                   data-testid="upload-file-field"
                   type="file"
                   onChange={(event) => setFile(event.target.files?.[0] ?? null)}
@@ -171,7 +169,14 @@ export function DashboardUploadComposer() {
             </SelectField>
 
             <Button className="lg:min-w-[11rem]" disabled={submitting} type="submit" variant="accent">
-              {submitting ? "Starting..." : "Start processing"}
+              {submitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Starting...
+                </>
+              ) : (
+                "Start processing"
+              )}
             </Button>
           </div>
 

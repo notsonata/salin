@@ -12,3 +12,4 @@ export function createBrowserClient() {
 export function createServerClient() {
   return new SalinApiClient(internalBaseUrl);
 }
+

@@ -1,17 +1,16 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import { CircleAlert, NotebookPen, RefreshCw, Save } from "lucide-react";
 
-import type { GeneratedNotesSummary, NotesUpdateRequest } from "@salin/shared";
+import type { NotesStatus, NotesUpdateRequest, RecordingDetailResponse } from "@salin/shared";
 
-import { ExportLinks, type ExportLinkItem } from "@/components/export-links";
+import { NotesExportLinks, type ExportUrls, type NotesExportContent } from "@/components/export-links";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { MarkdownEditor } from "@/components/markdown-editor";
 
-function statusCopy(status: GeneratedNotesSummary["status"]) {
+function statusCopy(status: NotesStatus) {
   switch (status) {
     case "idle":
       return "Ready to generate";
@@ -26,7 +25,7 @@ function statusCopy(status: GeneratedNotesSummary["status"]) {
   }
 }
 
-function statusTone(status: GeneratedNotesSummary["status"]) {
+function statusTone(status: NotesStatus) {
   switch (status) {
     case "completed":
       return "accent";
@@ -45,7 +44,8 @@ export function NotesEditorTab({
   dirty,
   draft,
   error,
-  exportLinks,
+  exportUrls,
+  exportContent,
   notes,
   notesBusy,
   saveBusy,
@@ -56,10 +56,11 @@ export function NotesEditorTab({
 }: {
   canGenerate: boolean;
   dirty: boolean;
-  draft: NotesUpdateRequest;
+  draft: NotesUpdateRequest | null;
   error: string | null;
-  exportLinks: ExportLinkItem[];
-  notes: GeneratedNotesSummary;
+  exportUrls: { notesUrls: ExportUrls; combinedUrls: ExportUrls };
+  exportContent: NotesExportContent;
+  notes: RecordingDetailResponse["notes"];
   notesBusy: boolean;
   saveBusy: boolean;
   saveMessage: string | null;
@@ -68,7 +69,7 @@ export function NotesEditorTab({
   onSave: () => void;
 }) {
   const buttonLabel = notes.status === "idle" ? "Generate notes" : "Regenerate notes";
-  const showEmptyState = notes.status === "idle" && !draft.content;
+  const showEmptyState = notes.status === "idle" && !draft?.content;
 
   return (
     <section className="grid gap-4" data-testid="notes-dock">
@@ -91,9 +92,6 @@ export function NotesEditorTab({
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
-              {notes.status === "completed" ? (
-                <ExportLinks items={exportLinks} label="Export notes" />
-              ) : null}
               <Button
                 disabled={!canGenerate || notesBusy}
                 type="button"
@@ -112,6 +110,14 @@ export function NotesEditorTab({
                 <Save className="h-4 w-4" />
                 {saveBusy ? "Saving..." : "Save edits"}
               </Button>
+              {notes.status === "completed" ? (
+                <NotesExportLinks
+                  combinedUrls={exportUrls.combinedUrls}
+                  content={exportContent}
+                  label="Export notes"
+                  notesUrls={exportUrls.notesUrls}
+                />
+              ) : null}
             </div>
           </div>
 
@@ -146,8 +152,8 @@ export function NotesEditorTab({
         <div className="bg-panel px-5 py-5 min-h-[500px]" data-color-mode="light">
           <MarkdownEditor
             key={notes.updated_at ?? "editor"}
-            markdown={draft.content ?? ""}
-            onChange={(val) => onDraftChange({ ...draft, content: val || "" })}
+            markdown={draft?.content ?? ""}
+            onChange={(val) => onDraftChange({ ...(draft ?? {}), content: val || "" } as NotesUpdateRequest)}
           />
         </div>
       </Card>

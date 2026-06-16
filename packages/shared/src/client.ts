@@ -43,12 +43,20 @@ export class SalinApiClient {
     return `${this.baseUrl}/recordings/${recordingId}/exports/transcript.pdf`;
   }
 
+  notesMarkdownExportUrl(recordingId: string): string {
+    return `${this.baseUrl}/recordings/${recordingId}/exports/notes.md`;
+  }
+
   notesExportUrl(recordingId: string): string {
     return `${this.baseUrl}/recordings/${recordingId}/exports/notes.txt`;
   }
 
   notesPdfExportUrl(recordingId: string): string {
     return `${this.baseUrl}/recordings/${recordingId}/exports/notes.pdf`;
+  }
+
+  combinedMarkdownExportUrl(recordingId: string): string {
+    return `${this.baseUrl}/recordings/${recordingId}/exports/combined.md`;
   }
 
   combinedExportUrl(recordingId: string): string {

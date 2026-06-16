@@ -35,8 +35,10 @@ from salin_api.schemas.recordings import (
 from salin_api.services.exports import (
     BinaryExport,
     TextExport,
+    build_combined_md,
     build_combined_pdf,
     build_combined_txt,
+    build_notes_md,
     build_notes_pdf,
     build_notes_txt,
     build_transcript_pdf,
@@ -314,6 +316,23 @@ def export_transcript_pdf(recording_id: str, session: SessionDep) -> Response:
     )
 
 
+@router.get("/recordings/{recording_id}/exports/notes.md")
+def export_notes_md(recording_id: str, session: SessionDep) -> PlainTextResponse:
+    repository = RecordingRepository(session)
+    recording = repository.get_recording(recording_id)
+    if recording is None:
+        raise HTTPException(status_code=404, detail="Recording not found.")
+
+    notes = repository.get_generated_notes(recording_id)
+    if not notes_is_exportable(notes):
+        raise HTTPException(
+            status_code=409,
+            detail="Completed notes are required before export.",
+        )
+
+    return build_text_export_response(build_notes_md(recording=recording, notes=notes))
+
+
 @router.get("/recordings/{recording_id}/exports/notes.txt")
 def export_notes_txt(recording_id: str, session: SessionDep) -> PlainTextResponse:
     repository = RecordingRepository(session)
@@ -371,6 +390,32 @@ def export_combined_txt(recording_id: str, session: SessionDep) -> PlainTextResp
 
     return build_text_export_response(
         build_combined_txt(recording=recording, segments=segments, notes=notes)
+    )
+
+
+@router.get("/recordings/{recording_id}/exports/combined.md")
+def export_combined_md(recording_id: str, session: SessionDep) -> PlainTextResponse:
+    repository = RecordingRepository(session)
+    recording = repository.get_recording(recording_id)
+    if recording is None:
+        raise HTTPException(status_code=404, detail="Recording not found.")
+
+    segments = repository.list_segments(recording_id)
+    if not segments:
+        raise HTTPException(
+            status_code=409,
+            detail="Transcript segments are required before export.",
+        )
+
+    notes = repository.get_generated_notes(recording_id)
+    if not notes_is_exportable(notes):
+        raise HTTPException(
+            status_code=409,
+            detail="Completed notes are required before export.",
+        )
+
+    return build_text_export_response(
+        build_combined_md(recording=recording, segments=segments, notes=notes)
     )
 
 

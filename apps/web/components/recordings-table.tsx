@@ -103,20 +103,15 @@ export function RecordingsTable({
             Library
           </h2>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Badge tone="review">Transcript ready</Badge>
-          <Badge tone="attention">Processing</Badge>
-          <Badge tone="danger">Failed</Badge>
-        </div>
+
       </div>
 
       <Card className="overflow-hidden" data-testid="recordings-library">
         <div className="flex flex-col gap-3 border-b border-line/80 px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="grid gap-1">
-            <p className="text-sm font-medium text-ink">Scan the queue without leaving upload.</p>
+            <p className="text-sm font-medium text-ink">View all your sessions at a glance.</p>
             <p className="text-sm leading-6 text-muted">
-              The library stays dense and sober so active, failed, and finished work scan
-              quickly.
+              Easily track the status of your past, ongoing, and failed uploads in one place.
             </p>
           </div>
           <div className="relative w-full max-w-sm">
