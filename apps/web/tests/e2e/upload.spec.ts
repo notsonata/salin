@@ -269,7 +269,7 @@ test("supported upload transitions into the interactive transcript workspace", a
 
   await page.waitForURL("**/workspace/rec_1", { timeout: 15_000 });
   const desktopGrid = page.getByTestId("desktop-workspace-grid");
-  await expect(page.getByRole("link", { name: "Back to dashboard" })).toBeVisible({
+  await expect(page.getByRole("link", { name: "Back" })).toBeVisible({
     timeout: 15_000,
   });
   await expect(page.getByTestId("workspace-shell")).toBeVisible();

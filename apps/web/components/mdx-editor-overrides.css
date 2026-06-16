@@ -16,8 +16,47 @@
   border: none !important;
 }
 
-.salin-mdx-editor input[type="checkbox"] {
+/* MDXEditor uses Lexical checklist classes and draws the box with li::before. */
+.salin-mdx-editor [class*="_listItemChecked_"],
+.salin-mdx-editor [class*="_listItemUnchecked_"] {
+  margin-left: -1.20rem;
+  padding-left: 1.6rem;
+}
+
+.salin-mdx-editor [class*="_listItemChecked_"]::before,
+.salin-mdx-editor [class*="_listItemUnchecked_"]::before {
+  top: 0;
+  transform: translateY(0.45em);
+}
+
+.salin-mdx-editor [class*="_listItemChecked_"]::after {
+  transform: translateY(0.45em) rotate(45deg);
+}
+
+.salin-mdx-editor ul.contains-task-list {
+  list-style: none;
+  padding-left: 0;
+  margin-left: 0;
+}
+
+.salin-mdx-editor li.task-list-item {
+  display: grid;
+  grid-template-columns: 1.35rem 1fr;
+  column-gap: 0.75rem;
+  align-items: start;
+  list-style: none;
+  margin: 0.85rem 0;
+}
+
+.salin-mdx-editor li.task-list-item > p {
+  margin: 0;
+}
+
+.salin-mdx-editor li.task-list-item > input[type="checkbox"] {
   accent-color: var(--accent);
-  position: relative;
-  top: 2px;
+  flex: none;
+  width: 1.05rem;
+  height: 1.05rem;
+  margin: 0;
+  transform: translateY(0.45em);
 }

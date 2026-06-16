@@ -158,9 +158,9 @@ export function RecordingDetailHeader({
         <div className="grid min-w-0 gap-3">
           <div className="flex flex-wrap items-center gap-3">
             <Button asChild size="sm" variant="ghost" className="gap-2 -ml-2 text-muted hover:text-ink">
-              <Link href="/dashboard">
+              <Link href="/library">
                 <ArrowLeft className="h-4 w-4" />
-                Back to dashboard
+                Back
               </Link>
             </Button>
             <Badge tone={stageTone(data.job.stage)}>{stageCopy(data.job.stage)}</Badge>

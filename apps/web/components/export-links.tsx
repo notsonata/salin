@@ -39,7 +39,7 @@ export function ExportLinks({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button aria-label={label} size="sm" variant="secondary">
-          <Download className="text-review" />
+          <Download className="h-4 w-4 text-review" />
           <span>{label}</span>
         </Button>
       </DropdownMenuTrigger>
@@ -50,9 +50,9 @@ export function ExportLinks({
           <DropdownMenuItem asChild key={item.href}>
             <a aria-label={item.ariaLabel} href={item.href}>
               {item.label.includes("PDF") ? (
-                <FileDown className="text-attention" />
+                <FileDown className="h-4 w-4 text-attention" />
               ) : (
-                <FileText className="text-review" />
+                <FileText className="h-4 w-4 text-review" />
               )}
               <span>{item.label}</span>
             </a>
@@ -146,7 +146,7 @@ export function NotesExportLinks({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button aria-label={label} size="sm" variant="notes">
-          <Download className="text-accent" />
+          <Download className="h-4 w-4 text-accent" />
           <span>{label}</span>
         </Button>
       </DropdownMenuTrigger>
@@ -156,14 +156,14 @@ export function NotesExportLinks({
 
         <DropdownMenuItem asChild>
           <a aria-label="Export to Markdown" href={urls.md} download>
-            <FileText className="text-accent" />
+            <FileText className="h-4 w-4 text-accent" />
             <span>Export to Markdown</span>
           </a>
         </DropdownMenuItem>
 
         <DropdownMenuItem asChild>
           <a aria-label="Export to Text" href={urls.txt} download>
-            <FileText className="text-accent" />
+            <FileText className="h-4 w-4 text-accent" />
             <span>Export to Text</span>
           </a>
         </DropdownMenuItem>
@@ -177,9 +177,9 @@ export function NotesExportLinks({
           }}
         >
           {pdfLoading ? (
-            <Loader2 className="animate-spin text-attention" />
+            <Loader2 className="h-4 w-4 animate-spin text-attention" />
           ) : (
-            <FileDown className="text-attention" />
+            <FileDown className="h-4 w-4 text-attention" />
           )}
           <span>{pdfLoading ? "Generating PDF…" : "Export to PDF"}</span>
         </DropdownMenuItem>
