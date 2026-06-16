@@ -206,11 +206,13 @@ The canonical transcript representation should remain provider-agnostic.
 
 ### Phase 5: Export and Reliability Polish
 
-- Chunked long-recording transcription
-- PDF export
-- Combined export format
-- Retry flows for downstream failures
-- Better processing and error states
+- Chunked long-recording transcription (Done)
+- Backend TXT export endpoints for transcript, notes, and combined text (Done)
+- Backend PDF export endpoints for transcript, notes, and combined output (Done)
+- Current-style export UI controls for transcript, notes, and combined TXT/PDF (Done)
+- Export presentation polish for the UI revamp
+- Retry/error-state UI polish for downstream failures
+- Better processing progress presentation
 
 ## Open Questions
 

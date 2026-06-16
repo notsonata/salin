@@ -143,7 +143,7 @@ test("dashboard home shows upload composer and recent recordings", async ({ page
     });
   });
 
-  await page.goto("/");
+  await page.goto("/dashboard");
 
   await expect(page.getByRole("heading", { name: "New recording", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Recent recordings" })).toBeVisible();
@@ -241,7 +241,7 @@ test("supported upload transitions into the interactive transcript workspace", a
     });
   });
 
-  await page.goto("/");
+  await page.goto("/dashboard");
   await expect(page.getByRole("heading", { name: "New recording", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Recent recordings" })).toBeVisible();
   await page.setInputFiles('input[type="file"]', {
@@ -272,18 +272,14 @@ test("supported upload transitions into the interactive transcript workspace", a
   await expect(page.getByText("Search and notes should stay useful.")).toBeVisible();
   await expect(page.getByText("Kamusta sa transcript workspace.")).toBeHidden();
 
-  const downloadPromise = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Export transcript TXT" }).click();
-  const download = await downloadPromise;
-  const contents = await download.path().then(async (filePath) => {
-    if (!filePath) {
-      return "";
-    }
-    const fs = await import("node:fs/promises");
-    return fs.readFile(filePath, "utf8");
-  });
-  expect(contents).toContain("Kamusta sa transcript workspace.");
-  expect(contents).toContain("Search and notes should stay useful.");
+  await expect(page.getByRole("link", { name: "Export transcript TXT" })).toHaveAttribute(
+    "href",
+    "http://localhost:8000/recordings/rec_1/exports/transcript.txt",
+  );
+  await expect(page.getByRole("link", { name: "Export transcript PDF" })).toHaveAttribute(
+    "href",
+    "http://localhost:8000/recordings/rec_1/exports/transcript.pdf",
+  );
 
   await page.getByRole("button", { name: "00:05" }).click();
   await expect(page.getByRole("button", { name: "00:05" })).toHaveAttribute(
@@ -408,7 +404,8 @@ test("transcript stays available while speaker labels are estimated", async ({ p
   await expect(page.getByText("Speaker labels are still being estimated.")).toBeVisible();
   await expect(page.getByText("Processing note:")).toBeVisible();
   await expect(page.getByText("Kamusta sa transcript workspace.")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Export transcript TXT" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Export transcript TXT" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Export transcript PDF" })).toBeVisible();
 });
 
 test("manual notes generation renders the completed structured notes", async ({ page }) => {
@@ -487,6 +484,22 @@ test("manual notes generation renders the completed structured notes", async ({ 
   await expect(page.getByLabel("Action items 1")).toHaveValue("Action item");
   await expect(page.getByLabel("Questions 1")).toHaveValue("Question");
   await expect(page.getByRole("button", { name: "Regenerate notes" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Export notes TXT" })).toHaveAttribute(
+    "href",
+    "http://localhost:8000/recordings/rec_1/exports/notes.txt",
+  );
+  await expect(page.getByRole("link", { name: "Export notes PDF" })).toHaveAttribute(
+    "href",
+    "http://localhost:8000/recordings/rec_1/exports/notes.pdf",
+  );
+  await expect(page.getByRole("link", { name: "Export combined TXT" })).toHaveAttribute(
+    "href",
+    "http://localhost:8000/recordings/rec_1/exports/combined.txt",
+  );
+  await expect(page.getByRole("link", { name: "Export combined PDF" })).toHaveAttribute(
+    "href",
+    "http://localhost:8000/recordings/rec_1/exports/combined.pdf",
+  );
 });
 
 test("notes failure keeps the transcript visible and allows regeneration", async ({ page }) => {
@@ -634,7 +647,7 @@ test("unsupported upload shows the API validation message", async ({ page }) => 
     });
   });
 
-  await page.goto("/");
+  await page.goto("/dashboard");
   await page.setInputFiles('input[type="file"]', {
     name: "notes.txt",
     mimeType: "text/plain",

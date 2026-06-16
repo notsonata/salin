@@ -25,6 +25,8 @@ Use the lowest level that gives credible confidence:
 - Manual notes queueing enforces transcript availability and no-duplicate-in-flight rules
 - Notes can be queued while the recording is in the `diarizing` stage when transcript segments already exist
 - `PUT /recordings/{id}/notes` persists structured edits and refreshes dashboard recency
+- Transcript TXT/PDF, notes TXT/PDF, and combined TXT/PDF exports are generated from stored rows
+- Export requests do not enqueue background transcription or notes work
 
 ### Worker integration
 
@@ -35,6 +37,8 @@ Use the lowest level that gives credible confidence:
 - Transcript segments persist before configured diarization begins
 - Configured diarization results replace generic estimated speaker labels after transcript persistence
 - Diarization failure keeps generic speaker labels, stores a non-fatal note, and does not fail completed transcription
+- Long recordings split into overlapped chunks, report chunk progress, and merge timestamps back into recording-relative transcript segments
+- Cached chunk artifacts are reused on retry so completed chunks are not transcribed again
 - Notes generation persists structured sections from stored transcript data
 - Notes failures keep transcript data intact
 - Notes regeneration replaces content only after a successful rerun
@@ -68,10 +72,11 @@ Use the lowest level that gives credible confidence:
 `apps/web/tests/e2e/upload.spec.ts`
 
 - Dashboard renders upload-first hierarchy plus recent recordings history
-- Supported upload redirects into the transcript workspace, renders normalized playback, supports transcript search, and exports transcript TXT
+- Dedicated home page routes into the dashboard and preview workspace
+- Supported upload redirects into the transcript workspace, renders normalized playback, supports transcript search, and exposes backend transcript TXT/PDF export links
 - Transcript content remains visible while speaker labels are still being estimated
 - Speaker labels can be renamed and reassigned from the transcript workspace
-- Manual notes generation renders completed structured notes
+- Manual notes generation renders completed structured notes and exposes backend notes/combined TXT/PDF export links
 - Structured notes edits save successfully from the notes tab
 - Notes failure keeps transcript review available and allows regeneration
 - Unsupported upload surfaces the API error in the form
@@ -124,5 +129,4 @@ docker compose -f infra/docker-compose.yml build
 
 - Real provider-backed end-to-end validation still depends on live Groq, OpenRouter, R2, and Redis/Postgres availability.
 - Live pyannote-backed diarization validation depends on Hugging Face model access and `PYANNOTE_AUTH_TOKEN`; routine tests use fakes and do not download the gated model.
-- Notes TXT export, PDF export, and combined export do not exist yet, so they should not appear in current test expectations.
-- Chunking is intentionally absent in the current slice, so large-file behavior is currently a bounded failure path rather than a success path.
+- Real long-recording validation still depends on live provider limits, R2 availability, and worker timeout settings; routine coverage uses deterministic provider and chunking fakes.

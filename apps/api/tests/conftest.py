@@ -20,6 +20,9 @@ class FakeStorage:
     def upload_file(self, key: str, source_path: Path, content_type: str) -> None:
         self.objects[key] = source_path.read_bytes()
 
+    def download_bytes(self, key: str) -> bytes:
+        return self.objects[key]
+
     def download_file(self, key: str, destination_path: Path) -> None:
         destination_path.write_bytes(self.objects[key])
 

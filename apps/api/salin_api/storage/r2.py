@@ -11,6 +11,8 @@ class ObjectStorage(Protocol):
 
     def upload_file(self, key: str, source_path: Path, content_type: str) -> None: ...
 
+    def download_bytes(self, key: str) -> bytes: ...
+
     def download_file(self, key: str, destination_path: Path) -> None: ...
 
     def presign_get(self, key: str) -> str: ...
@@ -57,6 +59,10 @@ class S3ObjectStorage:
             Key=key,
             Filename=str(destination_path),
         )
+
+    def download_bytes(self, key: str) -> bytes:
+        response = self.client.get_object(Bucket=self.bucket_name, Key=key)
+        return response["Body"].read()
 
     def presign_get(self, key: str) -> str:
         return self.client.generate_presigned_url(

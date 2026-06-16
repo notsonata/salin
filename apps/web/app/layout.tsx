@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import type { ReactNode } from "react";
 
 import "./globals.css";
@@ -15,23 +16,32 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="bg-[#ece4d8] text-ink antialiased">
-        <div className="mx-auto min-h-screen max-w-[1560px] px-4 py-4 sm:px-6 lg:px-8">
-          <header className="mb-6 grid gap-4 border-b border-[#d7ccbb] pb-4 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-end">
-            <div className="grid gap-2">
-              <div className="flex items-center gap-3 text-sm text-muted">
-                <span className="font-mono text-[12px] uppercase tracking-[0.12em] text-ink">
-                  Salin
-                </span>
-                <span>Uploaded recordings</span>
-              </div>
-              <h1 className="font-mono text-xl tracking-[-0.04em] text-ink sm:text-2xl">
-                Review the transcript, verify timestamps, and turn the recording into notes.
-              </h1>
-            </div>
-            <p className="text-sm leading-6 text-muted">
-              Groq-first transcription, normalized audio review, and manual notes generation from stored transcript data.
-            </p>
+      <body className="bg-canvas text-ink antialiased">
+        <div className="mx-auto min-h-screen max-w-[1240px] px-4 py-4 sm:px-6 lg:px-8">
+          <header className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-line pb-4">
+            <Link
+              className="inline-flex h-9 items-center rounded-md px-1 text-lg font-semibold text-ink"
+              href="/"
+            >
+              Salin
+            </Link>
+            <nav
+              aria-label="Primary"
+              className="flex flex-wrap items-center gap-2 text-sm"
+            >
+              <Link
+                className="inline-flex h-9 items-center rounded-md px-3 font-medium text-muted transition-colors hover:bg-accentFaint hover:text-accent"
+                href="/dashboard"
+              >
+                Dashboard
+              </Link>
+              <Link
+                className="inline-flex h-9 items-center rounded-md border border-reviewSoft bg-reviewFaint px-3 font-medium text-review transition-colors hover:bg-reviewSoft"
+                href="/preview/recording"
+              >
+                Preview workspace
+              </Link>
+            </nav>
           </header>
           {children}
         </div>

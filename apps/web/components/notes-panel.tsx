@@ -129,11 +129,11 @@ export function NotesPanel({
 
   return (
     <div className="grid gap-4">
-      <Card className="border-[#cabca6] bg-[#f4ede0] p-5">
+      <Card className="border-notesSoft bg-notesFaint p-5">
         <div className="grid gap-4">
           <div className="flex items-start justify-between gap-4">
             <div className="grid gap-2">
-              <h2 className="text-lg font-semibold tracking-[-0.02em] text-ink">
+              <h2 className="text-lg font-semibold text-ink">
                 Notes
               </h2>
               <p className="text-sm leading-6 text-muted">
@@ -141,17 +141,19 @@ export function NotesPanel({
                 remains reviewable even when notes are empty, generating, or failed.
               </p>
             </div>
-            <Badge className="bg-[#ebe2d3] text-ink">{statusCopy(notes.status)}</Badge>
+            <Badge className="border-notesSoft bg-notesSoft text-notes">
+              {statusCopy(notes.status)}
+            </Badge>
           </div>
 
           {notes.status === "failed" && notes.error_message ? (
-            <div className="rounded-md border border-[#cfa79c] bg-[#f6e7e2] px-3 py-3 text-sm text-danger">
+            <div className="rounded-md border border-dangerSoft bg-dangerFaint px-3 py-3 text-sm text-danger">
               {notes.error_message}
             </div>
           ) : null}
 
           {!contentVisible && notes.status === "idle" ? (
-            <div className="rounded-md border border-dashed border-[#cdbfa8] bg-[#faf6ee] px-4 py-4">
+            <div className="rounded-md border border-dashed border-notesSoft bg-panel px-4 py-4">
               <p className="text-sm font-medium text-ink">Nothing generated yet.</p>
               <p className="mt-1 text-sm text-muted">
                 Use the transcript below, then generate summary, key points,
@@ -161,7 +163,7 @@ export function NotesPanel({
           ) : null}
 
           {(notes.status === "queued" || notes.status === "generating") && !contentVisible ? (
-            <div className="rounded-md border border-[#cdbfa8] bg-[#faf6ee] px-4 py-4">
+            <div className="rounded-md border border-attentionSoft bg-attentionFaint px-4 py-4">
               <p className="text-sm font-medium text-ink">Notes generation is in progress.</p>
               <p className="mt-1 text-sm text-muted">
                 This column updates as soon as the generated sections are saved.
@@ -173,7 +175,7 @@ export function NotesPanel({
             className="w-full"
             disabled={!canGenerate || notesBusy}
             type="button"
-            variant="accent"
+            variant="notes"
             onClick={onGenerate}
           >
             {notesBusy ? "Generating notes..." : buttonLabel}

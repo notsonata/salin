@@ -243,6 +243,239 @@ def test_update_notes_persists_structured_edits(client, app) -> None:
     assert payload["notes"]["questions"] == ["Question A"]
 
 
+def test_export_transcript_txt_uses_stored_segments_without_queueing(client, app) -> None:
+    recording_id = create_completed_recording(
+        client,
+        app,
+        filename="group lecture.mp3",
+        segments=[
+            TranscriptSegmentInput(
+                index=0,
+                start_ms=0,
+                end_ms=1200,
+                text="Kamusta sa lahat.",
+                speaker_label="Speaker 1",
+                speaker_estimated=True,
+                source_provider="groq",
+            ),
+            TranscriptSegmentInput(
+                index=1,
+                start_ms=1200,
+                end_ms=2200,
+                text="Good morning.",
+                speaker_label="Teacher",
+                speaker_estimated=False,
+                source_provider="groq",
+            ),
+        ],
+    )
+    enqueued_recordings = list(app.state.services.job_queue.enqueued_recordings)
+
+    response = client.get(f"/recordings/{recording_id}/exports/transcript.txt")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/plain")
+    assert (
+        response.headers["content-disposition"]
+        == 'attachment; filename="salin-group-lecture-transcript.txt"'
+    )
+    assert response.text == (
+        "Transcript\n"
+        "Recording: group-lecture.mp3\n"
+        "\n"
+        "Speaker labels are automatically estimated and can be edited.\n"
+        "\n"
+        "[00:00:00.000 - 00:00:01.200] Speaker 1 (estimated): Kamusta sa lahat.\n"
+        "[00:00:01.200 - 00:00:02.200] Teacher: Good morning.\n"
+    )
+    assert app.state.services.job_queue.enqueued_recordings == enqueued_recordings
+
+
+def test_export_transcript_txt_requires_segments(client) -> None:
+    response = client.post(
+        "/recordings",
+        data={
+            "language": "auto",
+            "processing_mode": "accurate",
+            "speaker_count": "auto",
+        },
+        files={"file": ("lecture.mp3", b"fake-audio", "audio/mpeg")},
+    )
+    recording_id = response.json()["recording"]["id"]
+
+    export_response = client.get(f"/recordings/{recording_id}/exports/transcript.txt")
+
+    assert export_response.status_code == 409
+    assert "Transcript segments are required" in export_response.json()["detail"]
+
+
+def test_export_transcript_pdf_uses_stored_segments_without_queueing(client, app) -> None:
+    recording_id = create_completed_recording(client, app, filename="lecture export.mp3")
+    enqueued_recordings = list(app.state.services.job_queue.enqueued_recordings)
+
+    response = client.get(f"/recordings/{recording_id}/exports/transcript.pdf")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"] == "application/pdf"
+    assert response.headers["content-disposition"] == (
+        'attachment; filename="salin-lecture-export-transcript.pdf"'
+    )
+    assert response.content.startswith(b"%PDF-1.4")
+    assert response.content.rstrip().endswith(b"%%EOF")
+    assert app.state.services.job_queue.enqueued_recordings == enqueued_recordings
+
+
+def test_export_transcript_pdf_requires_segments(client) -> None:
+    response = client.post(
+        "/recordings",
+        data={
+            "language": "auto",
+            "processing_mode": "accurate",
+            "speaker_count": "auto",
+        },
+        files={"file": ("lecture.mp3", b"fake-audio", "audio/mpeg")},
+    )
+    recording_id = response.json()["recording"]["id"]
+
+    export_response = client.get(f"/recordings/{recording_id}/exports/transcript.pdf")
+
+    assert export_response.status_code == 409
+    assert "Transcript segments are required" in export_response.json()["detail"]
+
+
+def test_export_notes_txt_uses_completed_notes_without_queueing(client, app) -> None:
+    recording_id = create_completed_recording(client, app)
+    save_response = client.put(
+        f"/recordings/{recording_id}/notes",
+        json={
+            "summary": "The class discussed interviews.",
+            "key_points": ["Review the transcript", "Prepare follow-up questions"],
+            "decisions": ["Use Salin for the next session"],
+            "action_items": ["Export notes"],
+            "questions": ["Who will edit speaker labels?"],
+        },
+    )
+    assert save_response.status_code == 200
+    enqueued_notes = list(app.state.services.job_queue.enqueued_notes)
+
+    response = client.get(f"/recordings/{recording_id}/exports/notes.txt")
+
+    assert response.status_code == 200
+    assert response.headers["content-disposition"] == (
+        'attachment; filename="salin-lecture-notes.txt"'
+    )
+    assert "Notes\nRecording: lecture.mp3" in response.text
+    assert "Summary\nThe class discussed interviews." in response.text
+    assert "- Review the transcript" in response.text
+    assert "- Export notes" in response.text
+    assert app.state.services.job_queue.enqueued_notes == enqueued_notes
+
+
+def test_export_notes_txt_requires_completed_notes(client, app) -> None:
+    recording_id = create_completed_recording(client, app)
+
+    response = client.get(f"/recordings/{recording_id}/exports/notes.txt")
+
+    assert response.status_code == 409
+    assert "Completed notes are required" in response.json()["detail"]
+
+
+def test_export_notes_pdf_uses_completed_notes_without_queueing(client, app) -> None:
+    recording_id = create_completed_recording(client, app)
+    save_response = client.put(
+        f"/recordings/{recording_id}/notes",
+        json={
+            "summary": "PDF notes summary.",
+            "key_points": ["Point A"],
+            "decisions": [],
+            "action_items": [],
+            "questions": [],
+        },
+    )
+    assert save_response.status_code == 200
+    enqueued_notes = list(app.state.services.job_queue.enqueued_notes)
+
+    response = client.get(f"/recordings/{recording_id}/exports/notes.pdf")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"] == "application/pdf"
+    assert response.headers["content-disposition"] == (
+        'attachment; filename="salin-lecture-notes.pdf"'
+    )
+    assert response.content.startswith(b"%PDF-1.4")
+    assert response.content.rstrip().endswith(b"%%EOF")
+    assert app.state.services.job_queue.enqueued_notes == enqueued_notes
+
+
+def test_export_notes_pdf_requires_completed_notes(client, app) -> None:
+    recording_id = create_completed_recording(client, app)
+
+    response = client.get(f"/recordings/{recording_id}/exports/notes.pdf")
+
+    assert response.status_code == 409
+    assert "Completed notes are required" in response.json()["detail"]
+
+
+def test_export_combined_txt_includes_notes_and_transcript(client, app) -> None:
+    recording_id = create_completed_recording(client, app)
+    save_response = client.put(
+        f"/recordings/{recording_id}/notes",
+        json={
+            "summary": "Combined export summary.",
+            "key_points": ["Point A"],
+            "decisions": [],
+            "action_items": [],
+            "questions": [],
+        },
+    )
+    assert save_response.status_code == 200
+
+    response = client.get(f"/recordings/{recording_id}/exports/combined.txt")
+
+    assert response.status_code == 200
+    assert response.headers["content-disposition"] == (
+        'attachment; filename="salin-lecture-combined.txt"'
+    )
+    assert response.text.startswith("Salin Export\nRecording: lecture.mp3")
+    assert "Notes\n\nSummary\nCombined export summary." in response.text
+    assert "Transcript\n\nSpeaker labels are automatically estimated" in response.text
+    assert "[00:00:00.000 - 00:00:01.200] Speaker (estimated):" in response.text
+
+
+def test_export_combined_pdf_includes_notes_and_transcript(client, app) -> None:
+    recording_id = create_completed_recording(client, app)
+    save_response = client.put(
+        f"/recordings/{recording_id}/notes",
+        json={
+            "summary": "Combined PDF summary.",
+            "key_points": ["Point A"],
+            "decisions": [],
+            "action_items": [],
+            "questions": [],
+        },
+    )
+    assert save_response.status_code == 200
+
+    response = client.get(f"/recordings/{recording_id}/exports/combined.pdf")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"] == "application/pdf"
+    assert response.headers["content-disposition"] == (
+        'attachment; filename="salin-lecture-combined.pdf"'
+    )
+    assert response.content.startswith(b"%PDF-1.4")
+    assert response.content.rstrip().endswith(b"%%EOF")
+
+
+def test_export_combined_pdf_requires_completed_notes(client, app) -> None:
+    recording_id = create_completed_recording(client, app)
+
+    response = client.get(f"/recordings/{recording_id}/exports/combined.pdf")
+
+    assert response.status_code == 409
+    assert "Completed notes are required" in response.json()["detail"]
+
+
 def test_rename_speaker_updates_matching_transcript_segments(client, app) -> None:
     recording_id = create_completed_recording(
         client,

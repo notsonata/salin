@@ -37,6 +37,16 @@ class Settings(BaseSettings):
         default="small",
         alias="LOCAL_TRANSCRIPTION_MODEL",
     )
+    transcription_chunk_minutes: int = Field(
+        default=10,
+        ge=1,
+        alias="TRANSCRIPTION_CHUNK_MINUTES",
+    )
+    transcription_chunk_overlap_seconds: int = Field(
+        default=15,
+        ge=0,
+        alias="TRANSCRIPTION_CHUNK_OVERLAP_SECONDS",
+    )
     recording_job_timeout_seconds: int = Field(
         default=3600,
         ge=1,

@@ -1,6 +1,7 @@
 "use client";
 
 import type { RefObject } from "react";
+import { ExternalLink, Headphones } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -17,12 +18,13 @@ export function TranscriptPlayer({
   originalUrl?: string;
 }) {
   return (
-    <Card className="grid gap-4 p-5">
-      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
+    <Card className="grid gap-4 border-reviewSoft p-4 sm:p-5">
+      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
         <div className="grid gap-2">
-          <h2 className="font-mono text-lg tracking-[-0.04em] text-ink">
-            Audio review
-          </h2>
+          <div className="flex items-center gap-2">
+            <Headphones aria-hidden="true" className="h-4 w-4 text-review" />
+            <h2 className="text-lg font-semibold text-ink">Audio review</h2>
+          </div>
           <p className="text-sm leading-6 text-muted">
             Playback uses the normalized review track so timestamp seeking stays
             consistent across the transcript.
@@ -37,6 +39,7 @@ export function TranscriptPlayer({
             target="_blank"
           >
             <Button type="button" variant="ghost">
+              <ExternalLink aria-hidden="true" className="h-4 w-4" />
               Open original upload
             </Button>
           </a>
@@ -44,16 +47,18 @@ export function TranscriptPlayer({
       </div>
 
       {normalizedUrl ? (
-        <audio
-          ref={audioRef as RefObject<HTMLAudioElement>}
-          aria-label={`Normalized review audio for ${filename}`}
-          className="w-full"
-          controls
-          preload="metadata"
-          src={normalizedUrl}
-        />
+        <div className="rounded-md border border-reviewSoft bg-reviewFaint px-3 py-3">
+          <audio
+            ref={audioRef as RefObject<HTMLAudioElement>}
+            aria-label={`Normalized review audio for ${filename}`}
+            className="w-full"
+            controls
+            preload="metadata"
+            src={normalizedUrl}
+          />
+        </div>
       ) : (
-        <div className="rounded-md border border-dashed border-line bg-[#faf6ee] px-4 py-4">
+        <div className="rounded-md border border-dashed border-reviewSoft bg-reviewFaint px-4 py-4">
           <p className="text-sm font-medium text-ink">Normalized audio unavailable.</p>
           <p className="mt-1 text-sm text-muted">
             The transcript is ready, but the review track has not been attached yet.

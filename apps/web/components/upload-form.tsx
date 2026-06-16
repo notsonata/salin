@@ -56,7 +56,7 @@ export function UploadForm() {
   }
 
   return (
-    <Card className="grid gap-8 p-6 lg:grid-cols-[minmax(0,1.2fr)_18rem] lg:p-8">
+    <Card className="grid gap-8 border-accentSoft p-6 lg:grid-cols-[minmax(0,1.2fr)_18rem] lg:p-8">
       <form className="grid gap-6" onSubmit={onSubmit}>
         <div className="grid gap-2">
           <label className="text-sm font-medium text-ink" htmlFor="recording-file">
@@ -64,7 +64,7 @@ export function UploadForm() {
           </label>
           <input
             id="recording-file"
-            className="block w-full rounded-md border border-line bg-[#fbf8f3] px-3 py-3 text-sm text-ink file:mr-4 file:rounded-md file:border-0 file:bg-ink file:px-3 file:py-2 file:text-sm file:font-medium file:text-panel"
+            className="block w-full rounded-md border border-accentSoft bg-field px-3 py-3 text-sm text-ink file:mr-4 file:rounded-md file:border-0 file:bg-accent file:px-3 file:py-2 file:text-sm file:font-medium file:text-panel"
             type="file"
             accept={supportedFormats.join(",")}
             onChange={(event) => setFile(event.target.files?.[0] ?? null)}
@@ -79,7 +79,7 @@ export function UploadForm() {
             </label>
             <select
               id="language"
-              className="h-10 rounded-md border border-line bg-[#fbf8f3] px-3 text-sm text-ink"
+              className="h-10 rounded-md border border-line bg-field px-3 text-sm text-ink"
               value={language}
               onChange={(event) => setLanguage(event.target.value as LanguageOption)}
             >
@@ -95,7 +95,7 @@ export function UploadForm() {
             </label>
             <select
               id="processing-mode"
-              className="h-10 rounded-md border border-line bg-[#fbf8f3] px-3 text-sm text-ink"
+              className="h-10 rounded-md border border-line bg-field px-3 text-sm text-ink"
               value={processingMode}
               onChange={(event) =>
                 setProcessingMode(event.target.value as ProcessingMode)
@@ -112,7 +112,7 @@ export function UploadForm() {
             </label>
             <select
               id="speaker-count"
-              className="h-10 rounded-md border border-line bg-[#fbf8f3] px-3 text-sm text-ink"
+              className="h-10 rounded-md border border-line bg-field px-3 text-sm text-ink"
               value={speakerCount}
               onChange={(event) =>
                 setSpeakerCount(event.target.value as SpeakerCount)
@@ -129,7 +129,7 @@ export function UploadForm() {
         </div>
 
         {error ? (
-          <div className="rounded-md border border-[#d8b3ab] bg-[#f7ebe8] px-4 py-3 text-sm text-danger">
+          <div className="rounded-md border border-dangerSoft bg-dangerFaint px-4 py-3 text-sm text-danger">
             {error}
           </div>
         ) : null}
@@ -139,7 +139,7 @@ export function UploadForm() {
             Upload one recording, queue the background job, and review the
             transcript as soon as it is ready.
           </p>
-          <Button disabled={submitting} type="submit">
+          <Button disabled={submitting} type="submit" variant="accent">
             {submitting ? "Starting..." : "Start processing"}
           </Button>
         </div>
@@ -147,7 +147,7 @@ export function UploadForm() {
 
       <aside className="grid content-start gap-4 border-t border-line pt-6 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
         <div className="grid gap-2">
-          <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted">
+          <p className="font-mono text-[11px] uppercase text-muted">
             Processing notes
           </p>
           <p className="text-sm text-ink">
@@ -156,7 +156,7 @@ export function UploadForm() {
           </p>
         </div>
         <div className="grid gap-2">
-          <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted">
+          <p className="font-mono text-[11px] uppercase text-muted">
             Recording quality
           </p>
           <ul className="grid gap-2 text-sm text-muted">

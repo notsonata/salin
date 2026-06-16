@@ -50,11 +50,13 @@ Acceptance criteria:
 
 ### [P0] Rebuild the web app into an upload-first dashboard and recording detail workspace
 
-Replace the current upload-only home screen and dead-end recording page with a real dashboard plus a tabbed recording detail workflow.
+Replace the current upload-only home screen and dead-end recording page with a
+real dashboard plus a tabbed recording detail workflow.
 
 Acceptance criteria:
 
-- `/` becomes an upload-first dashboard with recent recordings history
+- `/dashboard` becomes an upload-first dashboard with recent recordings history
+- `/` becomes a dedicated product home that routes users into the dashboard
 - `/recordings/[id]` gains obvious dashboard return navigation
 - recording detail splits into `Transcript` and `Notes` tabs
 - notes become editable and savable in their structured section form
@@ -207,7 +209,24 @@ Acceptance criteria:
 
 - **Files**: `apps/worker`, `apps/api`, `apps/web`, `packages/shared`, `docs/architecture.md`, `docs/testing.md`
 - **Context**: Podcast-length uploads need chunking to avoid huge all-or-nothing jobs and to support useful progress.
-- **Status**: Planned
+- **Status**: Done
+
+### [P1] Add macOS host-only presentation runner
+
+Run Salin locally on an Apple Silicon Mac without Docker so diarization can use
+host hardware backends and presentation setup stays lighter.
+
+Acceptance criteria:
+
+- `run-local.sh` starts the API, worker, and web app on the host
+- The script expects local Postgres and Redis on `localhost`
+- Compose-style `postgres` and `redis` hosts from `.env` are rewritten to `localhost`
+- The worker uses RQ's spawn worker class for macOS safety
+- Setup docs include Homebrew service and local database instructions
+
+- **Files**: `run-local.sh`, `docs/setup.md`, `README.md`
+- **Context**: The M4 presentation machine should not need Docker for the live demo path.
+- **Status**: Done
 
 ### [P2] Add export outputs for transcript and notes
 
@@ -222,4 +241,31 @@ Acceptance criteria:
 
 - **Files**: `apps/api`, `apps/worker`, `apps/web`, `packages/shared`
 - **Context**: Export matters to user workflow, but it is downstream of transcript and notes correctness.
-- **Status**: Blocked
+- **Backend status**: Transcript TXT/PDF, notes TXT/PDF, and combined TXT/PDF endpoints are implemented.
+- **Web status**: Current-style transcript, notes, and combined export controls are implemented in the recording workspace.
+- **Deferred**: Export presentation polish belongs with the later UI revamp.
+- **Status**: Done
+
+### [P2] Revamp the Salin web UI around the Study Desk direction
+
+Polish the existing dashboard and recording detail workspace into a premium,
+transcript-first review experience using the Salin Study Desk design system,
+Trint-style transcript workflow references, and Linear-style light-mode control
+polish.
+
+Acceptance criteria:
+
+- dashboard keeps upload as the first-priority action and recent recordings as a compact working table
+- home and dashboard are separate so onboarding copy does not compete with the upload form
+- recording detail keeps transcript review visually primary
+- notes remain immediately discoverable without competing with transcript reading
+- export actions are grouped into a polished menu or toolbar surface
+- processing, fallback, diarization, and notes failure states stay clear and non-blocking
+- lucide icon controls use dark ink, muted, active teal, disabled, hover, and focus states consistently
+- desktop and mobile layouts are verified for spacing, text fit, and control overlap
+- existing upload, transcript, notes, speaker correction, and export E2E flows still pass
+
+- **Files**: `apps/web`, `docs/ui.md`, `docs/superpowers/plans/2026-06-16-ui-ux-revamp.md`
+- **Context**: The core product flows are implemented, so the next front-end pass should make the workspace feel complete without changing product scope.
+- **Plan**: `docs/superpowers/plans/2026-06-16-ui-ux-revamp.md`
+- **Status**: Done

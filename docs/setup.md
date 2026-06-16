@@ -38,6 +38,8 @@ Required values:
 - `GROQ_TRANSCRIPTION_MODEL`
 - `GROQ_FAST_MODEL`
 - `LOCAL_TRANSCRIPTION_MODEL`
+- `TRANSCRIPTION_CHUNK_MINUTES`
+- `TRANSCRIPTION_CHUNK_OVERLAP_SECONDS`
 - `RECORDING_JOB_TIMEOUT_SECONDS`
 - `NOTES_JOB_TIMEOUT_SECONDS`
 - `MAX_UPLOAD_MB`
@@ -82,6 +84,18 @@ Default repo startup script:
 ./run.sh
 ```
 
+Mac host-only presentation path:
+
+```bash
+sh ./run-local.sh
+```
+
+This path does not start Docker. It expects local Postgres and Redis to already be
+running on `localhost`, starts the API on `localhost:8000`, starts the worker on
+the host with RQ's spawn worker class, and starts the web app on
+`localhost:3000`. It rewrites Compose-style `postgres` and `redis` hosts from
+`.env` to `localhost` for the running process.
+
 Stop the stack:
 
 ```bash
@@ -94,6 +108,42 @@ Run services directly without Compose:
 pnpm --filter @salin/web dev
 uv run --package salin-api uvicorn salin_api.main:app --reload --host 0.0.0.0 --port 8000
 uv run --package salin-worker rq worker salin-recordings --url redis://localhost:6379/0
+```
+
+## macOS Host Setup
+
+Install the local services:
+
+```bash
+brew install postgresql@16 redis ffmpeg uv
+corepack enable
+corepack prepare pnpm@9.15.4 --activate
+```
+
+Start local Postgres and Redis:
+
+```bash
+brew services start postgresql@16
+brew services start redis
+```
+
+Create the local database and role once:
+
+```bash
+createuser salin
+createdb -O salin salin
+psql -d postgres -c "ALTER USER salin WITH PASSWORD 'salin';"
+```
+
+For host-only macOS runs, these values are expected after `run-local.sh` rewrites
+Compose service names to `localhost`:
+
+```bash
+DATABASE_URL=postgresql+psycopg://salin:salin@localhost:5432/salin
+REDIS_URL=redis://localhost:6379/0
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
+SALIN_API_INTERNAL_BASE_URL=http://localhost:8000
+PYANNOTE_DEVICE=auto
 ```
 
 ## OpenAPI and Shared Types
@@ -117,10 +167,13 @@ pnpm --filter @salin/shared generate
 - `CORS_ALLOWED_ORIGINS` must include the browser-facing web origin, which is `http://localhost:3000` for the default Docker Compose setup.
 - Cloudflare R2 remains the source of truth for original, normalized, and raw-provider artifacts.
 - The phase 1 worker supports Groq-first transcription with `faster-whisper` fallback.
+- Long recordings are split into overlapped transcription chunks. The default chunk size is controlled by `TRANSCRIPTION_CHUNK_MINUTES`, and overlap is controlled by `TRANSCRIPTION_CHUNK_OVERLAP_SECONDS`.
+- Completed transcription chunks are cached as R2 artifacts, so retrying a failed job can resume from the first missing chunk instead of retranscribing completed chunks.
 - Diarization is disabled by default. To enable pyannote-backed diarization, accept the selected model's Hugging Face conditions, create a token, set `DIARIZATION_PROVIDER=pyannote`, and set `PYANNOTE_AUTH_TOKEN`.
 - `PYANNOTE_DEVICE=auto` prefers `cuda`, then `mps`, then `cpu`.
 - On Apple Silicon Macs, `mps` support only applies when the worker runs directly on the macOS host. The Docker Compose worker runs in a Linux container and cannot use Apple's `mps` backend, so diarization remains CPU-only there.
 - If you want Apple GPU acceleration for diarization on macOS, run the worker directly from the host toolchain and leave `PYANNOTE_DEVICE=auto` or set `PYANNOTE_DEVICE=mps`.
+- For a fully host-only macOS presentation run, use `sh ./run-local.sh`. This leaves Docker out of the loop entirely and uses local Postgres and Redis.
 - On macOS, `./run.sh` now automates that split mode: it starts `web`, `api`, `postgres`, and `redis` in Docker, then runs the worker directly on the host with `localhost` overrides for Postgres and Redis.
 - The macOS host-worker path uses RQ's `rq.worker.SpawnWorker` to avoid `fork()`-based work-horse crashes from Objective-C backed libraries.
 - For the macOS host worker, `./run.sh` prefers `uv`, then `python3 -m uv`, and finally falls back to the repo-local `.venv-tooling/bin/rq` script if present.
@@ -137,4 +190,5 @@ pnpm --filter @salin/shared generate
 - API or worker cannot authenticate to Cloudflare R2
 - Worker cannot import `groq` or `faster-whisper`
 - Recording fails with `Task exceeded maximum timeout value`: raise `RECORDING_JOB_TIMEOUT_SECONDS` and retry the failed recording
+- Long recording appears stuck: check the job note for chunk progress such as `Transcribing chunk 3/12`, and confirm the worker is still running
 - Browser-facing API base URL and server-side internal API base URL diverge
