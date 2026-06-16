@@ -57,12 +57,21 @@ Required elements:
 
 - strong product statement for bilingual transcript review
 - one transcript specimen
-- one recent-sessions board
+- one static product-proof panel
 - concise workflow proof
 - direct CTA into `/dashboard`
-- direct CTA into `/preview/recording`
 
 Home should feel like an in-product front door, not a generic landing page.
+
+Current home direction:
+
+- editorial hero inspired by modern transcription products, anchored by a review-console visual
+- glass-morphism top navigation that stays readable over the hero and light page sections
+- current Salin color system for buttons, badges, panels, and status accents
+- direct path to the dashboard without implying live capture or realtime meeting behavior
+- dashboard remains the only visible homepage CTA
+- transcript specimen and product-proof panel remain visible below the hero to prove the app workflow
+- below-hero content may use subtle scroll reveal animation when motion preferences allow it
 
 ### Dashboard
 

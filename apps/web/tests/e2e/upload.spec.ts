@@ -133,11 +133,10 @@ test("home frames the product as a transcript review board", async ({ page }) =>
     page.getByRole("heading", { name: "Review across languages." }),
   ).toBeVisible();
   await expect(page.getByRole("link", { name: "Open dashboard" })).toBeVisible();
-  await expect(
-    page.getByRole("main").getByRole("link", { name: "Preview workspace" }),
-  ).toBeVisible();
+  await expect(page.getByRole("navigation").getByRole("link", { name: "Dashboard" })).toBeVisible();
   await expect(page.getByTestId("home-workspace-specimen")).toBeVisible();
-  await expect(page.getByTestId("home-session-board")).toBeVisible();
+  await expect(page.getByTestId("home-proof-panel")).toBeVisible();
+  await expect(page.getByText("No dashboard noise.")).toBeVisible();
   await expect(page.getByText("Transcript specimen")).toBeVisible();
 });
 
