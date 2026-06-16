@@ -67,18 +67,22 @@ Route: `/dashboard`
 
 Required elements:
 
+- compact unframed dashboard header with workflow status chips
 - `New recording` composer as the first visual priority
+- polished upload drop zone backed by the native file input
 - file picker
 - supported format hint
 - language selector
 - processing mode selector
 - speaker count selector
 - start-processing action
+- concise review-quality helper rail when desktop space allows
 - `Recent recordings` compact table beneath the composer
 
 Dashboard table requirements:
 
 - columns for filename, status, language, updated time, and open action
+- table header and state copy live inside the table surface
 - clear empty state when no recordings exist yet
 - obvious reopen path back into any existing recording detail page
 - when the backend is offline during local UI review, show a calm backend-off state with a link to the preview workspace
@@ -135,7 +139,9 @@ Current notes tab requirements:
 Current UI polish:
 
 - home uses a modern product intro with deeper color and a transcript preview
-- dashboard is separated into a compact upload and recent-recordings workspace
+- dashboard uses an app-style shell, compact command header, upload-first composition, polished upload module, and integrated recent-recordings table
+- app shell uses a dedicated Salin logo mark combining a transcript page and audio waveform, not a letter-only placeholder
+- primary navigation uses route-aware active states; `/` has no active workspace nav item, `/dashboard` and `/recordings/[id]` activate Dashboard, and `/preview/recording` activates Preview workspace
 - recording detail uses a compact session strip, icon tabs, grouped export controls, and a timestamp-led transcript review surface
 - notes use a structured document editing surface with visible status, dirty state, save, generate/regenerate, and export controls
 

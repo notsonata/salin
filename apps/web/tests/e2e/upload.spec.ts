@@ -151,6 +151,30 @@ test("dashboard home shows upload composer and recent recordings", async ({ page
   await expect(page.getByRole("cell", { name: "client-call.mp3" })).toBeVisible();
 });
 
+test("primary navigation marks only the current section active", async ({ page }) => {
+  const primaryNav = page.getByLabel("Primary");
+  const dashboardLink = primaryNav.getByRole("link", {
+    exact: true,
+    name: "Dashboard",
+  });
+  const previewLink = primaryNav.getByRole("link", {
+    exact: true,
+    name: "Preview workspace",
+  });
+
+  await page.goto("/");
+  await expect(dashboardLink).not.toHaveAttribute("aria-current", "page");
+  await expect(previewLink).not.toHaveAttribute("aria-current", "page");
+
+  await page.goto("/dashboard");
+  await expect(dashboardLink).toHaveAttribute("aria-current", "page");
+  await expect(previewLink).not.toHaveAttribute("aria-current", "page");
+
+  await page.goto("/preview/recording");
+  await expect(dashboardLink).not.toHaveAttribute("aria-current", "page");
+  await expect(previewLink).toHaveAttribute("aria-current", "page");
+});
+
 test("supported upload transitions into the interactive transcript workspace", async ({
   page,
 }) => {

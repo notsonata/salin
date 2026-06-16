@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
+import { AppNav } from "@/components/app-nav";
+import { SalinLogo } from "@/components/salin-logo";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -17,33 +19,29 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="bg-canvas text-ink antialiased">
-        <div className="mx-auto min-h-screen max-w-[1240px] px-4 py-4 sm:px-6 lg:px-8">
-          <header className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b border-line pb-4">
-            <Link
-              className="inline-flex h-9 items-center rounded-md px-1 text-lg font-semibold text-ink"
-              href="/"
-            >
-              Salin
-            </Link>
-            <nav
-              aria-label="Primary"
-              className="flex flex-wrap items-center gap-2 text-sm"
-            >
+        <div className="min-h-screen">
+          <header className="sticky top-0 z-20 border-b border-line bg-canvas/95 backdrop-blur">
+            <div className="mx-auto flex max-w-[1240px] flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
               <Link
-                className="inline-flex h-9 items-center rounded-md px-3 font-medium text-muted transition-colors hover:bg-accentFaint hover:text-accent"
-                href="/dashboard"
+                className="inline-flex items-center gap-3 rounded-lg px-1 text-ink"
+                href="/"
               >
-                Dashboard
+                <SalinLogo className="shrink-0 shadow-panel" />
+                <span className="grid gap-0.5">
+                  <span className="text-base font-semibold leading-5">
+                    Salin
+                  </span>
+                  <span className="hidden text-xs text-muted sm:inline">
+                    Recording review workspace
+                  </span>
+                </span>
               </Link>
-              <Link
-                className="inline-flex h-9 items-center rounded-md border border-reviewSoft bg-reviewFaint px-3 font-medium text-review transition-colors hover:bg-reviewSoft"
-                href="/preview/recording"
-              >
-                Preview workspace
-              </Link>
-            </nav>
+              <AppNav />
+            </div>
           </header>
-          {children}
+          <div className="mx-auto max-w-[1240px] px-4 py-5 sm:px-6 lg:px-8">
+            {children}
+          </div>
         </div>
       </body>
     </html>

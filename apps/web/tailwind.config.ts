@@ -44,7 +44,7 @@ const config: Config = {
         lg: "12px",
       },
       boxShadow: {
-        panel: "0 1px 2px rgba(21, 18, 15, 0.06)",
+        panel: "0 1px 2px rgba(21, 18, 15, 0.05), 0 10px 30px rgba(21, 18, 15, 0.04)",
       },
     },
   },

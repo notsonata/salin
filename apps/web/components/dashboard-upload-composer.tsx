@@ -1,7 +1,14 @@
 "use client";
 
 import { useMemo, useState, type FormEvent } from "react";
-import { CircleAlert } from "lucide-react";
+import {
+  CircleAlert,
+  FileAudio,
+  Gauge,
+  Languages,
+  UploadCloud,
+  UsersRound,
+} from "lucide-react";
 
 import type { LanguageOption, ProcessingMode, SpeakerCount } from "@salin/shared";
 
@@ -51,20 +58,29 @@ export function DashboardUploadComposer() {
 
   return (
     <section className="grid gap-3" id="new-recording">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-        <div className="grid gap-1">
-          <p className="font-mono text-[11px] uppercase text-accent">
-            Upload
-          </p>
-          <h2 className="text-xl font-semibold text-ink">New recording</h2>
-        </div>
-        <p className="max-w-xl text-sm leading-6 text-muted sm:text-right">
-          Upload one recording, then review the transcript and notes in the
-          workspace.
-        </p>
-      </div>
-
       <Card className="overflow-hidden border-accentSoft p-0">
+        <div className="grid gap-4 border-b border-accentSoft bg-accentFaint px-5 py-5 sm:px-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+          <div className="flex items-start gap-3">
+            <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-accent text-panel">
+              <UploadCloud aria-hidden="true" className="h-5 w-5" />
+            </span>
+            <div className="grid gap-1">
+              <p className="font-mono text-[11px] uppercase text-accent">
+                Upload
+              </p>
+              <h2 className="text-xl font-semibold text-ink">New recording</h2>
+              <p className="max-w-2xl text-sm leading-6 text-muted">
+                Choose a supported recording and Salin will create the review
+                workspace as soon as the processing job is queued.
+              </p>
+            </div>
+          </div>
+          <div className="rounded-md border border-accentSoft bg-panel px-3 py-2 text-xs leading-5 text-muted">
+            <span className="font-medium text-ink">Supported:</span>{" "}
+            {supportedCopy}
+          </div>
+        </div>
+
         <form className="grid gap-6" onSubmit={onSubmit}>
           <div className="grid gap-5 p-5 sm:p-6">
             <div className="grid gap-2">
@@ -74,27 +90,46 @@ export function DashboardUploadComposer() {
               >
                 Recording
               </label>
-              <input
-                id="recording-file"
-                className="block min-h-12 w-full rounded-md border border-accentSoft bg-field px-3 py-2 text-sm text-ink file:mr-4 file:rounded-md file:border-0 file:bg-accent file:px-3 file:py-2 file:text-sm file:font-medium file:text-panel hover:bg-accentFaint focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-                type="file"
-                accept={supportedFormats.join(",")}
-                onChange={(event) => setFile(event.target.files?.[0] ?? null)}
-              />
-              <p className="text-sm text-muted">Supported formats: {supportedCopy}</p>
+              <div className="relative rounded-lg border border-dashed border-accentSoft bg-field transition-colors hover:bg-accentFaint">
+                <input
+                  id="recording-file"
+                  className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                  type="file"
+                  accept={supportedFormats.join(",")}
+                  onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+                />
+                <div className="flex flex-col gap-4 px-4 py-5 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-accentSoft text-accent">
+                      <FileAudio aria-hidden="true" className="h-5 w-5" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-ink">
+                        {file ? file.name : "Choose a recording file"}
+                      </p>
+                      <p className="mt-1 text-sm text-muted">
+                        {file
+                          ? "Ready to queue for processing."
+                          : "MP3, WAV, M4A, AAC, MP4, MOV, or WEBM."}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="inline-flex h-9 items-center justify-center rounded-md bg-accent px-3 text-sm font-medium text-panel">
+                    Browse
+                  </span>
+                </div>
+              </div>
             </div>
 
             <div className="grid gap-4 md:grid-cols-3">
-              <fieldset className="grid gap-2">
-                <label
-                  className="text-sm font-medium text-ink"
-                  htmlFor="language"
-                >
+              <fieldset className="grid gap-3 rounded-md border border-line bg-field p-3">
+                <label className="flex items-center gap-2 text-sm font-medium text-ink" htmlFor="language">
+                  <Languages aria-hidden="true" className="h-4 w-4 text-accent" />
                   Language
                 </label>
                 <select
                   id="language"
-                  className="h-10 rounded-md border border-line bg-field px-3 text-sm text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                  className="h-10 rounded-md border border-line bg-panel px-3 text-sm text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                   value={language}
                   onChange={(event) => setLanguage(event.target.value as LanguageOption)}
                 >
@@ -104,16 +139,14 @@ export function DashboardUploadComposer() {
                 </select>
               </fieldset>
 
-              <fieldset className="grid gap-2">
-                <label
-                  className="text-sm font-medium text-ink"
-                  htmlFor="processing-mode"
-                >
+              <fieldset className="grid gap-3 rounded-md border border-line bg-field p-3">
+                <label className="flex items-center gap-2 text-sm font-medium text-ink" htmlFor="processing-mode">
+                  <Gauge aria-hidden="true" className="h-4 w-4 text-review" />
                   Processing mode
                 </label>
                 <select
                   id="processing-mode"
-                  className="h-10 rounded-md border border-line bg-field px-3 text-sm text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                  className="h-10 rounded-md border border-line bg-panel px-3 text-sm text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                   value={processingMode}
                   onChange={(event) =>
                     setProcessingMode(event.target.value as ProcessingMode)
@@ -124,16 +157,14 @@ export function DashboardUploadComposer() {
                 </select>
               </fieldset>
 
-              <fieldset className="grid gap-2">
-                <label
-                  className="text-sm font-medium text-ink"
-                  htmlFor="speaker-count"
-                >
+              <fieldset className="grid gap-3 rounded-md border border-line bg-field p-3">
+                <label className="flex items-center gap-2 text-sm font-medium text-ink" htmlFor="speaker-count">
+                  <UsersRound aria-hidden="true" className="h-4 w-4 text-notes" />
                   Speaker count
                 </label>
                 <select
                   id="speaker-count"
-                  className="h-10 rounded-md border border-line bg-field px-3 text-sm text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                  className="h-10 rounded-md border border-line bg-panel px-3 text-sm text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                   value={speakerCount}
                   onChange={(event) =>
                     setSpeakerCount(event.target.value as SpeakerCount)

@@ -1,5 +1,12 @@
 import Link from "next/link";
-import { ArrowUpRight, CircleAlert, Clock3, FileText, Loader2 } from "lucide-react";
+import {
+  ArrowUpRight,
+  CircleAlert,
+  Clock3,
+  FileText,
+  History,
+  Loader2,
+} from "lucide-react";
 
 import type { RecordingListItemSummary } from "@salin/shared";
 
@@ -89,19 +96,27 @@ export function RecordingsTable({
 }) {
   return (
     <section className="grid gap-3">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-        <div className="grid gap-1">
-          <p className="font-mono text-[11px] uppercase text-review">
-            Library
-          </p>
-          <h2 className="text-xl font-semibold text-ink">Recent recordings</h2>
-        </div>
-        <p className="max-w-2xl text-sm leading-6 text-muted sm:text-right">
-          Reopen in-flight or completed work quickly from the same home surface.
-        </p>
-      </div>
-
       <Card className="overflow-hidden border-reviewSoft p-0">
+        <div className="grid gap-4 border-b border-reviewSoft bg-panel px-5 py-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+          <div className="flex items-start gap-3">
+            <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-reviewSoft text-review">
+              <History aria-hidden="true" className="h-5 w-5" />
+            </span>
+            <div className="grid gap-1">
+              <p className="font-mono text-[11px] uppercase text-review">
+                Library
+              </p>
+              <h2 className="text-xl font-semibold text-ink">Recent recordings</h2>
+              <p className="max-w-2xl text-sm leading-6 text-muted">
+                Reopen in-flight or completed work quickly from the same surface.
+              </p>
+            </div>
+          </div>
+          <div className="rounded-md border border-reviewSoft bg-reviewFaint px-3 py-2 text-xs leading-5 text-review">
+            Transcript, notes, and export state stay attached to each recording.
+          </div>
+        </div>
+
         {loading ? (
           <div className="flex items-center gap-3 px-5 py-8">
             <Loader2 aria-hidden="true" className="h-4 w-4 text-review" />
@@ -190,12 +205,17 @@ export function RecordingsTable({
           </div>
         ) : (
           <div className="grid gap-4 bg-reviewFaint px-5 py-6 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
-            <div>
+            <div className="flex items-start gap-3">
+              <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-panel text-review">
+                <FileText aria-hidden="true" className="h-5 w-5" />
+              </span>
+              <div>
               <p className="text-sm font-medium text-ink">No recordings yet.</p>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
                 Your completed, in-flight, and failed recordings will appear
                 here after the first upload.
               </p>
+              </div>
             </div>
             <Link
               className="inline-flex h-9 items-center justify-center gap-2 rounded-md border border-reviewSoft bg-panel px-3 text-sm font-medium text-review transition-colors hover:bg-reviewSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-review"
