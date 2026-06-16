@@ -143,7 +143,7 @@ test("dashboard home shows upload composer and recent recordings", async ({ page
     });
   });
 
-  await page.goto("/");
+  await page.goto("/dashboard");
 
   await expect(page.getByRole("heading", { name: "New recording", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Recent recordings" })).toBeVisible();
@@ -241,7 +241,7 @@ test("supported upload transitions into the interactive transcript workspace", a
     });
   });
 
-  await page.goto("/");
+  await page.goto("/dashboard");
   await expect(page.getByRole("heading", { name: "New recording", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Recent recordings" })).toBeVisible();
   await page.setInputFiles('input[type="file"]', {
@@ -647,7 +647,7 @@ test("unsupported upload shows the API validation message", async ({ page }) => 
     });
   });
 
-  await page.goto("/");
+  await page.goto("/dashboard");
   await page.setInputFiles('input[type="file"]', {
     name: "notes.txt",
     mimeType: "text/plain",

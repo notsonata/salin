@@ -68,6 +68,7 @@ Use the lowest level that gives credible confidence:
 `apps/web/tests/e2e/upload.spec.ts`
 
 - Dashboard renders upload-first hierarchy plus recent recordings history
+- Dedicated home page routes into the dashboard and preview workspace
 - Supported upload redirects into the transcript workspace, renders normalized playback, supports transcript search, and exposes backend transcript TXT/PDF export links
 - Transcript content remains visible while speaker labels are still being estimated
 - Speaker labels can be renamed and reassigned from the transcript workspace

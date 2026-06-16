@@ -1,4 +1,5 @@
 import type { RefObject } from "react";
+import { CircleAlert, Loader2, RefreshCw } from "lucide-react";
 
 import type { RecordingDetailResponse, TranscriptSegment } from "@salin/shared";
 
@@ -23,6 +24,37 @@ function stageCopy(stage: RecordingDetailResponse["job"]["stage"]) {
     case "failed":
       return "Processing failed";
   }
+}
+
+const stageSteps: Array<{
+  id: RecordingDetailResponse["job"]["stage"];
+  label: string;
+}> = [
+  { id: "uploaded", label: "Upload" },
+  { id: "preprocessing", label: "Normalize" },
+  { id: "transcribing", label: "Transcribe" },
+  { id: "diarizing", label: "Diarize" },
+  { id: "completed", label: "Review" },
+];
+
+function stageIndex(stage: RecordingDetailResponse["job"]["stage"]) {
+  if (stage === "failed") {
+    return -1;
+  }
+
+  return stageSteps.findIndex((step) => step.id === stage);
+}
+
+function stageStepClass(index: number, currentStageIndex: number) {
+  if (index < currentStageIndex) {
+    return "border-successSoft bg-successSoft";
+  }
+
+  if (index === currentStageIndex) {
+    return "border-reviewSoft bg-reviewFaint";
+  }
+
+  return "border-line bg-field";
 }
 
 export function TranscriptWorkspaceTab({
@@ -61,6 +93,7 @@ export function TranscriptWorkspaceTab({
   onUpdateSegmentSpeaker: (segmentId: string, speakerLabel: string) => Promise<void>;
 }) {
   const transcriptAvailable = data.transcript_segments.length > 0;
+  const currentStageIndex = stageIndex(data.job.stage);
 
   return (
     <section
@@ -70,24 +103,56 @@ export function TranscriptWorkspaceTab({
       role="tabpanel"
     >
       {error ? (
-        <Card className="border-[#d8b3ab] bg-[#f7ebe8] p-4 text-sm text-danger">
-          {error}
+        <Card className="flex items-start gap-3 border-dangerSoft bg-dangerFaint p-4 text-sm text-danger">
+          <CircleAlert aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>{error}</span>
         </Card>
       ) : null}
 
       {!transcriptAvailable ? (
-        <Card className="grid gap-3 p-5">
-          <p className="font-medium text-ink">{stageCopy(data.job.stage)}</p>
-          <p className="text-sm leading-6 text-muted">
-            This recording is still working through the pipeline. Stay here for
-            progress, then return to the transcript once processing completes.
-          </p>
+        <Card className="grid gap-5 p-5">
+          <div className="grid gap-2">
+            <div className="flex items-center gap-2">
+              {data.job.stage === "failed" ? (
+                <CircleAlert aria-hidden="true" className="h-4 w-4 text-danger" />
+              ) : (
+                <Loader2 aria-hidden="true" className="h-4 w-4 text-review" />
+              )}
+              <p className="font-medium text-ink">{stageCopy(data.job.stage)}</p>
+            </div>
+            <p className="text-sm leading-6 text-muted">
+              This recording is moving through the processing pipeline. The
+              transcript panel appears as soon as transcript blocks are saved.
+            </p>
+          </div>
+          {data.job.stage !== "failed" ? (
+            <div className="grid gap-2 sm:grid-cols-5">
+              {stageSteps.map((step, index) => (
+                <div
+                  className={`rounded-md border px-3 py-3 ${stageStepClass(index, currentStageIndex)}`}
+                  key={step.id}
+                >
+                  <p className="font-mono text-[11px] uppercase text-muted">
+                    {step.label}
+                  </p>
+                  <p className="mt-1 text-sm font-medium text-ink">
+                    {index < currentStageIndex
+                      ? "Done"
+                      : index === currentStageIndex
+                        ? "Now"
+                        : "Pending"}
+                  </p>
+                </div>
+              ))}
+            </div>
+          ) : null}
           {data.job.stage === "failed" && data.job.error_message ? (
             <p className="text-sm text-danger">{data.job.error_message}</p>
           ) : null}
           {data.job.stage === "failed" && data.job.retryable ? (
             <div>
               <Button disabled={retrying} type="button" variant="secondary" onClick={onRetry}>
+                <RefreshCw aria-hidden="true" className="h-4 w-4" />
                 {retrying ? "Retrying..." : "Retry processing"}
               </Button>
             </div>
@@ -96,7 +161,7 @@ export function TranscriptWorkspaceTab({
       ) : (
         <>
           {data.job.stage === "diarizing" ? (
-            <Card className="grid gap-2 border-[#dfd2bd] bg-[#fbf8f3] p-4">
+            <Card className="grid gap-2 border-notesSoft bg-notesFaint p-4">
               <p className="text-sm font-medium text-ink">Transcript is ready.</p>
               <p className="text-sm leading-6 text-muted">
                 Speaker labels are still being estimated. You can review, search,
@@ -105,12 +170,16 @@ export function TranscriptWorkspaceTab({
             </Card>
           ) : null}
           {data.job.stage === "failed" && data.job.error_message ? (
-            <Card className="grid gap-3 border-[#d8b3ab] bg-[#f7ebe8] p-4">
-              <p className="text-sm font-medium text-danger">Processing stopped.</p>
+            <Card className="grid gap-3 border-dangerSoft bg-dangerFaint p-4">
+              <p className="flex items-center gap-2 text-sm font-medium text-danger">
+                <CircleAlert aria-hidden="true" className="h-4 w-4" />
+                Processing stopped.
+              </p>
               <p className="text-sm leading-6 text-danger">{data.job.error_message}</p>
               {data.job.retryable ? (
                 <div>
                   <Button disabled={retrying} type="button" variant="secondary" onClick={onRetry}>
+                    <RefreshCw aria-hidden="true" className="h-4 w-4" />
                     {retrying ? "Retrying..." : "Retry processing"}
                   </Button>
                 </div>

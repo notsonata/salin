@@ -50,11 +50,13 @@ Acceptance criteria:
 
 ### [P0] Rebuild the web app into an upload-first dashboard and recording detail workspace
 
-Replace the current upload-only home screen and dead-end recording page with a real dashboard plus a tabbed recording detail workflow.
+Replace the current upload-only home screen and dead-end recording page with a
+real dashboard plus a tabbed recording detail workflow.
 
 Acceptance criteria:
 
-- `/` becomes an upload-first dashboard with recent recordings history
+- `/dashboard` becomes an upload-first dashboard with recent recordings history
+- `/` becomes a dedicated product home that routes users into the dashboard
 - `/recordings/[id]` gains obvious dashboard return navigation
 - recording detail splits into `Transcript` and `Notes` tabs
 - notes become editable and savable in their structured section form
@@ -228,4 +230,28 @@ Acceptance criteria:
 - **Backend status**: Transcript TXT/PDF, notes TXT/PDF, and combined TXT/PDF endpoints are implemented.
 - **Web status**: Current-style transcript, notes, and combined export controls are implemented in the recording workspace.
 - **Deferred**: Export presentation polish belongs with the later UI revamp.
+- **Status**: Done
+
+### [P2] Revamp the Salin web UI around the Study Desk direction
+
+Polish the existing dashboard and recording detail workspace into a premium,
+transcript-first review experience using the Salin Study Desk design system,
+Trint-style transcript workflow references, and Linear-style light-mode control
+polish.
+
+Acceptance criteria:
+
+- dashboard keeps upload as the first-priority action and recent recordings as a compact working table
+- home and dashboard are separate so onboarding copy does not compete with the upload form
+- recording detail keeps transcript review visually primary
+- notes remain immediately discoverable without competing with transcript reading
+- export actions are grouped into a polished menu or toolbar surface
+- processing, fallback, diarization, and notes failure states stay clear and non-blocking
+- lucide icon controls use dark ink, muted, active teal, disabled, hover, and focus states consistently
+- desktop and mobile layouts are verified for spacing, text fit, and control overlap
+- existing upload, transcript, notes, speaker correction, and export E2E flows still pass
+
+- **Files**: `apps/web`, `docs/ui.md`, `docs/superpowers/plans/2026-06-16-ui-ux-revamp.md`
+- **Context**: The core product flows are implemented, so the next front-end pass should make the workspace feel complete without changing product scope.
+- **Plan**: `docs/superpowers/plans/2026-06-16-ui-ux-revamp.md`
 - **Status**: Done

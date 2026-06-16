@@ -1,11 +1,13 @@
 "use client";
 
+import { CircleAlert, NotebookPen, Plus, RefreshCw, Save, Trash2 } from "lucide-react";
+
 import type { GeneratedNotesSummary, NotesUpdateRequest } from "@salin/shared";
 
+import { ExportLinks, type ExportLinkItem } from "@/components/export-links";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ExportLinks, type ExportLinkItem } from "@/components/export-links";
 
 type ListSectionKey = "key_points" | "decisions" | "action_items" | "questions";
 
@@ -122,60 +124,72 @@ export function NotesEditorTab({
       id="notes-panel"
       role="tabpanel"
     >
-      <Card className="border-[#cabca6] bg-[#f4ede0] p-5">
-        <div className="grid gap-4">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="grid gap-2">
-              <h2 className="font-mono text-lg tracking-[-0.04em] text-ink">Notes</h2>
-              <p className="max-w-3xl text-sm leading-6 text-muted">
-                Generated notes stay downstream of the transcript, but they can
-                now be edited and saved section by section.
-              </p>
+      <Card className="overflow-hidden border-notesSoft p-0">
+        <div className="grid gap-4 bg-notesFaint px-5 py-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
+          <div className="grid gap-2">
+            <div className="flex flex-wrap items-center gap-3">
+              <NotebookPen aria-hidden="true" className="h-4 w-4 text-notes" />
+              <h2 className="text-lg font-semibold text-ink">Notes</h2>
+              <Badge className="border-notesSoft bg-notesSoft text-notes">
+                {statusCopy(notes.status)}
+              </Badge>
+              {dirty ? (
+                <Badge className="border-attentionSoft bg-attentionSoft text-attention">
+                  Unsaved changes
+                </Badge>
+              ) : null}
             </div>
-            <div className="flex flex-wrap items-center gap-2">
-              {dirty ? <Badge className="bg-accentSoft text-ink">Unsaved changes</Badge> : null}
-              <Badge className="bg-[#ebe2d3] text-ink">{statusCopy(notes.status)}</Badge>
-            </div>
+            <p className="max-w-3xl text-sm leading-6 text-muted">
+              Notes are generated from stored transcript data, then edited as a
+              structured working document.
+            </p>
           </div>
 
-          {error ? (
-            <div className="rounded-md border border-[#cfa79c] bg-[#f6e7e2] px-3 py-3 text-sm text-danger">
-              {error}
-            </div>
-          ) : null}
-
-          {notes.status === "failed" && notes.error_message ? (
-            <div className="rounded-md border border-[#cfa79c] bg-[#f6e7e2] px-3 py-3 text-sm text-danger">
-              {notes.error_message}
-            </div>
-          ) : null}
-
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
             <Button
               disabled={!canGenerate || notesBusy}
               type="button"
-              variant="accent"
+              variant="notes"
               onClick={onGenerate}
             >
+              <RefreshCw aria-hidden="true" className="h-4 w-4" />
               {notesBusy ? "Generating notes..." : buttonLabel}
             </Button>
-            <div className="flex items-center gap-3">
-              {saveMessage ? <p className="text-sm text-muted">{saveMessage}</p> : null}
-              <Button
-                disabled={!dirty || saveBusy}
-                type="button"
-                variant="secondary"
-                onClick={onSave}
-              >
-                {saveBusy ? "Saving..." : "Save edits"}
-              </Button>
-            </div>
+            <Button
+              disabled={!dirty || saveBusy}
+              type="button"
+              variant="secondary"
+              onClick={onSave}
+            >
+              <Save aria-hidden="true" className="h-4 w-4" />
+              {saveBusy ? "Saving..." : "Save edits"}
+            </Button>
           </div>
-
-          {notes.status === "completed" ? (
-            <ExportLinks items={exportLinks} label="Exports" />
-          ) : null}
         </div>
+
+        {(error || (notes.status === "failed" && notes.error_message) || saveMessage) ? (
+          <div className="grid gap-2 border-t border-line bg-field px-5 py-3">
+            {error ? (
+              <div className="flex items-start gap-2 text-sm text-danger">
+                <CircleAlert aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" />
+                <span>{error}</span>
+              </div>
+            ) : null}
+            {notes.status === "failed" && notes.error_message ? (
+              <div className="flex items-start gap-2 text-sm text-danger">
+                <CircleAlert aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" />
+                <span>{notes.error_message}</span>
+              </div>
+            ) : null}
+            {saveMessage ? <p className="text-sm text-success">{saveMessage}</p> : null}
+          </div>
+        ) : null}
+
+        {notes.status === "completed" ? (
+          <div className="border-t border-line bg-panel px-5 py-4">
+            <ExportLinks items={exportLinks} label="Exports" />
+          </div>
+        ) : null}
       </Card>
 
       <Card className="grid gap-5 p-5">
@@ -185,7 +199,7 @@ export function NotesEditorTab({
           </label>
           <textarea
             aria-label="Summary"
-            className="min-h-32 rounded-md border border-line bg-[#fbf8f3] px-3 py-3 text-sm leading-6 text-ink"
+            className="min-h-36 rounded-md border border-line bg-field px-3 py-3 text-sm leading-6 text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-notes"
             id="notes-summary"
             placeholder="The short recap lands here after notes generation completes."
             value={draft.summary ?? ""}
@@ -197,12 +211,11 @@ export function NotesEditorTab({
           <div className="grid gap-3 border-t border-line pt-4" key={section.key}>
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="grid gap-1">
-                <h3 className="font-mono text-sm tracking-[-0.03em] text-ink">
-                  {section.title}
-                </h3>
+                <h3 className="text-sm font-semibold text-ink">{section.title}</h3>
                 <p className="text-sm text-muted">{section.placeholder}</p>
               </div>
               <Button type="button" variant="ghost" onClick={() => addListItem(section.key)}>
+                <Plus aria-hidden="true" className="h-4 w-4" />
                 {section.addLabel}
               </Button>
             </div>
@@ -210,10 +223,13 @@ export function NotesEditorTab({
             {draft[section.key].length ? (
               <div className="grid gap-3">
                 {draft[section.key].map((item, index) => (
-                  <div className="flex items-start gap-3" key={`${section.key}-${index}`}>
+                  <div
+                    className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
+                    key={`${section.key}-${index}`}
+                  >
                     <input
                       aria-label={`${section.title} ${index + 1}`}
-                      className="h-10 flex-1 rounded-md border border-line bg-[#fbf8f3] px-3 text-sm text-ink"
+                      className="h-10 min-w-0 rounded-md border border-line bg-field px-3 text-sm text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-notes"
                       placeholder={section.placeholder}
                       value={item}
                       onChange={(event) =>
@@ -221,17 +237,21 @@ export function NotesEditorTab({
                       }
                     />
                     <Button
+                      className="justify-self-start"
                       type="button"
                       variant="ghost"
                       onClick={() => removeListItem(section.key, index)}
                     >
+                      <Trash2 aria-hidden="true" className="h-4 w-4" />
                       Remove
                     </Button>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-muted">No items yet.</p>
+              <p className="rounded-md border border-dashed border-notesSoft bg-notesFaint px-3 py-3 text-sm text-muted">
+                No items yet.
+              </p>
             )}
           </div>
         ))}
