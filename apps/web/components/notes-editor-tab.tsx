@@ -4,7 +4,7 @@ import { CircleAlert, NotebookPen, Plus, RefreshCw, Save, Trash2 } from "lucide-
 
 import type { GeneratedNotesSummary, NotesUpdateRequest } from "@salin/shared";
 
-import { ExportLinks, type ExportLinkItem } from "@/components/export-links";
+import { ExportLinks, type ExportTargetLinks } from "@/components/export-links";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -63,7 +63,8 @@ export function NotesEditorTab({
   dirty,
   draft,
   error,
-  exportLinks,
+  exportTarget,
+  includeTranscriptExportTarget,
   notes,
   notesBusy,
   saveBusy,
@@ -76,7 +77,8 @@ export function NotesEditorTab({
   dirty: boolean;
   draft: NotesUpdateRequest;
   error: string | null;
-  exportLinks: ExportLinkItem[];
+  exportTarget: ExportTargetLinks;
+  includeTranscriptExportTarget: ExportTargetLinks;
   notes: GeneratedNotesSummary;
   notesBusy: boolean;
   saveBusy: boolean;
@@ -187,7 +189,12 @@ export function NotesEditorTab({
 
         {notes.status === "completed" ? (
           <div className="border-t border-line bg-panel px-5 py-4">
-            <ExportLinks items={exportLinks} label="Exports" />
+            <ExportLinks
+              includeTranscriptTarget={includeTranscriptExportTarget}
+              label="Exports"
+              target={exportTarget}
+              tone="notes"
+            />
           </div>
         ) : null}
       </Card>

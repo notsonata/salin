@@ -209,7 +209,7 @@ The canonical transcript representation should remain provider-agnostic.
 - Chunked long-recording transcription (Done)
 - Backend TXT export endpoints for transcript, notes, and combined text (Done)
 - Backend PDF export endpoints for transcript, notes, and combined output (Done)
-- Current-style export UI controls for transcript, notes, and combined TXT/PDF (Done)
+- Current-style export UI controls for transcript TXT/PDF plus notes TXT/PDF with an `Export Transcript` checkbox for combined output (Done)
 - Export presentation polish for the UI revamp
 - Retry/error-state UI polish for downstream failures
 - Better processing progress presentation

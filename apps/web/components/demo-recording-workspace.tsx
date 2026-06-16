@@ -8,7 +8,7 @@ import type {
   TranscriptSegment,
 } from "@salin/shared";
 
-import type { ExportLinkItem } from "@/components/export-links";
+import type { ExportTargetLinks } from "@/components/export-links";
 import { NotesEditorTab } from "@/components/notes-editor-tab";
 import { RecordingDetailHeader } from "@/components/recording-detail-header";
 import { RecordingWorkspaceTabs } from "@/components/recording-workspace-tabs";
@@ -59,45 +59,27 @@ export function DemoRecordingWorkspace() {
     [data.transcript_segments],
   );
 
-  const transcriptExportLinks = useMemo<ExportLinkItem[]>(
-    () => [
-      {
-        ariaLabel: "Export transcript TXT",
-        href: demoExportHref("Transcript TXT"),
-        label: "Transcript TXT",
-      },
-      {
-        ariaLabel: "Export transcript PDF",
-        href: demoExportHref("Transcript PDF"),
-        label: "Transcript PDF",
-      },
-    ],
+  const transcriptExportTarget = useMemo<ExportTargetLinks>(
+    () => ({
+      pdfHref: demoExportHref("Transcript PDF"),
+      txtHref: demoExportHref("Transcript TXT"),
+    }),
     [],
   );
 
-  const notesExportLinks = useMemo<ExportLinkItem[]>(
-    () => [
-      {
-        ariaLabel: "Export notes TXT",
-        href: demoExportHref("Notes TXT"),
-        label: "Notes TXT",
-      },
-      {
-        ariaLabel: "Export notes PDF",
-        href: demoExportHref("Notes PDF"),
-        label: "Notes PDF",
-      },
-      {
-        ariaLabel: "Export combined TXT",
-        href: demoExportHref("Combined TXT"),
-        label: "Combined TXT",
-      },
-      {
-        ariaLabel: "Export combined PDF",
-        href: demoExportHref("Combined PDF"),
-        label: "Combined PDF",
-      },
-    ],
+  const notesExportTarget = useMemo<ExportTargetLinks>(
+    () => ({
+      pdfHref: demoExportHref("Notes PDF"),
+      txtHref: demoExportHref("Notes TXT"),
+    }),
+    [],
+  );
+
+  const notesWithTranscriptExportTarget = useMemo<ExportTargetLinks>(
+    () => ({
+      pdfHref: demoExportHref("Combined PDF"),
+      txtHref: demoExportHref("Combined TXT"),
+    }),
     [],
   );
 
@@ -186,7 +168,7 @@ export function DemoRecordingWorkspace() {
           audioRef={audioRef}
           data={data}
           error={null}
-          exportLinks={transcriptExportLinks}
+          exportTarget={transcriptExportTarget}
           filteredSegments={filteredSegments}
           query={searchQuery}
           retrying={false}
@@ -205,7 +187,8 @@ export function DemoRecordingWorkspace() {
           dirty={notesDirty}
           draft={notesDraft}
           error={null}
-          exportLinks={notesExportLinks}
+          exportTarget={notesExportTarget}
+          includeTranscriptExportTarget={notesWithTranscriptExportTarget}
           notes={data.notes}
           notesBusy={false}
           saveBusy={false}

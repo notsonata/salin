@@ -237,10 +237,13 @@ def _render_pdf(*, title: str, lines: Sequence[str]) -> bytes:
     page_ids = [4 + page_index * 2 for page_index in range(len(pages))]
 
     objects[catalog_id] = b"<< /Type /Catalog /Pages 2 0 R >>"
-    objects[font_id] = b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>"
+    objects[font_id] = (
+        b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica "
+        b"/Encoding /WinAnsiEncoding >>"
+    )
+    page_kids = " ".join(f"{page_id} 0 R" for page_id in page_ids)
     objects[pages_id] = (
-        f"<< /Type /Pages /Kids {' '.join(f'{page_id} 0 R' for page_id in page_ids)} "
-        f"/Count {len(page_ids)} >>"
+        f"<< /Type /Pages /Kids [{page_kids}] /Count {len(page_ids)} >>"
     ).encode("ascii")
 
     for page_index, page_lines in enumerate(pages):
@@ -308,7 +311,7 @@ def _render_page_content(
 
 
 def _pdf_text_hex(value: str) -> str:
-    payload = b"\xfe\xff" + value.encode("utf-16-be", errors="replace")
+    payload = value.encode("cp1252", errors="replace")
     return f"<{payload.hex().upper()}>"
 
 

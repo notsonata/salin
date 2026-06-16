@@ -296,11 +296,11 @@ test("supported upload transitions into the interactive transcript workspace", a
   await expect(page.getByText("Search and notes should stay useful.")).toBeVisible();
   await expect(page.getByText("Kamusta sa transcript workspace.")).toBeHidden();
 
-  await expect(page.getByRole("link", { name: "Export transcript TXT" })).toHaveAttribute(
+  await expect(page.getByRole("link", { name: "Export to .txt" })).toHaveAttribute(
     "href",
     "http://localhost:8000/recordings/rec_1/exports/transcript.txt",
   );
-  await expect(page.getByRole("link", { name: "Export transcript PDF" })).toHaveAttribute(
+  await expect(page.getByRole("link", { name: "Export to .pdf" })).toHaveAttribute(
     "href",
     "http://localhost:8000/recordings/rec_1/exports/transcript.pdf",
   );
@@ -428,8 +428,8 @@ test("transcript stays available while speaker labels are estimated", async ({ p
   await expect(page.getByText("Speaker labels are still being estimated.")).toBeVisible();
   await expect(page.getByText("Processing note:")).toBeVisible();
   await expect(page.getByText("Kamusta sa transcript workspace.")).toBeVisible();
-  await expect(page.getByRole("link", { name: "Export transcript TXT" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Export transcript PDF" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Export to .txt" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Export to .pdf" })).toBeVisible();
 });
 
 test("manual notes generation renders the completed structured notes", async ({ page }) => {
@@ -508,19 +508,22 @@ test("manual notes generation renders the completed structured notes", async ({ 
   await expect(page.getByLabel("Action items 1")).toHaveValue("Action item");
   await expect(page.getByLabel("Questions 1")).toHaveValue("Question");
   await expect(page.getByRole("button", { name: "Regenerate notes" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Export notes TXT" })).toHaveAttribute(
+  await expect(page.getByLabel("Export Transcript")).not.toBeChecked();
+  await expect(page.getByRole("link", { name: "Export to .txt" })).toHaveAttribute(
     "href",
     "http://localhost:8000/recordings/rec_1/exports/notes.txt",
   );
-  await expect(page.getByRole("link", { name: "Export notes PDF" })).toHaveAttribute(
+  await expect(page.getByRole("link", { name: "Export to .pdf" })).toHaveAttribute(
     "href",
     "http://localhost:8000/recordings/rec_1/exports/notes.pdf",
   );
-  await expect(page.getByRole("link", { name: "Export combined TXT" })).toHaveAttribute(
+
+  await page.getByLabel("Export Transcript").check();
+  await expect(page.getByRole("link", { name: "Export to .txt" })).toHaveAttribute(
     "href",
     "http://localhost:8000/recordings/rec_1/exports/combined.txt",
   );
-  await expect(page.getByRole("link", { name: "Export combined PDF" })).toHaveAttribute(
+  await expect(page.getByRole("link", { name: "Export to .pdf" })).toHaveAttribute(
     "href",
     "http://localhost:8000/recordings/rec_1/exports/combined.pdf",
   );

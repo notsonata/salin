@@ -242,7 +242,7 @@ Acceptance criteria:
 - **Files**: `apps/api`, `apps/worker`, `apps/web`, `packages/shared`
 - **Context**: Export matters to user workflow, but it is downstream of transcript and notes correctness.
 - **Backend status**: Transcript TXT/PDF, notes TXT/PDF, and combined TXT/PDF endpoints are implemented.
-- **Web status**: Current-style transcript, notes, and combined export controls are implemented in the recording workspace.
+- **Web status**: Current-style transcript exports and notes exports are implemented in the recording workspace; combined output is selected with the notes tab's `Export Transcript` checkbox.
 - **Deferred**: Export presentation polish belongs with the later UI revamp.
 - **Status**: Done
 

@@ -54,12 +54,12 @@ salin/
 - Redirect to `/recordings/[id]` after upload
 - Poll `GET /recordings/{id}` every 2 seconds until the transcript job and notes lifecycle reach terminal states
 - Render recording detail header plus transcript/notes tabs
-- Render normalized-audio review, timestamp seeking, transcript search, and transcript TXT/PDF export links inside the transcript tab
+- Render normalized-audio review, timestamp seeking, transcript search, and transcript TXT/PDF export controls inside the transcript tab
 - Keep transcript review visible while the worker is in the `diarizing` stage
 - Render non-fatal processing notes such as local-backup fallback and diarization failure details
 - Render estimated/edited speaker state, speaker rename, and per-block speaker reassignment controls inside the transcript tab
 - Render manual notes generation, regeneration, and structured notes editing without blocking transcript review
-- Render notes TXT/PDF and combined TXT/PDF export links once notes have completed
+- Render notes TXT/PDF export controls once notes have completed, with an `Export Transcript` checkbox that switches those same controls to combined TXT/PDF output
 - Show retry affordance only when the API marks a failed job as retryable
 
 ### `apps/api`

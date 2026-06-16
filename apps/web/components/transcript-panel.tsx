@@ -5,7 +5,7 @@ import { FileText, Pencil, Play, Save, Search, UserRound } from "lucide-react";
 
 import type { TranscriptSegment } from "@salin/shared";
 
-import { ExportLinks, type ExportLinkItem } from "@/components/export-links";
+import { ExportLinks, type ExportTargetLinks } from "@/components/export-links";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 export function TranscriptPanel({
   activeSegmentId,
   canSeek,
-  exportLinks,
+  exportTarget,
   filteredSegments,
   matchCount,
   onQueryChange,
@@ -29,7 +29,7 @@ export function TranscriptPanel({
 }: {
   activeSegmentId: string | null;
   canSeek: boolean;
-  exportLinks: ExportLinkItem[];
+  exportTarget: ExportTargetLinks;
   filteredSegments: TranscriptSegment[];
   matchCount: number;
   speakerLabels: string[];
@@ -121,7 +121,7 @@ export function TranscriptPanel({
               value={query}
             />
           </label>
-          <ExportLinks items={exportLinks} label="Exports" />
+          <ExportLinks label="Exports" target={exportTarget} />
         </div>
       </div>
 

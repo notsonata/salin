@@ -29,6 +29,16 @@ require_value() {
   fi
 }
 
+require_command() {
+  command_name=$1
+  install_hint=$2
+  if ! command -v "$command_name" >/dev/null 2>&1; then
+    printf 'Missing required command for macOS host worker: %s\n%s\n' \
+      "$command_name" "$install_hint" >&2
+    exit 1
+  fi
+}
+
 wait_for_tcp_port() {
   host=$1
   port=$2
@@ -122,6 +132,8 @@ if [ "$#" -gt 0 ]; then
   exit 1
 fi
 
+require_command ffmpeg "Install it with: brew install ffmpeg"
+
 database_url=$(read_env_value DATABASE_URL)
 redis_url=$(read_env_value REDIS_URL)
 
@@ -139,4 +151,3 @@ wait_for_tcp_port "127.0.0.1" "6379" "Redis"
 
 cd "$SCRIPT_DIR"
 run_host_worker
-f

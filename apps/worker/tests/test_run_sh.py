@@ -51,6 +51,11 @@ def test_run_sh_uses_host_worker_on_macos(tmp_path: Path) -> None:
         "#!/usr/bin/env sh\n"
         "exit 0\n",
     )
+    write_executable(
+        bin_dir / "ffmpeg",
+        "#!/usr/bin/env sh\n"
+        "exit 0\n",
+    )
 
     env = os.environ | {
         "PATH": f"{bin_dir}:{os.environ['PATH']}",
@@ -167,6 +172,11 @@ def test_run_sh_falls_back_to_repo_tooling_rq_when_uv_is_unavailable(
         "fi\n"
         "exit 0\n",
     )
+    write_executable(
+        bin_dir / "ffmpeg",
+        "#!/usr/bin/env sh\n"
+        "exit 0\n",
+    )
     tooling_rq = repo_root / ".venv-tooling" / "bin" / "rq"
     tooling_rq.parent.mkdir(parents=True)
     write_executable(
@@ -230,6 +240,11 @@ def test_run_sh_bootstraps_tooling_worker_dependencies_for_pyannote(
         "if [ \"$1\" = \"-m\" ] && [ \"$2\" = \"uv\" ] && [ \"$3\" = \"--version\" ]; then\n"
         "  exit 1\n"
         "fi\n"
+        "exit 0\n",
+    )
+    write_executable(
+        bin_dir / "ffmpeg",
+        "#!/usr/bin/env sh\n"
         "exit 0\n",
     )
     tooling_dir = repo_root / ".venv-tooling" / "bin"

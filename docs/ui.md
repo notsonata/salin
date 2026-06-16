@@ -101,8 +101,8 @@ Current layout:
 
 Current export controls:
 
-- transcript tab shows backend-backed `Transcript TXT` and `Transcript PDF` links inside a grouped export toolbar once transcript blocks are available
-- notes tab shows backend-backed `Notes TXT`, `Notes PDF`, `Combined TXT`, and `Combined PDF` links inside a grouped export toolbar once notes are completed
+- transcript tab shows backend-backed `Export to .txt` and `Export to .pdf` links inside a grouped export toolbar once transcript blocks are available
+- notes tab shows backend-backed `Export to .txt` and `Export to .pdf` links once notes are completed, with an `Export Transcript` checkbox that switches the same buttons from notes-only exports to combined notes-plus-transcript exports
 
 Current transcript block contents:
 

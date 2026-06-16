@@ -12,7 +12,7 @@ import type {
 
 import { Card } from "@/components/ui/card";
 import { createBrowserClient } from "@/lib/api";
-import type { ExportLinkItem } from "@/components/export-links";
+import type { ExportTargetLinks } from "@/components/export-links";
 import { NotesEditorTab } from "@/components/notes-editor-tab";
 import { RecordingDetailHeader } from "@/components/recording-detail-header";
 import { RecordingWorkspaceTabs } from "@/components/recording-workspace-tabs";
@@ -58,44 +58,25 @@ export function RecordingWorkspace({
   const notesDirtyRef = useRef(false);
   const stage = data?.job.stage;
   const notesStatus = data?.notes.status;
-  const transcriptExportLinks = useMemo<ExportLinkItem[]>(
-    () => [
-      {
-        ariaLabel: "Export transcript TXT",
-        href: apiClient.transcriptExportUrl(recordingId),
-        label: "Transcript TXT",
-      },
-      {
-        ariaLabel: "Export transcript PDF",
-        href: apiClient.transcriptPdfExportUrl(recordingId),
-        label: "Transcript PDF",
-      },
-    ],
+  const transcriptExportTarget = useMemo<ExportTargetLinks>(
+    () => ({
+      pdfHref: apiClient.transcriptPdfExportUrl(recordingId),
+      txtHref: apiClient.transcriptExportUrl(recordingId),
+    }),
     [recordingId],
   );
-  const notesExportLinks = useMemo<ExportLinkItem[]>(
-    () => [
-      {
-        ariaLabel: "Export notes TXT",
-        href: apiClient.notesExportUrl(recordingId),
-        label: "Notes TXT",
-      },
-      {
-        ariaLabel: "Export notes PDF",
-        href: apiClient.notesPdfExportUrl(recordingId),
-        label: "Notes PDF",
-      },
-      {
-        ariaLabel: "Export combined TXT",
-        href: apiClient.combinedExportUrl(recordingId),
-        label: "Combined TXT",
-      },
-      {
-        ariaLabel: "Export combined PDF",
-        href: apiClient.combinedPdfExportUrl(recordingId),
-        label: "Combined PDF",
-      },
-    ],
+  const notesExportTarget = useMemo<ExportTargetLinks>(
+    () => ({
+      pdfHref: apiClient.notesPdfExportUrl(recordingId),
+      txtHref: apiClient.notesExportUrl(recordingId),
+    }),
+    [recordingId],
+  );
+  const notesWithTranscriptExportTarget = useMemo<ExportTargetLinks>(
+    () => ({
+      pdfHref: apiClient.combinedPdfExportUrl(recordingId),
+      txtHref: apiClient.combinedExportUrl(recordingId),
+    }),
     [recordingId],
   );
 
@@ -352,7 +333,7 @@ export function RecordingWorkspace({
           speakerLabels={speakerLabels}
           speakerMessage={speakerMessage}
           speakerSavingTarget={speakerSavingTarget}
-          exportLinks={transcriptExportLinks}
+          exportTarget={transcriptExportTarget}
           onQueryChange={setSearchQuery}
           onRenameSpeaker={renameSpeaker}
           onRetry={retryJob}
@@ -365,7 +346,8 @@ export function RecordingWorkspace({
           dirty={notesDirty}
           draft={notesDraft ?? toNotesDraft(data.notes)}
           error={error}
-          exportLinks={notesExportLinks}
+          exportTarget={notesExportTarget}
+          includeTranscriptExportTarget={notesWithTranscriptExportTarget}
           notes={data.notes}
           notesBusy={notesBusy}
           saveBusy={savingNotes}

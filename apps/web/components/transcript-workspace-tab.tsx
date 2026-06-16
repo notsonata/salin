@@ -5,7 +5,7 @@ import type { RecordingDetailResponse, TranscriptSegment } from "@salin/shared";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import type { ExportLinkItem } from "@/components/export-links";
+import type { ExportTargetLinks } from "@/components/export-links";
 import { TranscriptPlayer } from "@/components/transcript-player";
 import { TranscriptPanel } from "@/components/transcript-panel";
 
@@ -62,7 +62,7 @@ export function TranscriptWorkspaceTab({
   audioRef,
   data,
   error,
-  exportLinks,
+  exportTarget,
   filteredSegments,
   query,
   retrying,
@@ -79,7 +79,7 @@ export function TranscriptWorkspaceTab({
   audioRef: RefObject<HTMLAudioElement | null>;
   data: RecordingDetailResponse;
   error: string | null;
-  exportLinks: ExportLinkItem[];
+  exportTarget: ExportTargetLinks;
   filteredSegments: TranscriptSegment[];
   query: string;
   retrying: boolean;
@@ -195,7 +195,7 @@ export function TranscriptWorkspaceTab({
           <TranscriptPanel
             activeSegmentId={activeSegmentId}
             canSeek={Boolean(data.artifact_urls?.normalized)}
-            exportLinks={exportLinks}
+            exportTarget={exportTarget}
             filteredSegments={filteredSegments}
             matchCount={filteredSegments.length}
             query={query}

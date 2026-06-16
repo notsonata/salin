@@ -66,6 +66,7 @@ fi
 require_command python3 "Install Python 3.12+, for example with Homebrew."
 require_command uv "Install uv, for example: brew install uv"
 require_command pnpm "Enable pnpm, for example: corepack enable && corepack prepare pnpm@9.15.4 --activate"
+require_command ffmpeg "Install ffmpeg, for example: brew install ffmpeg"
 
 if [ -f "$SCRIPT_DIR/.env" ]; then
   set -a

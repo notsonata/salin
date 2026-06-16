@@ -103,6 +103,13 @@ def create_completed_recording(
     return recording_id
 
 
+def assert_pdf_contains_visible_text(content: bytes, expected: str) -> None:
+    expected_hex = expected.encode("cp1252", errors="replace").hex().upper().encode()
+    assert expected_hex in content
+    assert b"/Kids [" in content
+    assert b"FEFF" not in content
+
+
 def set_recording_updated_at(app, recording_id: str, *, seconds_from_now: int) -> None:
     session = app.state.session_factory()
     repository = RecordingRepository(session)
@@ -322,6 +329,8 @@ def test_export_transcript_pdf_uses_stored_segments_without_queueing(client, app
     )
     assert response.content.startswith(b"%PDF-1.4")
     assert response.content.rstrip().endswith(b"%%EOF")
+    assert_pdf_contains_visible_text(response.content, "Transcript")
+    assert_pdf_contains_visible_text(response.content, "Kamusta sa notes milestone.")
     assert app.state.services.job_queue.enqueued_recordings == enqueued_recordings
 
 
@@ -404,6 +413,8 @@ def test_export_notes_pdf_uses_completed_notes_without_queueing(client, app) -> 
     )
     assert response.content.startswith(b"%PDF-1.4")
     assert response.content.rstrip().endswith(b"%%EOF")
+    assert_pdf_contains_visible_text(response.content, "Notes")
+    assert_pdf_contains_visible_text(response.content, "PDF notes summary.")
     assert app.state.services.job_queue.enqueued_notes == enqueued_notes
 
 
@@ -465,6 +476,9 @@ def test_export_combined_pdf_includes_notes_and_transcript(client, app) -> None:
     )
     assert response.content.startswith(b"%PDF-1.4")
     assert response.content.rstrip().endswith(b"%%EOF")
+    assert_pdf_contains_visible_text(response.content, "Salin Export")
+    assert_pdf_contains_visible_text(response.content, "Combined PDF summary.")
+    assert_pdf_contains_visible_text(response.content, "Kamusta sa notes milestone.")
 
 
 def test_export_combined_pdf_requires_completed_notes(client, app) -> None:

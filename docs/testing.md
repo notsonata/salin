@@ -73,10 +73,10 @@ Use the lowest level that gives credible confidence:
 
 - Dashboard renders upload-first hierarchy plus recent recordings history
 - Dedicated home page routes into the dashboard and preview workspace
-- Supported upload redirects into the transcript workspace, renders normalized playback, supports transcript search, and exposes backend transcript TXT/PDF export links
+- Supported upload redirects into the transcript workspace, renders normalized playback, supports transcript search, and exposes backend `Export to .txt` / `Export to .pdf` transcript links
 - Transcript content remains visible while speaker labels are still being estimated
 - Speaker labels can be renamed and reassigned from the transcript workspace
-- Manual notes generation renders completed structured notes and exposes backend notes/combined TXT/PDF export links
+- Manual notes generation renders completed structured notes and exposes backend notes TXT/PDF links, then switches those links to combined exports when `Export Transcript` is checked
 - Structured notes edits save successfully from the notes tab
 - Notes failure keeps transcript review available and allows regeneration
 - Unsupported upload surfaces the API error in the form
