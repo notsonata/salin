@@ -9,10 +9,15 @@
 html,
 body {
   min-height: 100%;
+  background: oklch(97.8% 0.006 244);
 }
 
 body {
-  font-family: "Avenir Next", "Avenir", "Segoe UI", sans-serif;
+  font-family:
+    "Avenir Next",
+    "SF Pro Text",
+    "Segoe UI",
+    sans-serif;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
@@ -20,7 +25,12 @@ body {
 code,
 pre,
 .font-mono {
-  font-family: "SF Mono", "Menlo", "Consolas", monospace;
+  font-family:
+    "SF Mono",
+    "JetBrains Mono",
+    "Menlo",
+    "Consolas",
+    monospace;
 }
 
 * {
@@ -33,7 +43,59 @@ button {
   font: inherit;
 }
 
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+
+p,
+li {
+  text-wrap: pretty;
+}
+
 ::selection {
-  background: #d9eee8;
-  color: #15120f;
+  background: oklch(93% 0.026 204);
+  color: oklch(23% 0.018 248);
+}
+
+summary {
+  list-style: none;
+}
+
+summary::-webkit-details-marker {
+  display: none;
+}
+
+audio {
+  accent-color: oklch(53% 0.092 195);
+}
+
+@layer base {
+  :focus-visible {
+    outline: 2px solid oklch(53% 0.092 195);
+    outline-offset: 2px;
+  }
+}
+
+@layer utilities {
+  .page-shell {
+    background:
+      radial-gradient(circle at top left, rgba(65, 143, 158, 0.09), transparent 26%),
+      radial-gradient(circle at top right, rgba(52, 79, 118, 0.08), transparent 22%),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.65), rgba(255, 255, 255, 0)),
+      oklch(97.8% 0.006 244);
+  }
+
+  .chrome-grid {
+    background-image:
+      linear-gradient(to right, rgba(73, 88, 110, 0.06) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(73, 88, 110, 0.06) 1px, transparent 1px);
+    background-size: 28px 28px;
+  }
+
+  .text-ledger {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.02em;
+  }
 }

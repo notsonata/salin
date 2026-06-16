@@ -42,7 +42,7 @@ export function UploadForm() {
         speaker_count: speakerCount,
       });
       startTransition(() => {
-        router.push(`/recordings/${response.recording.id}`);
+        router.push(`/workspace/${response.recording.id}`);
       });
     } catch (submissionError) {
       setError(

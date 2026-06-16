@@ -39,6 +39,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/recordings/{recording_id}/rename": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Rename Recording */
+        put: operations["rename_recording_recordings__recording_id__rename_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/recordings/{recording_id}/exports/transcript.txt": {
         parameters: {
             query?: never;
@@ -48,6 +65,23 @@ export interface paths {
         };
         /** Export Transcript Txt */
         get: operations["export_transcript_txt_recordings__recording_id__exports_transcript_txt_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/recordings/{recording_id}/exports/transcript.pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Export Transcript Pdf */
+        get: operations["export_transcript_pdf_recordings__recording_id__exports_transcript_pdf_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -73,6 +107,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/recordings/{recording_id}/exports/notes.pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Export Notes Pdf */
+        get: operations["export_notes_pdf_recordings__recording_id__exports_notes_pdf_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/recordings/{recording_id}/exports/combined.txt": {
         parameters: {
             query?: never;
@@ -82,6 +133,23 @@ export interface paths {
         };
         /** Export Combined Txt */
         get: operations["export_combined_txt_recordings__recording_id__exports_combined_txt_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/recordings/{recording_id}/exports/combined.pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Export Combined Pdf */
+        get: operations["export_combined_pdf_recordings__recording_id__exports_combined_pdf_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -158,7 +226,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/recordings/{recording_id}/transcript-segments/{segment_id}/speaker": {
+    "/recordings/{recording_id}/transcript-segments/{segment_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -166,8 +234,8 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Update Segment Speaker */
-        put: operations["update_segment_speaker_recordings__recording_id__transcript_segments__segment_id__speaker_put"];
+        /** Update Segment */
+        put: operations["update_segment_recordings__recording_id__transcript_segments__segment_id__put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -197,16 +265,8 @@ export interface components {
         /** GeneratedNotesSummary */
         GeneratedNotesSummary: {
             status: components["schemas"]["NotesStatus"];
-            /** Summary */
-            summary: string | null;
-            /** Key Points */
-            key_points: string[];
-            /** Decisions */
-            decisions: string[];
-            /** Action Items */
-            action_items: string[];
-            /** Questions */
-            questions: string[];
+            /** Content */
+            content: string | null;
             /** Error Message */
             error_message: string | null;
             /** Source Provider */
@@ -248,16 +308,8 @@ export interface components {
         NotesStatus: "idle" | "queued" | "generating" | "completed" | "failed";
         /** NotesUpdateRequest */
         NotesUpdateRequest: {
-            /** Summary */
-            summary: string | null;
-            /** Key Points */
-            key_points: string[];
-            /** Decisions */
-            decisions: string[];
-            /** Action Items */
-            action_items: string[];
-            /** Questions */
-            questions: string[];
+            /** Content */
+            content: string | null;
         };
         /** ProcessingJobSummary */
         ProcessingJobSummary: {
@@ -319,6 +371,11 @@ export interface components {
             /** Recordings */
             recordings: components["schemas"]["RecordingListItemSummary"][];
         };
+        /** RecordingRenameRequest */
+        RecordingRenameRequest: {
+            /** Filename */
+            filename: string;
+        };
         /** RecordingSummary */
         RecordingSummary: {
             /** Id */
@@ -349,10 +406,12 @@ export interface components {
             recording_id: string;
             job: components["schemas"]["ProcessingJobSummary"];
         };
-        /** SegmentSpeakerUpdateRequest */
-        SegmentSpeakerUpdateRequest: {
+        /** SegmentUpdateRequest */
+        SegmentUpdateRequest: {
             /** Speaker Label */
             speaker_label: string;
+            /** Text */
+            text: string;
         };
         /**
          * SpeakerCount
@@ -500,7 +559,73 @@ export interface operations {
             };
         };
     };
+    rename_recording_recordings__recording_id__rename_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                recording_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecordingRenameRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecordingDetailResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     export_transcript_txt_recordings__recording_id__exports_transcript_txt_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                recording_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_transcript_pdf_recordings__recording_id__exports_transcript_pdf_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -562,7 +687,69 @@ export interface operations {
             };
         };
     };
+    export_notes_pdf_recordings__recording_id__exports_notes_pdf_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                recording_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     export_combined_txt_recordings__recording_id__exports_combined_txt_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                recording_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_combined_pdf_recordings__recording_id__exports_combined_pdf_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -725,7 +912,7 @@ export interface operations {
             };
         };
     };
-    update_segment_speaker_recordings__recording_id__transcript_segments__segment_id__speaker_put: {
+    update_segment_recordings__recording_id__transcript_segments__segment_id__put: {
         parameters: {
             query?: never;
             header?: never;
@@ -737,7 +924,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["SegmentSpeakerUpdateRequest"];
+                "application/json": components["schemas"]["SegmentUpdateRequest"];
             };
         };
         responses: {

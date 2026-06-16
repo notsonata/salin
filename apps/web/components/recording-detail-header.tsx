@@ -1,29 +1,24 @@
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import {
-  ArrowLeft,
-  CircleAlert,
-  FileAudio,
-  NotebookPen,
-  RefreshCw,
-} from "lucide-react";
+import { ArrowLeft, Check, CircleAlert, NotebookPen, Pencil, RefreshCw, X } from "lucide-react";
 
 import type { RecordingDetailResponse } from "@salin/shared";
 
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { formatBytes } from "@/lib/format";
 
 function stageCopy(stage: RecordingDetailResponse["job"]["stage"]) {
   switch (stage) {
     case "uploaded":
-      return "Queued for processing";
+      return "Queued";
     case "preprocessing":
       return "Normalizing audio";
     case "transcribing":
-      return "Building timestamped transcript";
+      return "Building transcript";
     case "diarizing":
-      return "Transcript ready, estimating speakers";
+      return "Speaker estimation in progress";
     case "completed":
       return "Transcript ready";
     case "failed":
@@ -31,130 +26,225 @@ function stageCopy(stage: RecordingDetailResponse["job"]["stage"]) {
   }
 }
 
-function stageClass(stage: RecordingDetailResponse["job"]["stage"]) {
+function stageTone(stage: RecordingDetailResponse["job"]["stage"]) {
   switch (stage) {
     case "completed":
-      return "border-successSoft bg-successSoft text-success";
+      return "review";
     case "failed":
-      return "border-dangerSoft bg-dangerFaint text-danger";
+      return "danger";
     case "uploaded":
-      return "border-attentionSoft bg-attentionSoft text-attention";
+      return "attention";
     case "preprocessing":
-      return "border-accentSoft bg-accentFaint text-accent";
+      return "attention";
     case "transcribing":
-      return "border-reviewSoft bg-reviewSoft text-review";
+      return "review";
     case "diarizing":
-      return "border-notesSoft bg-notesSoft text-notes";
+      return "accent";
   }
 }
 
-function notesClass(status: RecordingDetailResponse["notes"]["status"]) {
+function notesTone(status: RecordingDetailResponse["notes"]["status"]) {
   switch (status) {
     case "completed":
-      return "border-notesSoft bg-notesSoft text-notes";
+      return "accent";
     case "failed":
-      return "border-dangerSoft bg-dangerFaint text-danger";
+      return "danger";
     case "queued":
     case "generating":
-      return "border-attentionSoft bg-attentionSoft text-attention";
+      return "attention";
     case "idle":
-      return "border-line bg-field text-muted";
+      return "quiet";
+  }
+}
+
+function notesCopy(status: RecordingDetailResponse["notes"]["status"]) {
+  switch (status) {
+    case "idle":
+      return "Notes idle";
+    case "queued":
+      return "Notes queued";
+    case "generating":
+      return "Notes generating";
+    case "completed":
+      return "Notes ready";
+    case "failed":
+      return "Notes failed";
   }
 }
 
 export function RecordingDetailHeader({
   data,
+  renaming,
   retrying,
+  onRename,
   onRetry,
 }: {
   data: RecordingDetailResponse;
+  renaming: boolean;
   retrying: boolean;
+  onRename: (newName: string) => Promise<void>;
   onRetry: () => void;
 }) {
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [renameDraft, setRenameDraft] = useState(data.recording.filename);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!isRenaming) {
+      setRenameDraft(data.recording.filename);
+    }
+  }, [data.recording.filename, isRenaming]);
+
+  useEffect(() => {
+    if (isRenaming && inputRef.current) {
+      inputRef.current.focus();
+      const lastDotIndex = renameDraft.lastIndexOf(".");
+      if (lastDotIndex > 0) {
+        inputRef.current.setSelectionRange(0, lastDotIndex);
+      } else {
+        inputRef.current.select();
+      }
+    }
+  }, [isRenaming]); // Intentionally omitting renameDraft to run only when isRenaming changes
+
+  async function handleRenameSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!renameDraft.trim() || renameDraft === data.recording.filename) {
+      setIsRenaming(false);
+      setRenameDraft(data.recording.filename);
+      return;
+    }
+    await onRename(renameDraft);
+    setIsRenaming(false);
+  }
+
   return (
-    <Card className="overflow-hidden p-0">
-      <div className="grid gap-4 px-5 py-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
-        <div className="grid gap-3">
-          <Link
-            className="inline-flex h-9 w-fit items-center gap-2 rounded-md border border-accentSoft bg-accentFaint px-3 text-sm font-medium text-accent transition-colors hover:bg-accentSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-            href="/dashboard"
-          >
-            <ArrowLeft aria-hidden="true" className="h-4 w-4 text-muted" />
-            Back to dashboard
-          </Link>
-          <div className="grid gap-2">
-            <div className="flex flex-wrap items-center gap-3">
-              <FileAudio aria-hidden="true" className="h-5 w-5 text-review" />
-              <h2 className="max-w-4xl break-words text-2xl font-semibold text-ink">
-                {data.recording.filename}
-              </h2>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge className={stageClass(data.job.stage)}>
-                {stageCopy(data.job.stage)}
-              </Badge>
-              <Badge className={notesClass(data.notes.status)}>
-                <NotebookPen aria-hidden="true" className="mr-1.5 h-3.5 w-3.5" />
-                Notes {data.notes.status}
-              </Badge>
-            </div>
+    <header
+      className="rounded-[1.2rem] border border-line/80 bg-panel shadow-panel"
+      data-testid="workspace-top-strip"
+    >
+      <div className="flex flex-wrap items-start justify-between gap-4 px-4 py-4 sm:px-5">
+        <div className="grid min-w-0 gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <Button asChild size="sm" variant="ghost" className="gap-2 -ml-2 text-muted hover:text-ink">
+              <Link href="/dashboard">
+                <ArrowLeft className="h-4 w-4" />
+                Back to dashboard
+              </Link>
+            </Button>
+            <Badge tone={stageTone(data.job.stage)}>{stageCopy(data.job.stage)}</Badge>
+            <Badge tone={notesTone(data.notes.status)}>
+              <NotebookPen className="mr-1.5 h-3.5 w-3.5" />
+              {notesCopy(data.notes.status)}
+            </Badge>
           </div>
-          <p className="max-w-3xl text-sm leading-6 text-muted">
-            Transcript review stays available as soon as transcript blocks exist.
-            Speaker labels are automatically estimated and can be edited.
-          </p>
+
+          <div className="min-w-0">
+            {isRenaming ? (
+              <form
+                className="flex items-center gap-2"
+                onSubmit={(e) => void handleRenameSubmit(e)}
+              >
+                <Input
+                  ref={inputRef}
+                  disabled={renaming}
+                  maxLength={1024}
+                  value={renameDraft}
+                  className="h-9 w-full max-w-[400px] text-lg font-medium"
+                  onChange={(e) => setRenameDraft(e.target.value)}
+                />
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  type="submit"
+                  disabled={renaming}
+                  className="h-9 w-9 text-ink hover:bg-line/50"
+                  aria-label="Save filename"
+                >
+                  <Check className="h-4 w-4" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  type="button"
+                  disabled={renaming}
+                  className="h-9 w-9 text-muted hover:bg-line/50 hover:text-ink"
+                  onClick={() => {
+                    setIsRenaming(false);
+                    setRenameDraft(data.recording.filename);
+                  }}
+                  aria-label="Cancel renaming"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </form>
+            ) : (
+              <div className="group flex items-center gap-3">
+                <h1 className="truncate text-2xl font-semibold tracking-[-0.04em] text-ink sm:text-3xl">
+                  {data.recording.filename}
+                </h1>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-8 w-8 text-muted opacity-0 hover:bg-line/50 hover:text-ink group-hover:opacity-100"
+                  aria-label="Rename recording"
+                  disabled={renaming}
+                  onClick={() => setIsRenaming(true)}
+                >
+                  <Pencil className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+            <p className="mt-1 text-sm leading-6 text-muted">
+              Speaker labels are automatically estimated and can be edited.
+            </p>
+          </div>
         </div>
 
         {data.job.stage === "failed" && data.job.retryable ? (
           <Button disabled={retrying} type="button" variant="secondary" onClick={onRetry}>
-            <RefreshCw aria-hidden="true" className="h-4 w-4" />
+            <RefreshCw className="h-4 w-4" />
             {retrying ? "Retrying..." : "Retry processing"}
           </Button>
         ) : null}
       </div>
 
+      <div className="border-t border-line/80 px-4 py-3 sm:px-5">
+        <dl className="grid gap-x-5 gap-y-2 text-sm text-muted sm:grid-cols-2 xl:grid-cols-5">
+          <div className="flex items-center gap-2">
+            <dt className="font-mono text-[10px] uppercase tracking-[0.18em]">Language</dt>
+            <dd className="text-ink">{data.recording.language}</dd>
+          </div>
+          <div className="flex items-center gap-2">
+            <dt className="font-mono text-[10px] uppercase tracking-[0.18em]">Mode</dt>
+            <dd className="text-ink">{data.recording.processing_mode}</dd>
+          </div>
+          <div className="flex items-center gap-2">
+            <dt className="font-mono text-[10px] uppercase tracking-[0.18em]">Size</dt>
+            <dd className="text-ink">{formatBytes(data.recording.file_size)}</dd>
+          </div>
+          <div className="flex items-center gap-2">
+            <dt className="font-mono text-[10px] uppercase tracking-[0.18em]">Provider</dt>
+            <dd className="text-ink">{data.job.last_provider ?? "Pending"}</dd>
+          </div>
+          <div className="flex items-center gap-2">
+            <dt className="font-mono text-[10px] uppercase tracking-[0.18em]">Speakers</dt>
+            <dd className="text-ink">{data.recording.speaker_count}</dd>
+          </div>
+        </dl>
+      </div>
+
       {data.job.stage !== "failed" && data.job.error_message ? (
-        <div className="mx-5 mb-4 flex items-start gap-3 rounded-md border border-attentionSoft bg-attentionFaint px-4 py-3 text-sm leading-6 text-muted">
-          <CircleAlert aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-attention" />
-          <p>
-            <span className="font-medium text-ink">Processing note: </span>
-            {data.job.error_message}
+        <div className="border-t border-line/80 bg-attentionFaint px-4 py-3 sm:px-5">
+          <p className="flex items-start gap-2 text-sm leading-6 text-muted">
+            <CircleAlert className="mt-1 h-4 w-4 shrink-0 text-attention" />
+            <span>
+              <span className="font-medium text-ink">Processing note:</span>{" "}
+              {data.job.error_message}
+            </span>
           </p>
         </div>
       ) : null}
-
-      <dl className="grid gap-0 border-t border-line bg-field text-sm sm:grid-cols-2 xl:grid-cols-5">
-        <div className="grid gap-1 border-b border-line bg-accentFaint px-5 py-3 sm:border-r xl:border-b-0">
-          <dt className="font-mono text-[11px] uppercase text-muted">
-            Language
-          </dt>
-          <dd className="font-medium text-ink">{data.recording.language}</dd>
-        </div>
-        <div className="grid gap-1 border-b border-line bg-reviewFaint px-5 py-3 xl:border-b-0 xl:border-r">
-          <dt className="font-mono text-[11px] uppercase text-muted">
-            Mode
-          </dt>
-          <dd className="font-medium text-ink">{data.recording.processing_mode}</dd>
-        </div>
-        <div className="grid gap-1 border-b border-line bg-notesFaint px-5 py-3 sm:border-r xl:border-b-0">
-          <dt className="font-mono text-[11px] uppercase text-muted">
-            Size
-          </dt>
-          <dd className="font-medium text-ink">{formatBytes(data.recording.file_size)}</dd>
-        </div>
-        <div className="grid gap-1 border-b border-line bg-attentionFaint px-5 py-3 xl:border-b-0 xl:border-r">
-          <dt className="font-mono text-[11px] uppercase text-muted">
-            Provider
-          </dt>
-          <dd className="font-medium text-ink">{data.job.last_provider ?? "pending"}</dd>
-        </div>
-        <div className="grid gap-1 bg-panel px-5 py-3">
-          <dt className="font-mono text-[11px] uppercase text-muted">
-            Stage
-          </dt>
-          <dd className="font-medium text-ink">{data.job.stage}</dd>
-        </div>
-      </dl>
-    </Card>
+    </header>
   );
 }

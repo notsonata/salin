@@ -1,16 +1,51 @@
 "use client";
 
-import { useMemo, useState, type FormEvent } from "react";
-import { CircleAlert } from "lucide-react";
+import { useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { CircleAlert, Sparkles, UploadCloud } from "lucide-react";
 
 import type { LanguageOption, ProcessingMode, SpeakerCount } from "@salin/shared";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
 import { createBrowserClient } from "@/lib/api";
 
 const apiClient = createBrowserClient();
 const supportedFormats = [".mp3", ".wav", ".m4a", ".aac", ".mp4", ".mov", ".webm"];
+
+function SelectField({
+  ariaLabel,
+  children,
+  label,
+  value,
+  onValueChange,
+}: {
+  ariaLabel: string;
+  children: ReactNode;
+  label: string;
+  value: string;
+  onValueChange: (value: string) => void;
+}) {
+  return (
+    <label className="grid gap-2">
+      <span className="text-sm font-medium text-ink">{label}</span>
+      <Select value={value} onValueChange={onValueChange}>
+        <SelectTrigger aria-label={ariaLabel}>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>{children}</SelectContent>
+      </Select>
+    </label>
+  );
+}
 
 export function DashboardUploadComposer() {
   const [language, setLanguage] = useState<LanguageOption>("auto");
@@ -39,7 +74,7 @@ export function DashboardUploadComposer() {
         processing_mode: processingMode,
         speaker_count: speakerCount,
       });
-      window.location.assign(`/recordings/${response.recording.id}`);
+      window.location.assign(`/workspace/${response.recording.id}`);
     } catch (submissionError) {
       setError(
         submissionError instanceof Error ? submissionError.message : "Upload failed.",
@@ -50,121 +85,117 @@ export function DashboardUploadComposer() {
   }
 
   return (
-    <section className="grid gap-3" id="new-recording">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+    <section className="grid gap-4" id="new-recording">
+      <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="grid gap-1">
-          <p className="font-mono text-[11px] uppercase text-accent">
-            Upload
+          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
+            Upload deck
           </p>
-          <h2 className="text-xl font-semibold text-ink">New recording</h2>
+          <h2 className="text-2xl font-semibold tracking-[-0.03em] text-ink">
+            New recording
+          </h2>
         </div>
-        <p className="max-w-xl text-sm leading-6 text-muted sm:text-right">
-          Upload one recording, then review the transcript and notes in the
-          workspace.
-        </p>
+
       </div>
 
-      <Card className="overflow-hidden border-accentSoft p-0">
-        <form className="grid gap-6" onSubmit={onSubmit}>
-          <div className="grid gap-5 p-5 sm:p-6">
-            <div className="grid gap-2">
-              <label
-                className="text-sm font-medium text-ink"
-                htmlFor="recording-file"
-              >
-                Recording
+      <Card className="overflow-hidden" data-testid="dashboard-command-deck">
+        <form className="grid gap-0" onSubmit={onSubmit}>
+          <div className="grid gap-6 border-b border-line/80 px-5 py-5 lg:px-6">
+            <div className="grid gap-5">
+              <div className="flex flex-wrap items-start gap-4">
+                <span className="inline-flex size-11 items-center justify-center rounded-xl border border-accentSoft bg-accentFaint text-accent">
+                  <UploadCloud className="h-5 w-5" />
+                </span>
+                <div className="grid gap-2">
+                  <h3 className="text-lg font-semibold tracking-[-0.03em] text-ink">
+                    Processing command deck
+                  </h3>
+                  <p className="max-w-2xl text-sm leading-6 text-muted">
+                    Start the job here, then move straight into transcript review. No
+                    decorative cards, no second screen.
+                  </p>
+                </div>
+              </div>
+
+              <label className="grid gap-2">
+                <span className="text-sm font-medium text-ink">Recording</span>
+                <Input
+                  accept={supportedFormats.join(",")}
+                  aria-label="Recording"
+                  className="h-auto min-h-12 px-3 py-2 file:mr-4 file:rounded-md file:border-0 file:bg-ink file:px-3 file:py-2 file:text-sm file:font-medium file:text-panel"
+                  data-testid="upload-file-field"
+                  type="file"
+                  onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+                />
+                <p className="text-sm text-muted">Supported formats: {supportedCopy}</p>
               </label>
-              <input
-                id="recording-file"
-                className="block min-h-12 w-full rounded-md border border-accentSoft bg-field px-3 py-2 text-sm text-ink file:mr-4 file:rounded-md file:border-0 file:bg-accent file:px-3 file:py-2 file:text-sm file:font-medium file:text-panel hover:bg-accentFaint focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-                type="file"
-                accept={supportedFormats.join(",")}
-                onChange={(event) => setFile(event.target.files?.[0] ?? null)}
-              />
-              <p className="text-sm text-muted">Supported formats: {supportedCopy}</p>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-3">
-              <fieldset className="grid gap-2">
-                <label
-                  className="text-sm font-medium text-ink"
-                  htmlFor="language"
-                >
-                  Language
-                </label>
-                <select
-                  id="language"
-                  className="h-10 rounded-md border border-line bg-field px-3 text-sm text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-                  value={language}
-                  onChange={(event) => setLanguage(event.target.value as LanguageOption)}
-                >
-                  <option value="auto">Auto detect</option>
-                  <option value="tl">Tagalog</option>
-                  <option value="en">English</option>
-                </select>
-              </fieldset>
 
-              <fieldset className="grid gap-2">
-                <label
-                  className="text-sm font-medium text-ink"
-                  htmlFor="processing-mode"
-                >
-                  Processing mode
-                </label>
-                <select
-                  id="processing-mode"
-                  className="h-10 rounded-md border border-line bg-field px-3 text-sm text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-                  value={processingMode}
-                  onChange={(event) =>
-                    setProcessingMode(event.target.value as ProcessingMode)
-                  }
-                >
-                  <option value="accurate">Accurate</option>
-                  <option value="fast">Fast</option>
-                </select>
-              </fieldset>
+          </div>
 
-              <fieldset className="grid gap-2">
-                <label
-                  className="text-sm font-medium text-ink"
-                  htmlFor="speaker-count"
-                >
-                  Speaker count
-                </label>
-                <select
-                  id="speaker-count"
-                  className="h-10 rounded-md border border-line bg-field px-3 text-sm text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-                  value={speakerCount}
-                  onChange={(event) =>
-                    setSpeakerCount(event.target.value as SpeakerCount)
-                  }
-                >
-                  <option value="auto">Auto</option>
-                  <option value="1">1</option>
-                  <option value="2">2</option>
-                  <option value="3">3</option>
-                  <option value="4">4</option>
-                  <option value="5_plus">5+</option>
-                </select>
-              </fieldset>
-            </div>
+          <div className="grid gap-4 px-5 py-5 lg:grid-cols-[repeat(3,minmax(0,1fr))_auto] lg:items-end lg:px-6">
+            <SelectField
+              ariaLabel="Language"
+              label="Language"
+              value={language}
+              onValueChange={(value) => setLanguage(value as LanguageOption)}
+            >
+              <SelectItem value="auto">Auto detect</SelectItem>
+              <SelectItem value="tl">Tagalog</SelectItem>
+              <SelectItem value="en">English</SelectItem>
+            </SelectField>
+
+            <SelectField
+              ariaLabel="Processing mode"
+              label="Processing mode"
+              value={processingMode}
+              onValueChange={(value) => setProcessingMode(value as ProcessingMode)}
+            >
+              <SelectItem value="accurate">Accurate</SelectItem>
+              <SelectItem value="fast">Fast</SelectItem>
+            </SelectField>
+
+            <SelectField
+              ariaLabel="Speaker count"
+              label="Speaker count"
+              value={speakerCount}
+              onValueChange={(value) => setSpeakerCount(value as SpeakerCount)}
+            >
+              <SelectItem value="auto">Auto</SelectItem>
+              <SelectItem value="1">1</SelectItem>
+              <SelectItem value="2">2</SelectItem>
+              <SelectItem value="3">3</SelectItem>
+              <SelectItem value="4">4</SelectItem>
+              <SelectItem value="5_plus">5+</SelectItem>
+            </SelectField>
+
+            <Button className="lg:min-w-[11rem]" disabled={submitting} type="submit" variant="accent">
+              {submitting ? "Starting..." : "Start processing"}
+            </Button>
           </div>
 
           {error ? (
-            <div className="mx-5 flex items-start gap-3 rounded-md border border-dangerSoft bg-dangerFaint px-4 py-3 text-sm text-danger sm:mx-6">
-              <CircleAlert aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" />
-              <span>{error}</span>
+            <div className="px-5 pb-5 lg:px-6">
+              <div className="flex items-start gap-3 rounded-xl border border-dangerSoft bg-dangerFaint px-4 py-3 text-sm text-danger">
+                <CircleAlert className="mt-0.5 h-4 w-4 shrink-0" />
+                <span>{error}</span>
+              </div>
             </div>
           ) : null}
 
-          <div className="flex flex-col gap-3 border-t border-accentSoft bg-accentFaint px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-            <p className="max-w-2xl text-sm leading-6 text-muted">
-              Best with a clean source file. Speaker labels are estimated until
-              you edit them.
-            </p>
-            <Button disabled={submitting} type="submit" variant="accent">
-              {submitting ? "Starting..." : "Start processing"}
-            </Button>
+          <div className="px-5 pb-5 lg:px-6">
+            <Separator />
+          </div>
+
+          <div className="flex flex-col gap-3 px-5 pb-5 lg:flex-row lg:items-center lg:justify-between lg:px-6">
+            <div className="flex items-start gap-3 rounded-xl border border-line/80 bg-canvas px-4 py-3">
+              <Sparkles className="mt-0.5 h-4 w-4 text-accent" />
+              <p className="max-w-2xl text-sm leading-6 text-muted">
+                Best with one clean source file. The review desk opens as soon as the
+                transcript becomes usable.
+              </p>
+            </div>
           </div>
         </form>
       </Card>

@@ -1,52 +1,53 @@
 # UI Conventions
 
-## Product Framing
+## Product framing
 
 Salin is a post-recording review workspace for uploaded recordings.
 
 Avoid language that implies:
 
 - live meeting assistance
+- realtime capture
 - perfect speaker identification
-- perfect Taglish transcription
-- legal-grade output
+- legal-grade certainty
 
-Required disclaimer:
+Required disclosure:
 
 `Speaker labels are automatically estimated and can be edited.`
 
-## Current Visual Direction
+## Committed direction
 
-Use a systematic repeated-use product UI:
+Salin now uses a **light-first transcript console** built from a **Newsroom Console + Bilingual Review Board hybrid**.
 
-- light warm-neutral surfaces
-- compact header and dense content regions
-- sans body copy with mono display headings
-- mono metadata labels for small status information
-- modest radii, clear borders, minimal shadows
-- no decorative gradients, no floating dashboard shells
-- `/` is a dedicated product home that explains the workflow and routes users into the dashboard or preview workspace
+Core rules:
 
-The transcript is the primary artifact. Notes and future controls must stay visually secondary.
+- cool neutral shell and white reading surfaces
+- left-rail app shell for home and dashboard
+- transcript-first hierarchy everywhere
+- compact, editor-like controls instead of colorful dashboard chrome
+- one sans family across headings, body, and controls
+- mono only for timestamps, counts, and compact status markers
+- color marks state and action, not feature ownership
 
-For the current workspace UI, "secondary" means transcript-first in content priority, not hidden in the layout. Notes generation must remain immediately discoverable, with a dedicated visible destination for generated sections.
+Home carries the strongest brand voice. Dashboard and workspace stay restrained and operational.
 
-## Color Palette
+## Theme guidance
 
-Use color as product meaning, not decoration:
+- default mode is `light`
+- dark mode is deferred
+- any future dark theme must preserve transcript readability first
 
-- warm neutral canvas, panel, field, line, ink, and muted remain the base for readability
-- brand deep green anchors the dedicated home intro
-- teal/accent marks upload, correction, and primary submit actions
-- blue/review marks transcript review, timestamp seeking, search, and transcript exports
-- plum/notes marks notes generation, notes editing, and combined notes exports
-- amber/attention marks queued, generating, processing, and PDF/export attention states
-- coral/danger marks backend, upload, notes, and processing failures
-- green/success marks completed or saved states
+## Color roles
 
-Most color should appear as soft fills, borders, icons, badges, and active states. Avoid large saturated blocks except for the home intro and primary action buttons.
+- `accent`: primary actions, saved edits, rename/apply flows
+- `review`: transcript emphasis, active seek states, transcript-ready status
+- `attention`: queued, generating, and estimated states
+- `danger`: upload failures, processing failures, notes failures
+- `success`: saved confirmation
 
-## Current Screens
+Do not reintroduce the old purple notes lane or warm-beige shell.
+
+## Screen structure
 
 ### Home
 
@@ -54,12 +55,14 @@ Route: `/`
 
 Required elements:
 
-- clear product framing for uploaded recording review
-- no live meeting or realtime transcription language
-- visual transcript/workspace preview
-- concise workflow explanation
-- primary route into `/dashboard`
-- secondary route into `/preview/recording` for frontend-only review
+- strong product statement for bilingual transcript review
+- one transcript specimen
+- one recent-sessions board
+- concise workflow proof
+- direct CTA into `/dashboard`
+- direct CTA into `/preview/recording`
+
+Home should feel like an in-product front door, not a generic landing page.
 
 ### Dashboard
 
@@ -67,115 +70,83 @@ Route: `/dashboard`
 
 Required elements:
 
-- `New recording` composer as the first visual priority
-- file picker
-- supported format hint
+- upload command deck as first priority
+- recording file picker
 - language selector
 - processing mode selector
 - speaker count selector
 - start-processing action
-- `Recent recordings` compact table beneath the composer
+- recent recordings library directly below
 
-Dashboard table requirements:
+Dashboard expectations:
 
-- columns for filename, status, language, updated time, and open action
-- clear empty state when no recordings exist yet
-- obvious reopen path back into any existing recording detail page
-- when the backend is offline during local UI review, show a calm backend-off state with a link to the preview workspace
+- upload remains visually strongest
+- the library is dense and calm
+- backend-off state routes into preview workspace
 
-### Recording detail workspace
+### Recording workspace
 
 Route: `/recordings/[id]`
 
-Current layout:
+Required structure:
 
-- top detail header with filename, transcript state, compact metadata, and `Back to dashboard`
-- tab switcher with `Transcript` and `Notes`
-- transcript tab for processing, playback, search, export, and transcript review
-- notes tab for generation, editing, and save actions
-- non-fatal processing notes for local-backup fallback or speaker-estimation failure
+- thin session strip with back navigation, inline-editable filename, stage, notes state, and compact metadata
+- sticky transcript toolbar under the strip
+- desktop split:
+  - transcript primary
+  - notes secondary right dock
+- mobile tabs fallback for `Transcript` and `Notes`
 
-Current export controls:
+Transcript surface requirements:
 
-- transcript tab shows backend-backed `Transcript TXT` and `Transcript PDF` links inside a grouped export toolbar once transcript blocks are available
-- notes tab shows backend-backed `Notes TXT`, `Notes PDF`, `Combined TXT`, and `Combined PDF` links inside a grouped export toolbar once notes are completed
+- integrated audio review
+- transcript search
+- grouped transcript export menu
+- speaker utility tray for global rename
+- transcript rows with:
+  - clickable timestamp rail
+  - compact row action
+  - collapsed inline edit form (stacked vertically with a textarea for segment text)
 
-Current transcript block contents:
+Notes dock requirements:
 
-- clickable timestamp
-- estimated or edited speaker label badge
-- per-block speaker label edit control
-- provider badge
-- transcript text
+- generate or regenerate action
+- save action
+- dirty state
+- grouped notes export menu once notes exist
+- summary textarea
+- editable lists for key points, decisions, action items, and questions
 
-Current transcript-level speaker controls:
+## State design
 
-- rename one speaker label across the recording
-- merge duplicate speaker labels by renaming one label to an existing label
+Every major surface should cover:
 
-Current notes panel states:
-
-- idle
-- queued
-- generating
-- completed
-- failed
-
-Current notes tab requirements:
-
-- a primary visible notes action without hunting through metadata cards
-- a clear empty state that shows where generated notes will appear
-- persistent section containers for summary, key points, decisions, action items, and questions
-- structured editing with textarea summary plus editable lists for the remaining sections
-- visible dirty state
-- explicit `Save edits` action
-- warning before destructive regenerate when unsaved edits exist
-- browser unload warning while unsaved edits exist
-
-Current UI polish:
-
-- home uses a modern product intro with deeper color and a transcript preview
-- dashboard is separated into a compact upload and recent-recordings workspace
-- recording detail uses a compact session strip, icon tabs, grouped export controls, and a timestamp-led transcript review surface
-- notes use a structured document editing surface with visible status, dirty state, save, generate/regenerate, and export controls
-
-### UI preview route
-
-Route: `/preview/recording`
-
-Purpose:
-
-- frontend-only recording workspace preview when the backend is not running
-- lets reviewers inspect transcript, notes, speaker editing, search, timestamp controls, and exports without provider calls
-- must remain framed as a local UI review aid, not a production workflow
-
-## State Design
-
-Every major screen should cover:
-
-- empty file selection
+- empty upload selection
 - active upload submission
-- processing poll state
-- transcript-ready while speaker estimation is still running
+- processing before transcript availability
+- transcript-ready while diarization continues
 - completed transcript state
-- retryable failure state
-- non-retryable load failure state
+- retryable processing failure
+- notes generation failure while transcript remains available
+- mobile tabs fallback without losing transcript or notes functionality
 
-## Accessibility Expectations
+## Accessibility expectations
 
-- file input, selects, and submit button must have explicit labels
-- status copy must be understandable without relying on color alone
-- retry must be keyboard reachable
-- transcript timestamps must stay readable and structured even before they become interactive
+- all form controls need explicit labels
+- timestamps remain readable before and after activation
+- status text stays understandable without color alone
+- transcript search stays keyboard reachable
+- mobile tabs must switch transcript and notes without hiding required controls
 
-## Next UI Milestones
+## Testing expectations
 
-Current planning artifact:
+Web E2E should cover:
 
-- `docs/superpowers/plans/2026-06-16-ui-ux-revamp.md`
-
-Later milestones should add, in order:
-
-1. user-guided full UI review against real recordings
-2. finer responsive polish after testing on the presentation Mac
-3. deeper visual treatment for long-recording progress once real chunk telemetry is reviewed
+- home page review-board framing and CTAs
+- upload command deck plus recordings library
+- desktop split workspace shell
+- mobile transcript and notes tabs
+- transcript search and timestamp seeking
+- grouped transcript and notes export menus
+- speaker rename plus per-row reassignment
+- notes generation, edit, save, and failure handling

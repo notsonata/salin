@@ -23,9 +23,10 @@ from salin_api.schemas.recordings import (
     RecordingDetailResponse,
     RecordingListItemSummary,
     RecordingListResponse,
+    RecordingRenameRequest,
     RecordingSummary,
     RetryResponse,
-    SegmentSpeakerUpdateRequest,
+    SegmentUpdateRequest,
     SpeakerCount,
     SpeakerRenameRequest,
     TranscriptSegmentSummary,
@@ -81,11 +82,7 @@ def build_notes_summary(notes) -> GeneratedNotesSummary:
     if notes is None:
         return GeneratedNotesSummary(
             status=NotesStatus.IDLE,
-            summary=None,
-            key_points=[],
-            decisions=[],
-            action_items=[],
-            questions=[],
+            content=None,
             error_message=None,
             source_provider=None,
             generation_count=0,
@@ -96,11 +93,7 @@ def build_notes_summary(notes) -> GeneratedNotesSummary:
 
     return GeneratedNotesSummary(
         status=NotesStatus(notes.status),
-        summary=notes.summary,
-        key_points=json.loads(notes.key_points_json),
-        decisions=json.loads(notes.decisions_json),
-        action_items=json.loads(notes.action_items_json),
-        questions=json.loads(notes.questions_json),
+        content=notes.content,
         error_message=notes.error_message,
         source_provider=notes.source_provider,
         generation_count=notes.generation_count,
@@ -215,6 +208,49 @@ def get_recording(
     job = repository.get_job(recording_id)
     if recording is None or job is None:
         raise HTTPException(status_code=404, detail="Recording not found.")
+
+    segments = repository.list_segments(recording_id)
+    notes = repository.get_generated_notes(recording_id)
+    artifact_urls = ArtifactUrls(
+        original=request.app.state.services.storage.presign_get(recording.original_object_key),
+        normalized=(
+            request.app.state.services.storage.presign_get(recording.normalized_object_key)
+            if recording.normalized_object_key
+            else None
+        ),
+    )
+    if artifact_urls.normalized is None:
+        artifact_urls = ArtifactUrls(original=artifact_urls.original)
+
+    return RecordingDetailResponse(
+        recording=RecordingSummary.model_validate(recording),
+        job=ProcessingJobSummary.model_validate(job),
+        transcript_segments=[
+            TranscriptSegmentSummary.model_validate(segment) for segment in segments
+        ],
+        artifact_urls=artifact_urls,
+        notes=build_notes_summary(notes),
+    )
+
+
+@router.put("/recordings/{recording_id}/rename", response_model=RecordingDetailResponse)
+def rename_recording(
+    recording_id: str,
+    payload: RecordingRenameRequest,
+    request: Request,
+    session: SessionDep,
+) -> RecordingDetailResponse:
+    repository = RecordingRepository(session)
+    recording = repository.get_recording(recording_id)
+    job = repository.get_job(recording_id)
+    if recording is None or job is None:
+        raise HTTPException(status_code=404, detail="Recording not found.")
+
+    filename = payload.filename.strip()
+    if not filename:
+        raise HTTPException(status_code=400, detail="Filename cannot be empty.")
+
+    recording = repository.rename_recording(recording_id, filename)
 
     segments = repository.list_segments(recording_id)
     notes = repository.get_generated_notes(recording_id)
@@ -457,11 +493,7 @@ def update_notes(
 
     saved_notes = repository.save_notes_edits(
         recording_id,
-        summary=payload.summary,
-        key_points=payload.key_points,
-        decisions=payload.decisions,
-        action_items=payload.action_items,
-        questions=payload.questions,
+        content=payload.content,
     )
     return NotesGenerationResponse(
         recording_id=recording_id,
@@ -502,25 +534,29 @@ def rename_speaker(
 
 
 @router.put(
-    "/recordings/{recording_id}/transcript-segments/{segment_id}/speaker",
+    "/recordings/{recording_id}/transcript-segments/{segment_id}",
     response_model=TranscriptSegmentsUpdateResponse,
 )
-def update_segment_speaker(
+def update_segment(
     recording_id: str,
     segment_id: str,
-    payload: SegmentSpeakerUpdateRequest,
+    payload: SegmentUpdateRequest,
     session: SessionDep,
 ) -> TranscriptSegmentsUpdateResponse:
     repository = RecordingRepository(session)
     speaker_label = payload.speaker_label.strip()
+    text = payload.text.strip()
     if not speaker_label:
         raise HTTPException(status_code=400, detail="Speaker label cannot be empty.")
+    if not text:
+        raise HTTPException(status_code=400, detail="Text cannot be empty.")
 
     try:
-        segments = repository.update_segment_speaker(
+        segments = repository.update_segment(
             recording_id,
             segment_id=segment_id,
             speaker_label=speaker_label,
+            text=text,
         )
     except LookupError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc

@@ -13,10 +13,11 @@ export type RecordingCreateResponse = components["schemas"]["RecordingCreateResp
 export type RecordingDetailResponse = components["schemas"]["RecordingDetailResponse"];
 export type RecordingListItemSummary = components["schemas"]["RecordingListItemSummary"];
 export type RecordingListResponse = components["schemas"]["RecordingListResponse"];
+export type RecordingRenameRequest = components["schemas"]["RecordingRenameRequest"];
 export type RecordingSummary = components["schemas"]["RecordingSummary"];
 export type RetryResponse = components["schemas"]["RetryResponse"];
-export type SegmentSpeakerUpdateRequest =
-  components["schemas"]["SegmentSpeakerUpdateRequest"];
+export type SegmentUpdateRequest =
+  components["schemas"]["SegmentUpdateRequest"];
 export type SpeakerCount = components["schemas"]["SpeakerCount"];
 export type SpeakerRenameRequest = components["schemas"]["SpeakerRenameRequest"];
 export type TranscriptSegment = components["schemas"]["TranscriptSegmentSummary"];

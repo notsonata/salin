@@ -25,11 +25,7 @@ class NotesGenerationRequest:
 
 @dataclass(slots=True)
 class NotesGenerationResult:
-    summary: str
-    key_points: list[str]
-    decisions: list[str]
-    action_items: list[str]
-    questions: list[str]
+    content: str
     source_provider: str
 
 
@@ -53,11 +49,7 @@ class OpenRouterNotesProvider:
             try:
                 payload = self._request_notes(request=request, model_name=model_name)
                 return NotesGenerationResult(
-                    summary=self._normalize_string(payload.get("summary")),
-                    key_points=self._normalize_list(payload.get("key_points")),
-                    decisions=self._normalize_list(payload.get("decisions")),
-                    action_items=self._normalize_list(payload.get("action_items")),
-                    questions=self._normalize_list(payload.get("questions")),
+                    content=payload.strip(),
                     source_provider=f"openrouter:{model_name}",
                 )
             except Exception as exc:  # pragma: no cover - exercised through provider integration
@@ -68,7 +60,7 @@ class OpenRouterNotesProvider:
             f"OpenRouter notes generation failed for all configured models: {last_error}"
         ) from last_error
 
-    def _request_notes(self, *, request: NotesGenerationRequest, model_name: str) -> dict:
+    def _request_notes(self, *, request: NotesGenerationRequest, model_name: str) -> str:
         with httpx.Client(
             base_url="https://openrouter.ai/api/v1",
             headers={
@@ -86,9 +78,15 @@ class OpenRouterNotesProvider:
                             "role": "system",
                             "content": (
                                 "You generate structured notes from transcript data only. "
-                                "Return strict JSON with keys: summary, key_points, decisions, "
-                                "action_items, questions. summary must be a string. The other "
-                                "keys must be arrays of strings."
+                                "Return a clean Markdown document with the following sections:\n"
+                                "# Summary\n\n"
+                                "## Key Points\n"
+                                "(use bullets)\n\n"
+                                "## Decisions\n\n"
+                                "## Action Items\n"
+                                "(use - [ ] for checkboxes)\n\n"
+                                "## Questions\n\n"
+                                "Do not wrap in a markdown code block, just return raw markdown."
                             ),
                         },
                         {
@@ -101,7 +99,7 @@ class OpenRouterNotesProvider:
             response.raise_for_status()
         body = response.json()
         content = body["choices"][0]["message"]["content"]
-        return self._extract_json_payload(content)
+        return content
 
     def _build_prompt(self, request: NotesGenerationRequest) -> str:
         transcript_lines = "\n".join(
@@ -117,25 +115,7 @@ class OpenRouterNotesProvider:
             "Produce concise, reviewable notes for this recording."
         )
 
-    def _extract_json_payload(self, content: str) -> dict:
-        try:
-            return json.loads(content)
-        except json.JSONDecodeError as exc:
-            start = content.find("{")
-            end = content.rfind("}")
-            if start == -1 or end == -1 or end <= start:
-                raise ValueError("OpenRouter returned a non-JSON notes payload.") from exc
-            return json.loads(content[start : end + 1])
 
-    def _normalize_list(self, value: object) -> list[str]:
-        if not isinstance(value, list):
-            raise ValueError("Notes payload fields must be arrays of strings.")
-        return [self._normalize_string(entry) for entry in value]
-
-    def _normalize_string(self, value: object) -> str:
-        if not isinstance(value, str):
-            raise ValueError("Notes payload fields must be strings.")
-        return value.strip()
 
     def _format_timestamp(self, milliseconds: int) -> str:
         total_seconds = max(milliseconds, 0) // 1000

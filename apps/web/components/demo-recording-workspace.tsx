@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useDeferredValue, useMemo, useRef, useState } from "react";
 
 import type {
   NotesUpdateRequest,
@@ -13,15 +13,12 @@ import { NotesEditorTab } from "@/components/notes-editor-tab";
 import { RecordingDetailHeader } from "@/components/recording-detail-header";
 import { RecordingWorkspaceTabs } from "@/components/recording-workspace-tabs";
 import { TranscriptWorkspaceTab } from "@/components/transcript-workspace-tab";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { demoExportHref, demoRecordingDetail } from "@/lib/demo-recording";
 
 function toNotesDraft(notes: RecordingDetailResponse["notes"]): NotesUpdateRequest {
   return {
-    summary: notes.summary,
-    key_points: [...notes.key_points],
-    decisions: [...notes.decisions],
-    action_items: [...notes.action_items],
-    questions: [...notes.questions],
+    content: notes.content,
   };
 }
 
@@ -37,10 +34,12 @@ export function DemoRecordingWorkspace() {
   );
   const [notesDirty, setNotesDirty] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const desktopAudioRef = useRef<HTMLAudioElement | null>(null);
+  const mobileAudioRef = useRef<HTMLAudioElement | null>(null);
+  const deferredSearchQuery = useDeferredValue(searchQuery);
 
   const filteredSegments = useMemo(() => {
-    const normalizedQuery = searchQuery.trim().toLowerCase();
+    const normalizedQuery = deferredSearchQuery.trim().toLowerCase();
     if (!normalizedQuery) {
       return data.transcript_segments;
     }
@@ -49,7 +48,7 @@ export function DemoRecordingWorkspace() {
       const haystack = `${segment.speaker_label} ${segment.text}`.toLowerCase();
       return haystack.includes(normalizedQuery);
     });
-  }, [data.transcript_segments, searchQuery]);
+  }, [data.transcript_segments, deferredSearchQuery]);
 
   const speakerLabels = useMemo(
     () =>
@@ -103,12 +102,14 @@ export function DemoRecordingWorkspace() {
 
   function seekToSegment(segment: TranscriptSegment) {
     setActiveSegmentId(segment.id);
-    if (!audioRef.current) {
-      return;
-    }
+    for (const ref of [desktopAudioRef, mobileAudioRef]) {
+      if (!ref.current) {
+        continue;
+      }
 
-    audioRef.current.currentTime = segment.start_ms / 1000;
-    void audioRef.current.play().catch(() => undefined);
+      ref.current.currentTime = segment.start_ms / 1000;
+      void ref.current.play().catch(() => undefined);
+    }
   }
 
   async function renameSpeaker(fromLabel: string, toLabel: string) {
@@ -126,18 +127,18 @@ export function DemoRecordingWorkspace() {
     setSpeakerSavingTarget(null);
   }
 
-  async function updateSegmentSpeaker(segmentId: string, speakerLabel: string) {
+  async function updateSegment(segmentId: string, speakerLabel: string, text: string) {
     setSpeakerSavingTarget(segmentId);
     setSpeakerMessage(null);
     setData((current) => ({
       ...current,
       transcript_segments: current.transcript_segments.map((segment) =>
         segment.id === segmentId
-          ? { ...segment, speaker_label: speakerLabel, speaker_estimated: false }
+          ? { ...segment, speaker_label: speakerLabel, text: text, speaker_estimated: false }
           : segment,
       ),
     }));
-    setSpeakerMessage("Speaker label updated in preview.");
+    setSpeakerMessage("Segment updated in preview.");
     setSpeakerSavingTarget(null);
   }
 
@@ -177,44 +178,98 @@ export function DemoRecordingWorkspace() {
   }
 
   return (
-    <div className="grid min-h-[calc(100vh-7rem)] auto-rows-max content-start gap-6">
-      <RecordingDetailHeader data={data} retrying={false} onRetry={() => undefined} />
-      <RecordingWorkspaceTabs activeTab={activeTab} onTabChange={setActiveTab} />
-      {activeTab === "transcript" ? (
-        <TranscriptWorkspaceTab
-          activeSegmentId={activeSegmentId}
-          audioRef={audioRef}
+    <div className="mx-auto max-w-[1500px] px-3 py-3 sm:px-4 lg:px-5">
+      <div className="grid gap-4" data-testid="workspace-shell">
+        <RecordingDetailHeader
           data={data}
-          error={null}
-          exportLinks={transcriptExportLinks}
-          filteredSegments={filteredSegments}
-          query={searchQuery}
+          renaming={false}
           retrying={false}
-          speakerLabels={speakerLabels}
-          speakerMessage={speakerMessage}
-          speakerSavingTarget={speakerSavingTarget}
-          onQueryChange={setSearchQuery}
-          onRenameSpeaker={renameSpeaker}
+          onRename={async () => undefined}
           onRetry={() => undefined}
-          onSeek={seekToSegment}
-          onUpdateSegmentSpeaker={updateSegmentSpeaker}
         />
-      ) : (
-        <NotesEditorTab
-          canGenerate
-          dirty={notesDirty}
-          draft={notesDraft}
-          error={null}
-          exportLinks={notesExportLinks}
-          notes={data.notes}
-          notesBusy={false}
-          saveBusy={false}
-          saveMessage={saveMessage}
-          onDraftChange={handleDraftChange}
-          onGenerate={regenerateNotes}
-          onSave={saveNotes}
-        />
-      )}
+
+        <div
+          className="hidden items-start gap-4 xl:grid xl:grid-cols-[minmax(0,1.45fr)_minmax(22rem,0.84fr)]"
+          data-testid="desktop-workspace-grid"
+        >
+          <TranscriptWorkspaceTab
+            activeSegmentId={activeSegmentId}
+            audioRef={desktopAudioRef}
+            data={data}
+            error={null}
+            exportLinks={transcriptExportLinks}
+            filteredSegments={filteredSegments}
+            query={searchQuery}
+            retrying={false}
+            speakerLabels={speakerLabels}
+            speakerMessage={speakerMessage}
+            speakerSavingTarget={speakerSavingTarget}
+            onQueryChange={setSearchQuery}
+            onRenameSpeaker={renameSpeaker}
+            onRetry={() => undefined}
+            onSeek={seekToSegment}
+            onUpdateSegment={updateSegment}
+          />
+          <NotesEditorTab
+            canGenerate
+            dirty={notesDirty}
+            draft={notesDraft}
+            error={null}
+            exportLinks={notesExportLinks}
+            notes={data.notes}
+            notesBusy={false}
+            saveBusy={false}
+            saveMessage={saveMessage}
+            onDraftChange={handleDraftChange}
+            onGenerate={regenerateNotes}
+            onSave={saveNotes}
+          />
+        </div>
+
+        <Tabs
+          className="grid gap-3 xl:hidden"
+          value={activeTab}
+          onValueChange={(value) => setActiveTab(value as "transcript" | "notes")}
+        >
+          <RecordingWorkspaceTabs />
+          <TabsContent value="transcript">
+            <TranscriptWorkspaceTab
+              activeSegmentId={activeSegmentId}
+              audioRef={mobileAudioRef}
+              data={data}
+              error={null}
+              exportLinks={transcriptExportLinks}
+              filteredSegments={filteredSegments}
+              query={searchQuery}
+              retrying={false}
+              speakerLabels={speakerLabels}
+              speakerMessage={speakerMessage}
+              speakerSavingTarget={speakerSavingTarget}
+              onQueryChange={setSearchQuery}
+              onRenameSpeaker={renameSpeaker}
+              onRetry={() => undefined}
+              onSeek={seekToSegment}
+              onUpdateSegment={updateSegment}
+            />
+          </TabsContent>
+          <TabsContent value="notes">
+            <NotesEditorTab
+              canGenerate
+              dirty={notesDirty}
+              draft={notesDraft}
+              error={null}
+              exportLinks={notesExportLinks}
+              notes={data.notes}
+              notesBusy={false}
+              saveBusy={false}
+              saveMessage={saveMessage}
+              onDraftChange={handleDraftChange}
+              onGenerate={regenerateNotes}
+              onSave={saveNotes}
+            />
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   );
 }

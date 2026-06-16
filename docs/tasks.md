@@ -269,3 +269,43 @@ Acceptance criteria:
 - **Context**: The core product flows are implemented, so the next front-end pass should make the workspace feel complete without changing product scope.
 - **Plan**: `docs/superpowers/plans/2026-06-16-ui-ux-revamp.md`
 - **Status**: Done
+
+### [P2] Reset the Salin UI into a light-first transcript console
+
+Replace the old warm-neutral Study Desk presentation with a lighter transcript
+review system using the Newsroom Console + Bilingual Review Board hybrid, with
+the home page as the brand entry and the dashboard / workspace as restrained
+task surfaces.
+
+Acceptance criteria:
+
+- light mode becomes the default visual mode for this pass
+- `DESIGN.md` is replaced with the transcript-console design direction
+- home uses one committed transcript-specimen composition instead of a generic feature grid
+- home and dashboard share a left-rail app shell
+- dashboard keeps upload first but behaves like a compact command deck
+- desktop recording detail becomes a transcript-first split workspace with a notes dock
+- mobile recording detail falls back to transcript and notes tabs
+- transcript and notes exports stay grouped into compact menus
+- updated E2E coverage reflects the new home, desktop, and mobile structure
+
+- **Files**: `apps/web`, `DESIGN.md`, `docs/ui.md`, `docs/testing.md`
+- **Context**: The prior UI refresh still read like a generic vibecoded app, especially on the home page and workspace shell.
+- **Status**: Done
+
+### [P2] Refine transcript workspace editing and playback
+
+Improve the editing ergonomics and playback behavior of the transcript workspace based on user feedback.
+
+Acceptance criteria:
+
+- Audio playback pauses automatically at the end of a clicked segment instead of continuing indefinitely
+- Overlapping playback from rapid segment clicks is prevented
+- Unnecessary "estimated", "edited", and "groq" provider chips are removed from transcript segments
+- The per-segment edit form stacks fields vertically and uses a Textarea for the segment text
+- The recording session name can be renamed inline from the workspace header
+- The renaming capability is supported by a backend PUT endpoint and client types
+
+- **Files**: `apps/web/components/transcript-player.tsx`, `apps/web/components/transcript-panel.tsx`, `apps/web/components/recording-workspace.tsx`, `apps/web/components/recording-detail-header.tsx`, `apps/api/salin_api/api/routes.py`, `apps/api/salin_api/repositories/recordings.py`, `packages/shared/src/client.ts`
+- **Context**: Real usage revealed that the segment edit form was too cramped, the provider chips were noisy, playback needed segment-level pausing, and users needed a way to rename recordings.
+- **Status**: Done

@@ -91,26 +91,28 @@ export const demoRecordingDetail: RecordingDetailResponse = {
   ],
   notes: {
     status: "completed",
-    summary:
-      "The recording explains how to run a structured but conversational research interview, then review the transcript through timestamps before generating notes.",
-    key_points: [
-      "Interview questions can be conversational as long as the research goal stays consistent.",
-      "Clickable timestamps help reviewers verify important answers against the audio.",
-      "Speaker labels are useful, but they should remain editable because they are estimated.",
-    ],
-    decisions: [
-      "Use the stored transcript as the source for notes generation.",
-      "Review timestamps before finalizing notes or exports.",
-    ],
-    action_items: [
-      "Prepare an interview guide before recording.",
-      "Rename estimated speakers after transcript review.",
-      "Export the transcript and notes after edits are saved.",
-    ],
-    questions: [
-      "How many speakers should be expected for the real interview?",
-      "Which transcript sections need manual verification before export?",
-    ],
+    content: `
+### Summary
+The recording explains how to run a structured but conversational research interview, then review the transcript through timestamps before generating notes.
+
+### Key Points
+- Interview questions can be conversational as long as the research goal stays consistent.
+- Clickable timestamps help reviewers verify important answers against the audio.
+- Speaker labels are useful, but they should remain editable because they are estimated.
+
+### Decisions
+- Use the stored transcript as the source for notes generation.
+- Review timestamps before finalizing notes or exports.
+
+### Action Items
+- [ ] Prepare an interview guide before recording.
+- [ ] Rename estimated speakers after transcript review.
+- [ ] Export the transcript and notes after edits are saved.
+
+### Questions
+- How many speakers should be expected for the real interview?
+- Which transcript sections need manual verification before export?
+`,
     error_message: null,
     source_provider: "openrouter:preview",
     generation_count: 1,

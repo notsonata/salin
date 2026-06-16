@@ -1,0 +1,17 @@
+.salin-mdx-editor {
+  background-color: transparent !important;
+  border: none !important;
+  --mdxeditor-toolbar-bg: var(--panel) !important;
+}
+
+.salin-mdx-editor .mdxeditor-toolbar {
+  border-bottom: 1px solid oklch(0.902 0.01 246) !important;
+  border-top: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  background-color: transparent !important;
+}
+
+.salin-mdx-editor .mdxeditor-root-contenteditable {
+  border: none !important;
+}

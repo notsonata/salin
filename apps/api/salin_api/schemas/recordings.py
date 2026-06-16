@@ -94,11 +94,7 @@ class ArtifactUrls(BaseModel):
 
 class GeneratedNotesSummary(BaseModel):
     status: NotesStatus
-    summary: str | None
-    key_points: list[str]
-    decisions: list[str]
-    action_items: list[str]
-    questions: list[str]
+    content: str | None
     error_message: str | None
     source_provider: str | None
     generation_count: int
@@ -141,11 +137,11 @@ class NotesGenerationResponse(BaseModel):
 
 
 class NotesUpdateRequest(BaseModel):
-    summary: str | None
-    key_points: list[str]
-    decisions: list[str]
-    action_items: list[str]
-    questions: list[str]
+    content: str | None
+
+
+class RecordingRenameRequest(BaseModel):
+    filename: str = Field(min_length=1, max_length=1024)
 
 
 class SpeakerRenameRequest(BaseModel):
@@ -153,8 +149,9 @@ class SpeakerRenameRequest(BaseModel):
     to_label: str = Field(min_length=1, max_length=255)
 
 
-class SegmentSpeakerUpdateRequest(BaseModel):
+class SegmentUpdateRequest(BaseModel):
     speaker_label: str = Field(min_length=1, max_length=255)
+    text: str = Field(min_length=1)
 
 
 class TranscriptSegmentsUpdateResponse(BaseModel):

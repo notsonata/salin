@@ -99,6 +99,55 @@
         }
       }
     },
+    "/recordings/{recording_id}/rename": {
+      "put": {
+        "summary": "Rename Recording",
+        "operationId": "rename_recording_recordings__recording_id__rename_put",
+        "parameters": [
+          {
+            "name": "recording_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Recording Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordingRenameRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecordingDetailResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/recordings/{recording_id}/exports/transcript.txt": {
       "get": {
         "summary": "Export Transcript Txt",
@@ -497,10 +546,10 @@
         }
       }
     },
-    "/recordings/{recording_id}/transcript-segments/{segment_id}/speaker": {
+    "/recordings/{recording_id}/transcript-segments/{segment_id}": {
       "put": {
-        "summary": "Update Segment Speaker",
-        "operationId": "update_segment_speaker_recordings__recording_id__transcript_segments__segment_id__speaker_put",
+        "summary": "Update Segment",
+        "operationId": "update_segment_recordings__recording_id__transcript_segments__segment_id__put",
         "parameters": [
           {
             "name": "recording_id",
@@ -526,7 +575,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SegmentSpeakerUpdateRequest"
+                "$ref": "#/components/schemas/SegmentUpdateRequest"
               }
             }
           }
@@ -617,7 +666,7 @@
           "status": {
             "$ref": "#/components/schemas/NotesStatus"
           },
-          "summary": {
+          "content": {
             "anyOf": [
               {
                 "type": "string"
@@ -626,35 +675,7 @@
                 "type": "null"
               }
             ],
-            "title": "Summary"
-          },
-          "key_points": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Key Points"
-          },
-          "decisions": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Decisions"
-          },
-          "action_items": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Action Items"
-          },
-          "questions": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Questions"
+            "title": "Content"
           },
           "error_message": {
             "anyOf": [
@@ -722,11 +743,7 @@
         "type": "object",
         "required": [
           "status",
-          "summary",
-          "key_points",
-          "decisions",
-          "action_items",
-          "questions",
+          "content",
           "error_message",
           "source_provider",
           "generation_count",
@@ -800,7 +817,7 @@
       },
       "NotesUpdateRequest": {
         "properties": {
-          "summary": {
+          "content": {
             "anyOf": [
               {
                 "type": "string"
@@ -809,44 +826,12 @@
                 "type": "null"
               }
             ],
-            "title": "Summary"
-          },
-          "key_points": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Key Points"
-          },
-          "decisions": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Decisions"
-          },
-          "action_items": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Action Items"
-          },
-          "questions": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Questions"
+            "title": "Content"
           }
         },
         "type": "object",
         "required": [
-          "summary",
-          "key_points",
-          "decisions",
-          "action_items",
-          "questions"
+          "content"
         ],
         "title": "NotesUpdateRequest"
       },
@@ -1042,6 +1027,21 @@
         ],
         "title": "RecordingListResponse"
       },
+      "RecordingRenameRequest": {
+        "properties": {
+          "filename": {
+            "type": "string",
+            "maxLength": 1024,
+            "minLength": 1,
+            "title": "Filename"
+          }
+        },
+        "type": "object",
+        "required": [
+          "filename"
+        ],
+        "title": "RecordingRenameRequest"
+      },
       "RecordingSummary": {
         "properties": {
           "id": {
@@ -1111,20 +1111,26 @@
         ],
         "title": "RetryResponse"
       },
-      "SegmentSpeakerUpdateRequest": {
+      "SegmentUpdateRequest": {
         "properties": {
           "speaker_label": {
             "type": "string",
             "maxLength": 255,
             "minLength": 1,
             "title": "Speaker Label"
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Text"
           }
         },
         "type": "object",
         "required": [
-          "speaker_label"
+          "speaker_label",
+          "text"
         ],
-        "title": "SegmentSpeakerUpdateRequest"
+        "title": "SegmentUpdateRequest"
       },
       "SpeakerCount": {
         "type": "string",

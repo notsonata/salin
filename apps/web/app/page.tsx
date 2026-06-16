@@ -1,208 +1,113 @@
 import Link from "next/link";
-import {
-  ArrowRight,
-  Download,
-  FileText,
-  NotebookPen,
-  Play,
-  UploadCloud,
-  UserRound,
-} from "lucide-react";
+import { ArrowRight, AudioLines, FileText, Globe, NotebookPen } from "lucide-react";
 
-const workflow = [
-  {
-    title: "Upload",
-    copy: "Add one lecture, interview, podcast, or discussion recording.",
-    icon: UploadCloud,
-    cardClass: "border-accentSoft bg-accentFaint",
-    chipClass: "bg-accentSoft text-accent",
-  },
-  {
-    title: "Review",
-    copy: "Read timestamped transcript blocks and jump back to the audio.",
-    icon: FileText,
-    cardClass: "border-reviewSoft bg-reviewFaint",
-    chipClass: "bg-reviewSoft text-review",
-  },
-  {
-    title: "Shape notes",
-    copy: "Generate summaries, decisions, action items, and questions.",
-    icon: NotebookPen,
-    cardClass: "border-notesSoft bg-notesFaint",
-    chipClass: "bg-notesSoft text-notes",
-  },
-  {
-    title: "Export",
-    copy: "Download transcript, notes, or a combined file after review.",
-    icon: Download,
-    cardClass: "border-attentionSoft bg-attentionFaint",
-    chipClass: "bg-attentionSoft text-attention",
-  },
-];
+import { Button } from "@/components/ui/button";
 
-const transcriptPreview = [
-  {
-    time: "00:00",
-    speaker: "Speaker 1",
-    text: "Good morning everyone, today pag-uusapan natin yung structure ng research interview.",
-  },
-  {
-    time: "00:05",
-    speaker: "Speaker 2",
-    text: "Sir, kailangan po ba exact yung questions or pwede siyang conversational?",
-  },
-  {
-    time: "00:11",
-    speaker: "Speaker 1",
-    text: "Conversational is okay, basta consistent yung goal and easy to verify later.",
-  },
-];
-
-export default function HomePage() {
+export default function LandingPage() {
   return (
-    <main className="grid gap-6">
-      <section className="overflow-hidden rounded-lg bg-brandDeep text-panel shadow-panel">
-        <div className="grid gap-8 p-5 sm:p-7 lg:grid-cols-[minmax(0,1fr)_29rem] lg:items-center lg:p-8">
-          <div className="grid gap-5">
-            <div className="grid gap-3">
-              <p className="font-mono text-[11px] uppercase text-accentSoft">
-                Uploaded recording workspace
-              </p>
-              <h1 className="max-w-3xl text-4xl font-semibold leading-tight sm:text-5xl">
-                Review recordings faster without losing the original audio.
-              </h1>
-              <p className="max-w-2xl text-base leading-7 text-brandMuted">
-                Salin turns uploaded Tagalog, English, and Taglish recordings
-                into timestamped transcripts, editable speaker labels,
-                structured notes, and clean exports.
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Link
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-accentSoft px-4 text-sm font-medium text-brandDeep transition-colors hover:bg-panel focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accentSoft"
-                href="/dashboard"
-              >
-                Open dashboard
-                <ArrowRight aria-hidden="true" className="h-4 w-4" />
+    <div className="flex min-h-screen flex-col bg-canvas">
+      {/* Navbar */}
+      <header className="sticky top-0 z-50 w-full border-b border-line/80 bg-panel/96 backdrop-blur">
+        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
+          <div className="flex items-center gap-3">
+            <span className="inline-flex size-8 items-center justify-center rounded-lg border border-accentSoft bg-accentFaint text-accent">
+              <AudioLines className="h-4 w-4" />
+            </span>
+            <span className="text-base font-semibold tracking-[-0.03em] text-ink">
+              Salin
+            </span>
+          </div>
+          <nav className="flex items-center gap-4">
+            <Button asChild className="text-muted hover:text-ink" variant="ghost">
+              <Link href="/preview/recording">Preview</Link>
+            </Button>
+            <Button asChild variant="accent">
+              <Link href="/dashboard">
+                Dashboard
+                <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
-              <Link
-                className="inline-flex h-10 items-center justify-center rounded-md border border-brandLine px-4 text-sm font-medium text-panel transition-colors hover:bg-brandPanel focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accentSoft"
-                href="/preview/recording"
-              >
-                Preview workspace
-              </Link>
+            </Button>
+          </nav>
+        </div>
+      </header>
+
+      {/* Hero Section */}
+      <main className="flex-1">
+        <section className="mx-auto max-w-6xl px-6 py-24 sm:py-32 lg:px-8">
+          <div className="mx-auto max-w-3xl text-center">
+            <h1 className="text-4xl font-semibold tracking-[-0.04em] text-ink sm:text-6xl text-balance">
+              Turn recordings into structured notes.
+            </h1>
+            <p className="mt-6 text-lg leading-8 text-muted">
+              Salin is a recording-to-notes workspace built for Tagalog, English, and Taglish. 
+              Upload your meetings, lectures, or interviews, and get a highly accurate transcript 
+              and generated notes without the clutter.
+            </p>
+            <div className="mt-10 flex items-center justify-center gap-x-6">
+              <Button asChild className="h-12 px-6" variant="accent">
+                <Link href="/dashboard">
+                  Go to Dashboard
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
             </div>
           </div>
+        </section>
 
-          <div className="rounded-lg border border-brandLine bg-brandPanel p-3">
-            <div className="rounded-md border border-accentSoft bg-panel p-4 text-ink">
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-3">
-                <div>
-                  <p className="text-sm font-semibold text-ink">
-                    taglish-lecture-preview.mp3
-                  </p>
-                  <p className="mt-1 text-xs text-muted">
-                    Transcript ready - speaker labels estimated
+        {/* Feature Grid */}
+        <section className="border-t border-line/80 bg-panel py-24 sm:py-32">
+          <div className="mx-auto max-w-6xl px-6 lg:px-8">
+            <div className="mx-auto max-w-2xl sm:text-center">
+              <h2 className="text-3xl font-semibold tracking-[-0.03em] text-ink sm:text-4xl">
+                A serious workspace for bilingual review
+              </h2>
+              <p className="mt-4 text-lg leading-8 text-muted text-balance">
+                Everything you need to study, audit, and extract usable content from mixed-language audio.
+              </p>
+            </div>
+
+            <div className="mx-auto mt-16 max-w-2xl sm:mt-20 lg:mt-24 lg:max-w-none">
+              <div className="grid max-w-xl grid-cols-1 gap-x-8 gap-y-16 lg:max-w-none lg:grid-cols-3">
+                <div className="flex flex-col">
+                  <div className="mb-6 flex h-10 w-10 items-center justify-center rounded-lg border border-accentSoft bg-accentFaint">
+                    <Globe className="h-5 w-5 text-accent" />
+                  </div>
+                  <h3 className="text-lg font-semibold tracking-[-0.03em] text-ink">Bilingual-native</h3>
+                  <p className="mt-2 flex-auto text-base leading-7 text-muted">
+                    Built natively for Taglish. No more fighting with transcription engines that can only handle one language at a time.
                   </p>
                 </div>
-                <span className="inline-flex h-8 items-center gap-2 rounded-md bg-reviewSoft px-3 text-xs font-medium text-review">
-                  <Play aria-hidden="true" className="h-3.5 w-3.5" />
-                  24:18
-                </span>
-              </div>
-              <div className="grid gap-3 pt-3">
-                {transcriptPreview.map((segment) => (
-                  <div
-                    className="grid gap-3 rounded-md border border-line bg-field p-3 sm:grid-cols-[4rem_minmax(0,1fr)]"
-                    key={segment.time}
-                  >
-                    <span className="font-mono text-xs text-review">
-                      {segment.time}
-                    </span>
-                    <div className="grid gap-1">
-                      <p className="text-xs font-medium text-muted">
-                        {segment.speaker} - estimated
-                      </p>
-                      <p className="text-sm leading-6 text-ink">{segment.text}</p>
-                    </div>
+                
+                <div className="flex flex-col">
+                  <div className="mb-6 flex h-10 w-10 items-center justify-center rounded-lg border border-line/80 bg-canvas">
+                    <FileText className="h-5 w-5 text-muted" />
                   </div>
-                ))}
+                  <h3 className="text-lg font-semibold tracking-[-0.03em] text-ink">Transcript-first workflow</h3>
+                  <p className="mt-2 flex-auto text-base leading-7 text-muted">
+                    The transcript is the primary artifact. Read, skim, search, and correct without opening a separate player.
+                  </p>
+                </div>
+
+                <div className="flex flex-col">
+                  <div className="mb-6 flex h-10 w-10 items-center justify-center rounded-lg border border-line/80 bg-canvas">
+                    <NotebookPen className="h-5 w-5 text-muted" />
+                  </div>
+                  <h3 className="text-lg font-semibold tracking-[-0.03em] text-ink">Generated notes</h3>
+                  <p className="mt-2 flex-auto text-base leading-7 text-muted">
+                    Summaries, action items, and key points are generated directly from the transcript, keeping them accurate and anchored to the text.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      </main>
 
-      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {workflow.map((step, index) => {
-          const Icon = step.icon;
-          return (
-            <div
-              className={`rounded-lg border p-4 shadow-panel ${step.cardClass}`}
-              key={step.title}
-            >
-              <div
-                className={`inline-flex h-9 w-9 items-center justify-center rounded-md ${step.chipClass}`}
-              >
-                <Icon aria-hidden="true" className="h-4 w-4" />
-              </div>
-              <p className="mt-4 font-mono text-xs text-muted">
-                {(index + 1).toString().padStart(2, "0")}
-              </p>
-              <h2 className="mt-3 text-base font-semibold text-ink">{step.title}</h2>
-              <p className="mt-2 text-sm leading-6 text-muted">{step.copy}</p>
-            </div>
-          );
-        })}
-      </section>
-
-      <section className="grid gap-4 rounded-lg border border-reviewSoft bg-reviewFaint p-5 sm:p-6 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)] lg:items-center">
-        <div className="grid gap-2">
-          <h2 className="text-2xl font-semibold text-ink">
-            Built for review, not live meetings.
-          </h2>
-          <p className="max-w-2xl text-sm leading-6 text-muted">
-            Upload a finished recording, wait for processing, then work through
-            transcript, audio verification, notes, speaker correction, and export
-            in a focused workspace.
-          </p>
-        </div>
-        <div className="grid gap-2 text-sm">
-          <div className="flex items-center gap-2 rounded-md bg-panel px-3 py-2">
-            <FileText aria-hidden="true" className="h-4 w-4 text-review" />
-            Timestamped transcript
-          </div>
-          <div className="flex items-center gap-2 rounded-md bg-panel px-3 py-2">
-            <UserRound aria-hidden="true" className="h-4 w-4 text-accent" />
-            Editable estimated speakers
-          </div>
-          <div className="flex items-center gap-2 rounded-md bg-panel px-3 py-2">
-            <NotebookPen aria-hidden="true" className="h-4 w-4 text-notes" />
-            Notes from saved transcript data
-          </div>
-          <div className="flex items-center gap-2 rounded-md bg-panel px-3 py-2">
-            <Download aria-hidden="true" className="h-4 w-4 text-attention" />
-            Transcript and notes exports
-          </div>
-        </div>
-      </section>
-
-      <section className="flex flex-col gap-3 rounded-lg border border-line bg-panel p-5 shadow-panel sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="font-semibold text-ink">Ready to try the workflow?</p>
-          <p className="mt-1 text-sm text-muted">
-            Open the dashboard to upload a recording, or use the preview while
-            the backend is offline.
-          </p>
-        </div>
-        <Link
-          className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-accent px-4 text-sm font-medium text-panel transition-colors hover:bg-[#22564f] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-          href="/dashboard"
-        >
-          Go to dashboard
-          <ArrowRight aria-hidden="true" className="h-4 w-4" />
-        </Link>
-      </section>
-    </main>
+      <footer className="border-t border-line/80 bg-canvas py-10 text-center">
+        <p className="text-sm text-muted">
+          Salin &copy; {new Date().getFullYear()}. Transcript console.
+        </p>
+      </footer>
+    </div>
   );
 }

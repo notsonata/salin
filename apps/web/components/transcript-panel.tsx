@@ -1,49 +1,76 @@
 "use client";
 
-import { type FormEvent, useEffect, useState } from "react";
-import { FileText, Pencil, Play, Save, Search, UserRound } from "lucide-react";
+import { type FormEvent, type RefObject, useEffect, useState } from "react";
+import {
+  AudioLines,
+  ExternalLink,
+  Pencil,
+  Search,
+  UserRound,
+} from "lucide-react";
 
 import type { TranscriptSegment } from "@salin/shared";
 
 import { ExportLinks, type ExportLinkItem } from "@/components/export-links";
+import { AudioVisualizer } from "@/components/audio-visualizer";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatTimestamp } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 export function TranscriptPanel({
   activeSegmentId,
+  audioRef,
   canSeek,
   exportLinks,
   filteredSegments,
   matchCount,
+  normalizedUrl,
   onQueryChange,
   onRenameSpeaker,
   onSeek,
-  onUpdateSegmentSpeaker,
+  onUpdateSegment,
+  originalUrl,
   query,
   speakerLabels,
   speakerMessage,
   speakerSavingTarget,
 }: {
   activeSegmentId: string | null;
+  audioRef: RefObject<HTMLAudioElement | null>;
   canSeek: boolean;
   exportLinks: ExportLinkItem[];
   filteredSegments: TranscriptSegment[];
   matchCount: number;
+  normalizedUrl?: string;
+  originalUrl?: string;
+  query: string;
   speakerLabels: string[];
   speakerMessage: string | null;
   speakerSavingTarget: string | null;
   onQueryChange: (value: string) => void;
   onRenameSpeaker: (fromLabel: string, toLabel: string) => Promise<void>;
   onSeek: (segment: TranscriptSegment) => void;
-  onUpdateSegmentSpeaker: (segmentId: string, speakerLabel: string) => Promise<void>;
-  query: string;
+  onUpdateSegment: (segmentId: string, speakerLabel: string, text: string) => Promise<void>;
 }) {
   const [renameFrom, setRenameFrom] = useState("");
   const [renameTo, setRenameTo] = useState("");
-  const [segmentDrafts, setSegmentDrafts] = useState<Record<string, string>>({});
+  const [speakerDrafts, setSpeakerDrafts] = useState<Record<string, string>>({});
+  const [textDrafts, setTextDrafts] = useState<Record<string, string>>({});
+  const [expandedSegmentId, setExpandedSegmentId] = useState<string | null>(null);
+  const [speakerToolsOpen, setSpeakerToolsOpen] = useState(false);
 
   useEffect(() => {
     if (!speakerLabels.length) {
@@ -57,10 +84,17 @@ export function TranscriptPanel({
   }, [speakerLabels]);
 
   useEffect(() => {
-    setSegmentDrafts((current) => {
+    setSpeakerDrafts((current) => {
       const nextDrafts = { ...current };
       for (const segment of filteredSegments) {
         nextDrafts[segment.id] = segment.speaker_label;
+      }
+      return nextDrafts;
+    });
+    setTextDrafts((current) => {
+      const nextDrafts = { ...current };
+      for (const segment of filteredSegments) {
+        nextDrafts[segment.id] = segment.text;
       }
       return nextDrafts;
     });
@@ -81,211 +115,295 @@ export function TranscriptPanel({
     segment: TranscriptSegment,
   ) {
     event.preventDefault();
-    const nextLabel = (segmentDrafts[segment.id] ?? "").trim();
-    if (!nextLabel || nextLabel === segment.speaker_label) {
+    const nextSpeaker = (speakerDrafts[segment.id] ?? "").trim();
+    const nextText = (textDrafts[segment.id] ?? "").trim();
+    if (!nextSpeaker || !nextText || (nextSpeaker === segment.speaker_label && nextText === segment.text)) {
       return;
     }
 
-    void onUpdateSegmentSpeaker(segment.id, nextLabel);
+    void onUpdateSegment(segment.id, nextSpeaker, nextText);
   }
 
   const speakerBusy = speakerSavingTarget !== null;
 
   return (
-    <Card className="overflow-hidden border-reviewSoft p-0">
-      <div className="grid gap-4 border-b border-reviewSoft bg-reviewFaint px-4 py-4 sm:px-5 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-end">
-        <div className="grid gap-2">
-          <div className="flex flex-wrap items-center gap-3">
-            <FileText aria-hidden="true" className="h-4 w-4 text-review" />
-            <h2 className="text-lg font-semibold text-ink">Transcript</h2>
-            <Badge className="border-reviewSoft bg-panel text-review">{matchCount} visible</Badge>
-          </div>
-          <p className="max-w-3xl text-sm leading-6 text-muted">
-            Search the transcript, jump into the recording from any timestamp,
-            and correct estimated speaker labels without leaving the review flow.
-          </p>
-        </div>
+    <Card>
+      <div
+        className="border-b border-line/80 bg-panel"
+        data-testid="transcript-toolbar"
+      >
+        <div className="grid gap-4 px-4 py-4 sm:px-5">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="grid gap-2">
+              <div className="flex flex-wrap items-center gap-3">
+                <AudioLines className="h-4 w-4 text-review" />
+                <h2 className="text-lg font-semibold tracking-[-0.03em] text-ink">
+                  Transcript review
+                </h2>
+                <Badge tone="review">{matchCount} visible</Badge>
+              </div>
+              <p className="max-w-3xl text-sm leading-6 text-muted">
+                Read first, skim by timestamp, then correct only the labels that need
+                human cleanup.
+              </p>
+            </div>
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
-          <label className="relative block min-w-0 sm:min-w-[17rem]" htmlFor="transcript-search">
-            <span className="sr-only">Search transcript</span>
-            <Search
-              aria-hidden="true"
-              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-review"
-            />
-            <input
-              className="h-10 w-full rounded-md border border-reviewSoft bg-panel pl-9 pr-3 text-sm text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-review"
-              id="transcript-search"
-              onChange={(event) => onQueryChange(event.target.value)}
-              placeholder="Search transcript"
-              value={query}
-            />
-          </label>
-          <ExportLinks items={exportLinks} label="Exports" />
+            <div className="flex flex-wrap items-center gap-2">
+              {originalUrl ? (
+                <Button asChild size="sm" variant="secondary">
+                  <a href={originalUrl} rel="noreferrer" target="_blank">
+                    <ExternalLink className="h-4 w-4" />
+                    Original upload
+                  </a>
+                </Button>
+              ) : null}
+              <ExportLinks items={exportLinks} label="Export transcript" />
+            </div>
+          </div>
+
+          <div className="grid gap-4">
+            {normalizedUrl ? (
+              <AudioVisualizer audioRef={audioRef} url={normalizedUrl} />
+            ) : (
+              <div className="rounded-xl border border-dashed border-line bg-canvas px-4 py-3 text-sm text-muted">
+                Normalized review audio unavailable.
+              </div>
+            )}
+
+            <div className="flex">
+              <label className="relative block flex-1" htmlFor="transcript-search">
+                <span className="sr-only">Search transcript</span>
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
+                <Input
+                  id="transcript-search"
+                  className="pl-9"
+                  placeholder="Search transcript"
+                  value={query}
+                  onChange={(event) => onQueryChange(event.target.value)}
+                />
+              </label>
+            </div>
+          </div>
         </div>
       </div>
 
-      {speakerLabels.length ? (
-        <form
-          className="grid gap-3 border-b border-accentSoft bg-accentFaint px-4 py-4 sm:px-5 lg:grid-cols-[minmax(10rem,14rem)_minmax(12rem,1fr)_auto] lg:items-end"
-          onSubmit={handleRenameSubmit}
-        >
-          <div className="grid gap-1.5">
-            <label className="text-xs font-medium text-muted" htmlFor="speaker-rename-from">
-              Speaker to rename
-            </label>
-            <select
-              className="h-10 rounded-md border border-accentSoft bg-panel px-3 text-sm text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-              disabled={speakerBusy}
-              id="speaker-rename-from"
-              value={renameFrom}
-              onChange={(event) => setRenameFrom(event.target.value)}
-            >
-              {speakerLabels.map((label) => (
-                <option key={label} value={label}>
-                  {label}
-                </option>
-              ))}
-            </select>
+      <div className="border-b border-line/80 bg-canvas/70 px-4 py-4 sm:px-5">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="grid gap-1">
+            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
+              Speaker utility
+            </p>
+            <p className="text-sm leading-6 text-muted">
+              Rename one label globally, then make compact row-level corrections where
+              the estimate drifts.
+            </p>
           </div>
-          <div className="grid gap-1.5">
-            <label className="text-xs font-medium text-muted" htmlFor="speaker-rename-to">
-              Corrected speaker name
+          <Button
+            size="sm"
+            type="button"
+            variant="secondary"
+            onClick={() => setSpeakerToolsOpen((current) => !current)}
+          >
+            <Pencil className="h-4 w-4" />
+            Rename speakers
+          </Button>
+        </div>
+
+        {speakerToolsOpen && speakerLabels.length ? (
+          <form
+            className="mt-4 grid gap-3 rounded-xl border border-line/80 bg-panel px-4 py-4 lg:grid-cols-[minmax(12rem,0.7fr)_minmax(14rem,1fr)_auto] lg:items-end"
+            onSubmit={handleRenameSubmit}
+          >
+            <label className="grid gap-2">
+              <span className="text-sm font-medium text-ink">Speaker to rename</span>
+              <Select
+                value={renameFrom}
+                onValueChange={(value) => setRenameFrom(value)}
+              >
+                <SelectTrigger aria-label="Speaker to rename">
+                  <SelectValue placeholder="Speaker to rename" />
+                </SelectTrigger>
+                <SelectContent>
+                  {speakerLabels.map((label) => (
+                    <SelectItem key={label} value={label}>
+                      {label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </label>
-            <input
-              className="h-10 rounded-md border border-accentSoft bg-panel px-3 text-sm text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-              disabled={speakerBusy}
-              id="speaker-rename-to"
-              maxLength={255}
-              placeholder="Teacher, Student, Interviewer"
-              value={renameTo}
-              onChange={(event) => setRenameTo(event.target.value)}
-            />
-          </div>
-          <div className="lg:self-end">
+
+            <label className="grid gap-2" htmlFor="speaker-rename-to">
+              <span className="text-sm font-medium text-ink">Corrected speaker name</span>
+              <Input
+                disabled={speakerBusy}
+                id="speaker-rename-to"
+                maxLength={255}
+                placeholder="Teacher, Interviewer, Resident"
+                value={renameTo}
+                onChange={(event) => setRenameTo(event.target.value)}
+              />
+            </label>
+
             <Button
               disabled={
                 speakerBusy || !renameFrom || !renameTo.trim() || renameTo.trim() === renameFrom
               }
               type="submit"
-              variant="secondary"
+              variant="accent"
             >
-              <Pencil aria-hidden="true" className="h-4 w-4" />
               {speakerSavingTarget === "rename" ? "Saving..." : "Rename speaker"}
             </Button>
-          </div>
-          {speakerMessage ? (
-            <p className="text-sm font-medium text-success lg:col-span-3">{speakerMessage}</p>
-          ) : null}
-        </form>
-      ) : null}
+          </form>
+        ) : null}
+
+        {speakerMessage ? (
+          <p className="mt-3 text-sm font-medium text-success">{speakerMessage}</p>
+        ) : null}
+      </div>
 
       {filteredSegments.length ? (
-        <div className="divide-y divide-line bg-panel">
-          {filteredSegments.map((segment) => {
-            const isActive = activeSegmentId === segment.id;
-            const draftLabel = segmentDrafts[segment.id] ?? segment.speaker_label;
-            return (
-              <article
-                className={cn(
-                  "grid gap-4 border-l-4 px-4 py-4 transition-colors sm:grid-cols-[5.75rem_minmax(0,1fr)] sm:px-5",
-                  isActive
-                    ? "border-review bg-reviewFaint"
-                    : "border-transparent hover:bg-field",
-                )}
-                key={segment.id}
-              >
-                <div className="grid content-start gap-2">
-                  <button
-                    aria-pressed={isActive}
+        <TooltipProvider delayDuration={150}>
+          <div>
+            <div className="divide-y divide-line/80 bg-panel">
+              {filteredSegments.map((segment) => {
+                const isActive = activeSegmentId === segment.id;
+                const draftSpeaker = speakerDrafts[segment.id] ?? segment.speaker_label;
+                const draftText = textDrafts[segment.id] ?? segment.text;
+                const timestamp = formatTimestamp(segment.start_ms);
+                const expanded = expandedSegmentId === segment.id;
+
+                return (
+                  <article
                     className={cn(
-                      "inline-flex h-10 items-center justify-center gap-2 rounded-md border px-3 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-review",
-                      canSeek
-                        ? "border-reviewSoft bg-reviewFaint text-review hover:bg-reviewSoft"
-                        : "border-line bg-field text-muted",
-                      isActive ? "border-review bg-review text-panel hover:bg-[#285181]" : "",
+                      "grid gap-4 px-4 py-4 transition-colors sm:grid-cols-[4.75rem_minmax(0,1fr)_auto] sm:px-5",
+                      isActive ? "bg-reviewFaint" : "hover:bg-hover/50",
                     )}
-                    disabled={!canSeek}
-                    type="button"
-                    onClick={() => onSeek(segment)}
+                    key={segment.id}
                   >
-                    <Play aria-hidden="true" className="h-3.5 w-3.5" />
-                    {formatTimestamp(segment.start_ms)}
-                  </button>
-                  <span className="text-xs text-muted">
-                    {canSeek ? "Jump to audio" : "Audio unavailable"}
-                  </span>
-                </div>
+                    <div className="grid content-start gap-2">
+                      <button
+                        aria-pressed={isActive}
+                        className={cn(
+                          "inline-flex h-11 items-center justify-center rounded-md border font-mono text-sm transition-colors",
+                          canSeek
+                            ? "border-reviewSoft bg-panel text-review hover:bg-reviewFaint"
+                            : "border-line bg-field text-muted",
+                          isActive && "border-review bg-review text-panel hover:bg-review",
+                        )}
+                        disabled={!canSeek}
+                        type="button"
+                        onClick={() => onSeek(segment)}
+                      >
+                        {timestamp}
+                      </button>
+                      <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
+                        {formatTimestamp(segment.end_ms - segment.start_ms)} span
+                      </span>
+                    </div>
 
-                <div className="grid min-w-0 gap-3">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="inline-flex items-center gap-2 text-sm font-medium text-ink">
-                      <UserRound aria-hidden="true" className="h-4 w-4 text-muted" />
-                      {segment.speaker_label}
-                    </span>
-                    <Badge
-                      className={
-                        segment.speaker_estimated
-                          ? "border-attentionSoft bg-attentionSoft text-attention"
-                          : "border-accentSoft bg-accentSoft text-accent"
-                      }
-                    >
-                      {segment.speaker_estimated ? "Estimated" : "Edited"}
-                    </Badge>
-                    <span className="font-mono text-[11px] uppercase text-muted">
-                      {segment.source_provider}
-                    </span>
-                    {isActive ? (
-                      <Badge className="border-reviewSoft bg-reviewSoft text-review">
-                        Active
-                      </Badge>
-                    ) : null}
-                  </div>
+                    <div className="grid gap-3">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="inline-flex items-center gap-2 text-sm font-medium text-ink">
+                          <UserRound className="h-4 w-4 text-muted" />
+                          {segment.speaker_label}
+                        </span>
+                      </div>
 
-                  <p className="text-[15px] leading-7 text-ink">{segment.text}</p>
+                      <p className="max-w-[80ch] text-[15px] leading-7 text-ink">
+                        {segment.text}
+                      </p>
 
-                  <form
-                    className="grid gap-2 rounded-md border border-line bg-field p-3 sm:max-w-2xl sm:grid-cols-[minmax(10rem,1fr)_auto] sm:items-end"
-                    onSubmit={(event) => handleSegmentSubmit(event, segment)}
-                  >
-                    <label className="grid gap-1.5 text-xs font-medium text-muted">
-                      <span>Speaker label for {formatTimestamp(segment.start_ms)}</span>
-                      <input
-                        className="h-10 rounded-md border border-line bg-panel px-3 text-sm text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-                        disabled={speakerBusy}
-                        maxLength={255}
-                        value={draftLabel}
-                        onChange={(event) =>
-                          setSegmentDrafts((current) => ({
-                            ...current,
-                            [segment.id]: event.target.value,
-                          }))
-                        }
-                      />
-                    </label>
-                    <Button
-                      disabled={
-                        speakerBusy ||
-                        !draftLabel.trim() ||
-                        draftLabel.trim() === segment.speaker_label
-                      }
-                      type="submit"
-                      variant="ghost"
-                    >
-                      <Save aria-hidden="true" className="h-4 w-4" />
-                      {speakerSavingTarget === segment.id ? "Saving..." : "Apply speaker"}
-                    </Button>
-                  </form>
-                </div>
-              </article>
-            );
-          })}
-        </div>
+                      {expanded ? (
+                        <form
+                          className="grid gap-4 rounded-xl border border-line/80 bg-canvas px-4 py-4 sm:max-w-3xl"
+                          onSubmit={(event) => handleSegmentSubmit(event, segment)}
+                        >
+                          <div className="grid gap-4">
+                            <label className="grid gap-2">
+                              <span className="text-sm font-medium text-ink">
+                                Speaker label for {timestamp}
+                              </span>
+                              <Input
+                                aria-label={`Speaker label for ${timestamp}`}
+                                disabled={speakerBusy}
+                                maxLength={255}
+                                value={draftSpeaker}
+                                onChange={(event) =>
+                                  setSpeakerDrafts((current) => ({
+                                    ...current,
+                                    [segment.id]: event.target.value,
+                                  }))
+                                }
+                              />
+                            </label>
+                            <label className="grid gap-2">
+                              <span className="text-sm font-medium text-ink">
+                                Segment text
+                              </span>
+                              <Textarea
+                                aria-label={`Segment text for ${timestamp}`}
+                                className="min-h-[100px]"
+                                disabled={speakerBusy}
+                                value={draftText}
+                                onChange={(event) =>
+                                  setTextDrafts((current) => ({
+                                    ...current,
+                                    [segment.id]: event.target.value,
+                                  }))
+                                }
+                              />
+                            </label>
+                          </div>
+                          <div className="flex justify-end">
+                            <Button
+                              disabled={
+                                speakerBusy ||
+                                !draftSpeaker.trim() ||
+                                !draftText.trim() ||
+                                (draftSpeaker.trim() === segment.speaker_label && draftText.trim() === segment.text)
+                              }
+                              type="submit"
+                              variant="secondary"
+                            >
+                              {speakerSavingTarget === segment.id ? "Saving..." : "Apply edits"}
+                            </Button>
+                          </div>
+                        </form>
+                      ) : null}
+                    </div>
+
+                    <div className="justify-self-end">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            aria-label={`Edit segment at ${timestamp}`}
+                            size="icon"
+                            type="button"
+                            variant="ghost"
+                            onClick={() =>
+                              setExpandedSegmentId((current) =>
+                                current === segment.id ? null : segment.id,
+                              )
+                            }
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Edit segment at {timestamp}</TooltipContent>
+                      </Tooltip>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </div>
+        </TooltipProvider>
       ) : (
         <div className="px-5 py-8">
-          <p className="text-sm font-medium text-ink">No transcript matches</p>
-          <p className="mt-2 text-sm text-muted">
-            Try a different speaker label, phrase, or spelling.
+          <p className="text-sm font-medium text-ink">No transcript rows match the search.</p>
+          <p className="mt-2 text-sm leading-6 text-muted">
+            Clear the search input to restore the full transcript.
           </p>
         </div>
       )}

@@ -65,6 +65,14 @@ class RecordingRepository:
     def get_recording(self, recording_id: str) -> Recording | None:
         return self.session.get(Recording, recording_id)
 
+    def rename_recording(self, recording_id: str, filename: str) -> Recording:
+        recording = self.require_recording(recording_id)
+        recording.filename = filename
+        recording.updated_at = datetime.now(UTC)
+        self.session.commit()
+        self.session.refresh(recording)
+        return recording
+
     def get_job(self, recording_id: str) -> ProcessingJob | None:
         statement = select(ProcessingJob).where(ProcessingJob.recording_id == recording_id)
         return self.session.scalar(statement)
@@ -110,12 +118,13 @@ class RecordingRepository:
         self.session.commit()
         return self.list_segments(recording_id)
 
-    def update_segment_speaker(
+    def update_segment(
         self,
         recording_id: str,
         *,
         segment_id: str,
         speaker_label: str,
+        text: str,
     ) -> list[TranscriptSegment]:
         recording = self.require_recording(recording_id)
         statement = select(TranscriptSegment).where(
@@ -127,6 +136,7 @@ class RecordingRepository:
             raise LookupError("Transcript segment not found")
 
         segment.speaker_label = speaker_label
+        segment.text = text
         segment.speaker_estimated = False
         recording.updated_at = datetime.now(UTC)
         self.session.commit()
@@ -231,22 +241,14 @@ class RecordingRepository:
         self,
         recording_id: str,
         *,
-        summary: str,
-        key_points: list[str],
-        decisions: list[str],
-        action_items: list[str],
-        questions: list[str],
+        content: str,
         source_provider: str,
     ) -> GeneratedNotes:
         notes = self._ensure_generated_notes(recording_id)
         recording = self.require_recording(recording_id)
         now = datetime.now(UTC)
         notes.status = "completed"
-        notes.summary = summary
-        notes.key_points_json = json.dumps(key_points)
-        notes.decisions_json = json.dumps(decisions)
-        notes.action_items_json = json.dumps(action_items)
-        notes.questions_json = json.dumps(questions)
+        notes.content = content
         notes.error_message = None
         notes.source_provider = source_provider
         notes.generation_count += 1
@@ -272,21 +274,13 @@ class RecordingRepository:
         self,
         recording_id: str,
         *,
-        summary: str | None,
-        key_points: list[str],
-        decisions: list[str],
-        action_items: list[str],
-        questions: list[str],
+        content: str | None,
     ) -> GeneratedNotes:
         notes = self._ensure_generated_notes(recording_id)
         recording = self.require_recording(recording_id)
         now = datetime.now(UTC)
         notes.status = "completed"
-        notes.summary = summary
-        notes.key_points_json = json.dumps(key_points)
-        notes.decisions_json = json.dumps(decisions)
-        notes.action_items_json = json.dumps(action_items)
-        notes.questions_json = json.dumps(questions)
+        notes.content = content
         notes.error_message = None
         recording.updated_at = now
         self.session.commit()
@@ -349,11 +343,7 @@ class RecordingRepository:
         notes = GeneratedNotes(
             recording_id=recording_id,
             status="idle",
-            summary=None,
-            key_points_json="[]",
-            decisions_json="[]",
-            action_items_json="[]",
-            questions_json="[]",
+            content=None,
             generation_count=0,
         )
         self.session.add(notes)

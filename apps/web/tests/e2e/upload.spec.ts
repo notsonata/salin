@@ -126,6 +126,21 @@ function recordingsListRow({
   };
 }
 
+test("home frames the product as a transcript review board", async ({ page }) => {
+  await page.goto("/");
+
+  await expect(
+    page.getByRole("heading", { name: "Review across languages." }),
+  ).toBeVisible();
+  await expect(page.getByRole("link", { name: "Open dashboard" })).toBeVisible();
+  await expect(
+    page.getByRole("main").getByRole("link", { name: "Preview workspace" }),
+  ).toBeVisible();
+  await expect(page.getByTestId("home-workspace-specimen")).toBeVisible();
+  await expect(page.getByTestId("home-session-board")).toBeVisible();
+  await expect(page.getByText("Transcript specimen")).toBeVisible();
+});
+
 test("dashboard home shows upload composer and recent recordings", async ({ page }) => {
   await page.route("http://localhost:8000/recordings", async (route) => {
     await route.fulfill({
@@ -146,7 +161,9 @@ test("dashboard home shows upload composer and recent recordings", async ({ page
   await page.goto("/dashboard");
 
   await expect(page.getByRole("heading", { name: "New recording", exact: true })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Recent recordings" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Library" })).toBeVisible();
+  await expect(page.getByTestId("dashboard-command-deck")).toBeVisible();
+  await expect(page.getByTestId("recordings-library")).toBeVisible();
   await expect(page.getByRole("cell", { name: "lecture.mp3" })).toBeVisible();
   await expect(page.getByRole("cell", { name: "client-call.mp3" })).toBeVisible();
 });
@@ -243,53 +260,90 @@ test("supported upload transitions into the interactive transcript workspace", a
 
   await page.goto("/dashboard");
   await expect(page.getByRole("heading", { name: "New recording", exact: true })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Recent recordings" })).toBeVisible();
   await page.setInputFiles('input[type="file"]', {
     name: "lecture.mp3",
     mimeType: "audio/mpeg",
     buffer: Buffer.from("fake-audio"),
   });
-  await page.getByLabel("Language").selectOption("auto");
-  await page.getByLabel("Processing mode").selectOption("accurate");
   await page.getByRole("button", { name: "Start processing" }).click();
 
-  await page.waitForURL("**/recordings/rec_1", { timeout: 15_000 });
+  await page.waitForURL("**/workspace/rec_1", { timeout: 15_000 });
+  const desktopGrid = page.getByTestId("desktop-workspace-grid");
   await expect(page.getByRole("link", { name: "Back to dashboard" })).toBeVisible({
     timeout: 15_000,
   });
-  await expect(page.getByRole("tab", { name: "Transcript" })).toBeVisible();
-  await expect(page.getByRole("tab", { name: "Notes" })).toBeVisible();
+  await expect(page.getByTestId("workspace-shell")).toBeVisible();
+  await expect(page.getByTestId("workspace-top-strip")).toBeVisible();
+  await expect(desktopGrid).toBeVisible();
+  await expect(desktopGrid.getByTestId("notes-dock")).toBeVisible();
+  await expect(desktopGrid.getByTestId("transcript-toolbar")).toBeVisible();
+  await expect(page.getByTestId("mobile-workspace-tabs")).toBeHidden();
   await expect(page.getByText("Transcript ready").first()).toBeVisible();
-  await expect(page.getByRole("heading", { name: "lecture.mp3" })).toBeVisible();
-  await expect(page.getByText("Kamusta sa transcript workspace.")).toBeVisible();
-  await expect(page.getByRole("link", { name: "Open original upload" })).toBeVisible();
-  await expect(page.locator("audio")).toHaveAttribute(
+  await expect(page.getByRole("heading", { name: "lecture.mp3", exact: true })).toBeVisible();
+  await expect(desktopGrid.getByText("Kamusta sa transcript workspace.")).toBeVisible();
+  await expect(
+    page.getByText("Speaker labels are automatically estimated and can be edited."),
+  ).toBeVisible();
+  await expect(desktopGrid.locator("audio")).toHaveAttribute(
     "src",
     /data:audio\/wav;base64/,
   );
+  const toolbarPosition = await page
+    .getByTestId("desktop-workspace-grid")
+    .getByTestId("transcript-toolbar")
+    .evaluate((node) => window.getComputedStyle(node).position);
+  expect(toolbarPosition).toBe("sticky");
 
-  await page.getByPlaceholder("Search transcript").fill("search");
-  await expect(page.getByText("Search and notes should stay useful.")).toBeVisible();
-  await expect(page.getByText("Kamusta sa transcript workspace.")).toBeHidden();
+  await desktopGrid.getByPlaceholder("Search transcript").focus();
+  await expect(desktopGrid.getByPlaceholder("Search transcript")).toBeFocused();
+  await desktopGrid.getByPlaceholder("Search transcript").fill("search");
+  await expect(desktopGrid.getByText("Search and notes should stay useful.")).toBeVisible();
+  await expect(desktopGrid.getByText("Kamusta sa transcript workspace.")).toBeHidden();
 
-  await expect(page.getByRole("link", { name: "Export transcript TXT" })).toHaveAttribute(
+  await desktopGrid.getByRole("button", { name: "Export transcript" }).click();
+  await expect(desktopGrid.getByRole("link", { name: "Export transcript TXT" })).toHaveAttribute(
     "href",
     "http://localhost:8000/recordings/rec_1/exports/transcript.txt",
   );
-  await expect(page.getByRole("link", { name: "Export transcript PDF" })).toHaveAttribute(
+  await expect(desktopGrid.getByRole("link", { name: "Export transcript PDF" })).toHaveAttribute(
     "href",
     "http://localhost:8000/recordings/rec_1/exports/transcript.pdf",
   );
 
-  await page.getByRole("button", { name: "00:05" }).click();
-  await expect(page.getByRole("button", { name: "00:05" })).toHaveAttribute(
+  await desktopGrid.getByRole("button", { name: "00:05", exact: true }).click();
+  await expect(desktopGrid.getByRole("button", { name: "00:05", exact: true })).toHaveAttribute(
     "aria-pressed",
     "true",
   );
   const currentTimeValue = await page
+    .getByTestId("desktop-workspace-grid")
     .locator("audio")
     .evaluate((node) => (node as HTMLAudioElement).currentTime);
   expect(currentTimeValue).toBeGreaterThanOrEqual(5);
+});
+
+test("mobile workspace falls back to transcript and notes tabs", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+
+  await page.route("http://localhost:8000/recordings/rec_1", async (route) => {
+    await route.fulfill({
+      status: 200,
+      headers: {
+        "access-control-allow-origin": "*",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(completedDetail()),
+    });
+  });
+
+  await page.goto("/workspace/rec_1");
+
+  await expect(page.getByTestId("mobile-workspace-tabs")).toBeVisible();
+  await expect(page.getByTestId("desktop-workspace-grid")).toBeHidden();
+  await expect(page.getByRole("tab", { name: "Transcript" })).toBeVisible();
+  await expect(page.getByRole("tabpanel", { name: /Transcript/i })).toBeVisible();
+  await page.getByRole("tab", { name: "Notes" }).click();
+  await expect(page.getByRole("tabpanel", { name: /Notes/i })).toBeVisible();
 });
 
 test("speaker labels can be renamed and reassigned from the transcript", async ({
@@ -360,20 +414,23 @@ test("speaker labels can be renamed and reassigned from the transcript", async (
     },
   );
 
-  await page.goto("/recordings/rec_1");
+  await page.goto("/workspace/rec_1");
+  const desktopGrid = page.getByTestId("desktop-workspace-grid");
 
-  await expect(page.getByText("Estimated").first()).toBeVisible();
+  await expect(desktopGrid.getByText("Estimated").first()).toBeVisible();
+  await desktopGrid.getByRole("button", { name: "Rename speakers" }).click();
   await page.getByLabel("Corrected speaker name").fill("Teacher");
-  await page.getByRole("button", { name: "Rename speaker" }).click();
+  await page.getByRole("button", { name: "Rename speaker", exact: true }).click();
 
-  await expect(page.getByText("Speaker labels updated.")).toBeVisible();
+  await expect(desktopGrid.getByText("Speaker labels updated.")).toBeVisible();
+  await desktopGrid.getByRole("button", { name: "Edit speaker for 00:00" }).click();
   await expect(page.getByLabel("Speaker label for 00:00")).toHaveValue("Teacher");
-  await expect(page.getByText("Edited").first()).toBeVisible();
+  await expect(desktopGrid.getByText("Edited").first()).toBeVisible();
 
   await page.getByLabel("Speaker label for 00:00").fill("Student");
   await page.getByRole("button", { name: "Apply speaker" }).first().click();
 
-  await expect(page.getByText("Speaker label updated.")).toBeVisible();
+  await expect(desktopGrid.getByText("Speaker label updated.")).toBeVisible();
   await expect(page.getByLabel("Speaker label for 00:00")).toHaveValue("Student");
 });
 
@@ -398,14 +455,17 @@ test("transcript stays available while speaker labels are estimated", async ({ p
     });
   });
 
-  await page.goto("/recordings/rec_1");
+  await page.goto("/workspace/rec_1");
+  const desktopGrid = page.getByTestId("desktop-workspace-grid");
 
-  await expect(page.getByText("Transcript is ready.")).toBeVisible();
-  await expect(page.getByText("Speaker labels are still being estimated.")).toBeVisible();
+  await expect(
+    desktopGrid.getByText("Transcript is ready while speaker estimation continues."),
+  ).toBeVisible();
   await expect(page.getByText("Processing note:")).toBeVisible();
-  await expect(page.getByText("Kamusta sa transcript workspace.")).toBeVisible();
-  await expect(page.getByRole("link", { name: "Export transcript TXT" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Export transcript PDF" })).toBeVisible();
+  await expect(desktopGrid.getByText("Kamusta sa transcript workspace.")).toBeVisible();
+  await desktopGrid.getByRole("button", { name: "Export transcript" }).click();
+  await expect(desktopGrid.getByRole("link", { name: "Export transcript TXT" })).toBeVisible();
+  await expect(desktopGrid.getByRole("link", { name: "Export transcript PDF" })).toBeVisible();
 });
 
 test("manual notes generation renders the completed structured notes", async ({ page }) => {
@@ -472,31 +532,32 @@ test("manual notes generation renders the completed structured notes", async ({ 
     });
   });
 
-  await page.goto("/recordings/rec_1");
+  await page.goto("/workspace/rec_1");
+  const desktopGrid = page.getByTestId("desktop-workspace-grid");
 
-  await page.getByRole("tab", { name: "Notes" }).click();
-  await expect(page.getByRole("button", { name: "Generate notes" })).toBeVisible();
-  await page.getByRole("button", { name: "Generate notes" }).click();
+  await expect(desktopGrid.getByRole("button", { name: "Generate notes" })).toBeVisible();
+  await desktopGrid.getByRole("button", { name: "Generate notes" }).click();
 
   await expect(page.getByLabel("Summary")).toHaveValue("Clear summary");
   await expect(page.getByLabel("Key points 1")).toHaveValue("Key point");
   await expect(page.getByLabel("Decisions 1")).toHaveValue("Decision");
   await expect(page.getByLabel("Action items 1")).toHaveValue("Action item");
   await expect(page.getByLabel("Questions 1")).toHaveValue("Question");
-  await expect(page.getByRole("button", { name: "Regenerate notes" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Export notes TXT" })).toHaveAttribute(
+  await expect(desktopGrid.getByRole("button", { name: "Regenerate notes" })).toBeVisible();
+  await desktopGrid.getByRole("button", { name: "Export notes" }).click();
+  await expect(desktopGrid.getByRole("link", { name: "Export notes TXT" })).toHaveAttribute(
     "href",
     "http://localhost:8000/recordings/rec_1/exports/notes.txt",
   );
-  await expect(page.getByRole("link", { name: "Export notes PDF" })).toHaveAttribute(
+  await expect(desktopGrid.getByRole("link", { name: "Export notes PDF" })).toHaveAttribute(
     "href",
     "http://localhost:8000/recordings/rec_1/exports/notes.pdf",
   );
-  await expect(page.getByRole("link", { name: "Export combined TXT" })).toHaveAttribute(
+  await expect(desktopGrid.getByRole("link", { name: "Export combined TXT" })).toHaveAttribute(
     "href",
     "http://localhost:8000/recordings/rec_1/exports/combined.txt",
   );
-  await expect(page.getByRole("link", { name: "Export combined PDF" })).toHaveAttribute(
+  await expect(desktopGrid.getByRole("link", { name: "Export combined PDF" })).toHaveAttribute(
     "href",
     "http://localhost:8000/recordings/rec_1/exports/combined.pdf",
   );
@@ -545,14 +606,13 @@ test("notes failure keeps the transcript visible and allows regeneration", async
     });
   });
 
-  await page.goto("/recordings/rec_1");
-  await page.getByRole("tab", { name: "Notes" }).click();
-  await page.getByRole("button", { name: "Generate notes" }).click();
+  await page.goto("/workspace/rec_1");
+  const desktopGrid = page.getByTestId("desktop-workspace-grid");
+  await desktopGrid.getByRole("button", { name: "Generate notes" }).click();
 
   await expect(page.getByText("OpenRouter failed")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Regenerate notes" })).toBeVisible();
-  await page.getByRole("tab", { name: "Transcript" }).click();
-  await expect(page.getByText("Kamusta sa transcript workspace.")).toBeVisible();
+  await expect(desktopGrid.getByRole("button", { name: "Regenerate notes" })).toBeVisible();
+  await expect(desktopGrid.getByText("Kamusta sa transcript workspace.")).toBeVisible();
 });
 
 test("notes edits save through the structured editor", async ({ page }) => {
@@ -609,8 +669,7 @@ test("notes edits save through the structured editor", async ({ page }) => {
     });
   });
 
-  await page.goto("/recordings/rec_1");
-  await page.getByRole("tab", { name: "Notes" }).click();
+  await page.goto("/workspace/rec_1");
   await page.getByLabel("Summary").fill("Updated summary");
   await page.getByRole("button", { name: "Save edits" }).click();
 

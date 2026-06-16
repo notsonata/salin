@@ -154,6 +154,7 @@ The canonical transcript representation should remain provider-agnostic.
 - The user can click a timestamp and the audio seeks correctly.
 - The system can estimate speaker labels for multi-speaker recordings.
 - Transcript review remains available while speaker labels are still being estimated.
+- The user can rename the recording session.
 - The user can rename speakers and reassign blocks.
 - The system can generate summary, decisions, action items, and questions.
 - A failed notes step does not require retranscription.

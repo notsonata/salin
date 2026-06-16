@@ -6,8 +6,9 @@ import type {
   RecordingCreateResponse,
   RecordingDetailResponse,
   RecordingListResponse,
+  RecordingRenameRequest,
   RetryResponse,
-  SegmentSpeakerUpdateRequest,
+  SegmentUpdateRequest,
   SpeakerCount,
   SpeakerRenameRequest,
   TranscriptSegmentsUpdateResponse,
@@ -89,6 +90,21 @@ export class SalinApiClient {
     return parseResponse<RecordingDetailResponse>(response);
   }
 
+  async renameRecording(
+    recordingId: string,
+    payload: RecordingRenameRequest,
+  ): Promise<RecordingDetailResponse> {
+    const response = await fetch(`${this.baseUrl}/recordings/${recordingId}/rename`, {
+      method: "PUT",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    return parseResponse<RecordingDetailResponse>(response);
+  }
+
   async retryRecording(recordingId: string): Promise<RetryResponse> {
     const response = await fetch(`${this.baseUrl}/recordings/${recordingId}/retry`, {
       method: "POST",
@@ -135,13 +151,13 @@ export class SalinApiClient {
     return parseResponse<TranscriptSegmentsUpdateResponse>(response);
   }
 
-  async updateSegmentSpeaker(
+  async updateSegment(
     recordingId: string,
     segmentId: string,
-    payload: SegmentSpeakerUpdateRequest,
+    payload: SegmentUpdateRequest,
   ): Promise<TranscriptSegmentsUpdateResponse> {
     const response = await fetch(
-      `${this.baseUrl}/recordings/${recordingId}/transcript-segments/${segmentId}/speaker`,
+      `${this.baseUrl}/recordings/${recordingId}/transcript-segments/${segmentId}`,
       {
         method: "PUT",
         headers: {

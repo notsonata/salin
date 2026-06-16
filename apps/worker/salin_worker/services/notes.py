@@ -54,11 +54,7 @@ class RecordingNotesGenerator:
             )
             repository.complete_notes_generation(
                 recording_id,
-                summary=result.summary,
-                key_points=result.key_points,
-                decisions=result.decisions,
-                action_items=result.action_items,
-                questions=result.questions,
+                content=result.content,
                 source_provider=result.source_provider,
             )
         except Exception as exc:

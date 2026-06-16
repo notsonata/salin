@@ -71,13 +71,14 @@ Use the lowest level that gives credible confidence:
 
 `apps/web/tests/e2e/upload.spec.ts`
 
-- Dashboard renders upload-first hierarchy plus recent recordings history
-- Dedicated home page routes into the dashboard and preview workspace
-- Supported upload redirects into the transcript workspace, renders normalized playback, supports transcript search, and exposes backend transcript TXT/PDF export links
+- Home page frames Salin as a review board and routes into the dashboard and preview workspace
+- Dashboard renders the upload command deck plus the denser recordings library
+- Supported upload redirects into the split transcript workspace, renders normalized playback, keeps the transcript toolbar sticky, supports transcript search, and exposes grouped transcript export links
+- Desktop renders the transcript column and notes dock together while mobile falls back to transcript/notes tabs
 - Transcript content remains visible while speaker labels are still being estimated
-- Speaker labels can be renamed and reassigned from the transcript workspace
-- Manual notes generation renders completed structured notes and exposes backend notes/combined TXT/PDF export links
-- Structured notes edits save successfully from the notes tab
+- Speaker labels can be renamed globally and reassigned per row from the transcript workspace
+- Manual notes generation renders completed structured notes and exposes grouped notes/combined export links
+- Structured notes edits save successfully from the notes dock
 - Notes failure keeps transcript review available and allows regeneration
 - Unsupported upload surfaces the API error in the form
 
