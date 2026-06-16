@@ -14,7 +14,7 @@ notes workspace:
 - Render an upload-first dashboard with recent recordings
 - Render a tabbed recording detail workspace with transcript and notes sections
 - Review normalized audio through clickable transcript timestamps
-- Search and export the transcript as TXT
+- Search and export the transcript as TXT/PDF
 - Generate, edit, and save structured notes from stored transcript data
 - Estimate speaker labels with pyannote when configured, without blocking transcript review
 - Process long recordings through retryable transcription chunks
@@ -32,8 +32,8 @@ Implemented now:
 
 Deferred to later milestones:
 
-- UI controls for backend export endpoints
-- Export polish
+- Export presentation polish
+- Full UI/UX revamp
 
 ## Stack
 
@@ -96,7 +96,7 @@ The key variables are:
 - `NEXT_PUBLIC_API_BASE_URL`
 - `SALIN_API_INTERNAL_BASE_URL`
 
-See [.env.example](/Users/angelo/Projects/Personal/salin/.env.example) for the full contract.
+See [`.env.example`](.env.example) for the full contract.
 
 ## Install
 
