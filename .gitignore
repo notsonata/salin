@@ -9,6 +9,8 @@ coverage
 playwright-report
 test-results
 outputs
+deploy/secrets/*
+!deploy/secrets/.gitkeep
 .venv
 __pycache__
 .pytest_cache

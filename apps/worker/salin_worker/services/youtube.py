@@ -19,8 +19,14 @@ class YouTubeImportedAudio:
 
 
 class YouTubeAudioImporter:
-    def __init__(self, *, max_duration_seconds: int) -> None:
+    def __init__(
+        self,
+        *,
+        max_duration_seconds: int,
+        cookies_file: str | Path | None = None,
+    ) -> None:
         self.max_duration_seconds = max_duration_seconds
+        self.cookies_file = Path(cookies_file).expanduser() if cookies_file else None
 
     def download_audio(self, *, url: str, output_dir: Path) -> YouTubeImportedAudio:
         try:
@@ -41,6 +47,14 @@ class YouTubeAudioImporter:
             "fragment_retries": 2,
             "socket_timeout": 30,
         }
+        if self.cookies_file is not None:
+            if not self.cookies_file.is_file():
+                raise RuntimeError(
+                    "YouTube cookies file is configured but was not found. "
+                    "Export cookies.txt and mount it at the path in YOUTUBE_COOKIES_FILE."
+                )
+            options["cookiefile"] = str(self.cookies_file)
+
         with YoutubeDL(options) as downloader:
             info = downloader.extract_info(url, download=False)
             self._validate_info(info)

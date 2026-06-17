@@ -62,6 +62,7 @@ class Settings(BaseSettings):
         ge=1,
         alias="YOUTUBE_IMPORT_MAX_MINUTES",
     )
+    youtube_cookies_file: str = Field(default="", alias="YOUTUBE_COOKIES_FILE")
     diarization_provider: str = Field(default="none", alias="DIARIZATION_PROVIDER")
     pyannote_auth_token: str = Field(default="", alias="PYANNOTE_AUTH_TOKEN")
     pyannote_model: str = Field(

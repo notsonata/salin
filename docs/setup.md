@@ -57,6 +57,11 @@ Optional diarization values:
 - `PYANNOTE_DEVICE`: use `auto`, `cpu`, `cuda`, or `mps`
 - `PYANNOTE_METRICS_ENABLED`: defaults to `0` in the template
 
+Optional YouTube import value:
+
+- `YOUTUBE_COOKIES_FILE`: path to a Netscape-format `cookies.txt` file for
+  `yt-dlp` when YouTube asks the server to confirm it is not a bot.
+
 ## Install
 
 JavaScript workspace:
@@ -244,6 +249,8 @@ CORS_ALLOWED_ORIGINS=http://<droplet-ip>
 NEXT_PUBLIC_API_BASE_URL=http://<droplet-ip>:8000
 SALIN_API_INTERNAL_BASE_URL=http://api:8000
 DIARIZATION_PROVIDER=none
+# Optional, but recommended if YouTube imports hit bot checks:
+YOUTUBE_COOKIES_FILE=/run/secrets/salin/youtube-cookies.txt
 ```
 
 Then fill in the real provider values for:
@@ -261,10 +268,25 @@ Notes:
 
 - If you use a domain without a reverse proxy, keep the API URL on `:8000`, for
   example `NEXT_PUBLIC_API_BASE_URL=http://salin.example.com:8000`.
+- For `salin.notsonata.dev`, point the DNS `A` record at the Droplet public IP
+  `157.230.245.202`. If the record is proxied through Cloudflare and the API
+  still lives on public port `8000`, use a DNS-only record or keep
+  `NEXT_PUBLIC_API_BASE_URL` pointed at the Droplet IP until a reverse proxy
+  moves the API behind port `80` or `443`.
 - If you later front the stack with Caddy or Nginx, you can move the API behind
   the same origin and stop exposing port `8000` publicly.
 - Start with `DIARIZATION_PROVIDER=none` unless you have the CPU budget and a
   working `PYANNOTE_AUTH_TOKEN`.
+
+For YouTube videos that return a bot-check error from `yt-dlp`, export browser
+cookies in Netscape `cookies.txt` format and place the file on the Droplet at:
+
+```bash
+/opt/salin/deploy/secrets/youtube-cookies.txt
+```
+
+Keep this file out of git. The production Compose file mounts
+`deploy/secrets` read-only into the worker container at `/run/secrets/salin`.
 
 ### 7. Start the stack
 
@@ -344,6 +366,9 @@ pnpm --filter @salin/shared generate
 - The phase 1 worker supports Groq-first transcription with `faster-whisper` fallback.
 - The presentation YouTube importer uses the worker's `yt-dlp` dependency to download audio from public single-video links, then continues through the normal recording pipeline.
 - `YOUTUBE_IMPORT_MAX_MINUTES` limits public YouTube imports before transcription starts. The default is 180 minutes.
+- `YOUTUBE_COOKIES_FILE` lets the worker pass an exported browser
+  `cookies.txt` file to `yt-dlp` for public videos that trigger YouTube's bot
+  check.
 - Long recordings are split into overlapped transcription chunks. The default chunk size is controlled by `TRANSCRIPTION_CHUNK_MINUTES`, and overlap is controlled by `TRANSCRIPTION_CHUNK_OVERLAP_SECONDS`.
 - Completed transcription chunks are cached as R2 artifacts, so retrying a failed job can resume from the first missing chunk instead of retranscribing completed chunks.
 - Diarization is disabled by default. To enable pyannote-backed diarization, accept the selected model's Hugging Face conditions, create a token, set `DIARIZATION_PROVIDER=pyannote`, and set `PYANNOTE_AUTH_TOKEN`.
@@ -368,6 +393,11 @@ pnpm --filter @salin/shared generate
 - Worker cannot import `groq` or `faster-whisper`
 - Worker cannot import `yt-dlp`: rerun `uv sync --all-packages --dev` before using YouTube import
 - YouTube import fails before transcription: confirm the link is a public single video, not a playlist, private video, age-gated video, or livestream
+- YouTube import fails with `Sign in to confirm you're not a bot`: export a
+  fresh Netscape-format `cookies.txt`, place it at
+  `deploy/secrets/youtube-cookies.txt` on the host, set
+  `YOUTUBE_COOKIES_FILE=/run/secrets/salin/youtube-cookies.txt`, and restart the
+  worker.
 - Recording fails with `Task exceeded maximum timeout value`: raise `RECORDING_JOB_TIMEOUT_SECONDS` and retry the failed recording
 - Long recording appears stuck: check the job note for chunk progress such as `Transcribing chunk 3/12`, and confirm the worker is still running
 - Browser-facing API base URL and server-side internal API base URL diverge

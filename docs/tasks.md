@@ -1,5 +1,25 @@
 # Tasks
 
+### [P1] Make deployed YouTube imports recover from bot checks
+
+Allow the worker to pass a mounted `cookies.txt` file to `yt-dlp` when public
+YouTube imports return a bot-check challenge.
+
+Acceptance criteria:
+
+- worker settings expose an optional `YOUTUBE_COOKIES_FILE`
+- YouTube importer passes the configured file to `yt-dlp`
+- missing configured cookie files fail with an actionable error
+- production Compose mounts a read-only secrets directory for the cookie file
+- setup docs explain the DigitalOcean path and domain/API constraints
+- focused worker coverage documents the cookie-file path
+
+- **Files**: `apps/api/salin_api/core/settings.py`, `apps/worker/salin_worker/services/youtube.py`, `apps/worker/salin_worker/services/processing.py`, `infra/docker-compose.prod.yml`, `.env.example`, `docs/setup.md`, `docs/architecture.md`, `docs/testing.md`, `apps/worker/tests/test_youtube.py`
+- **Context**: YouTube can return `Sign in to confirm you're not a bot` from
+  `yt-dlp`; the server cannot use a local browser session, so deployment needs a
+  mounted cookies file instead of hardcoded credentials.
+- **Status**: Done
+
 ### [P2] Document the single-Droplet DigitalOcean deployment path
 
 Document the current DigitalOcean deployment flow and make the checked-in

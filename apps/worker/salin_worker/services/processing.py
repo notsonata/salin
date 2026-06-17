@@ -53,6 +53,7 @@ class RecordingProcessor:
         self.audio_chunker = audio_chunker or AudioChunker()
         self.youtube_importer = youtube_importer or YouTubeAudioImporter(
             max_duration_seconds=settings.youtube_import_max_minutes * 60,
+            cookies_file=settings.youtube_cookies_file or None,
         )
         self.session_factory = session_factory or create_session_factory(settings.database_url)
         self.groq_retry_delays = groq_retry_delays
