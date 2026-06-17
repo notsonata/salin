@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import re
+import shutil
+import tempfile
 import unicodedata
 from dataclasses import dataclass
 from pathlib import Path
@@ -47,18 +49,24 @@ class YouTubeAudioImporter:
             "fragment_retries": 2,
             "socket_timeout": 30,
         }
+        staged_cookies_file: Path | None = None
         if self.cookies_file is not None:
             if not self.cookies_file.is_file():
                 raise RuntimeError(
                     "YouTube cookies file is configured but was not found. "
                     "Export cookies.txt and mount it at the path in YOUTUBE_COOKIES_FILE."
                 )
-            options["cookiefile"] = str(self.cookies_file)
+            staged_cookies_file = self._stage_cookies_file(output_dir)
+            options["cookiefile"] = str(staged_cookies_file)
 
-        with YoutubeDL(options) as downloader:
-            info = downloader.extract_info(url, download=False)
-            self._validate_info(info)
-            downloader.download([url])
+        try:
+            with YoutubeDL(options) as downloader:
+                info = downloader.extract_info(url, download=False)
+                self._validate_info(info)
+                downloader.download([url])
+        finally:
+            if staged_cookies_file is not None:
+                staged_cookies_file.unlink(missing_ok=True)
 
         downloaded_path = self._find_downloaded_file(output_dir)
         title = str(info.get("title") or info.get("id") or "youtube-recording").strip()
@@ -94,6 +102,19 @@ class YouTubeAudioImporter:
             return int(float(duration))
         except (TypeError, ValueError):
             return None
+
+    def _stage_cookies_file(self, output_dir: Path) -> Path:
+        # yt-dlp rewrites the cookie jar on exit, so mounted secrets need a writable copy.
+        with tempfile.NamedTemporaryFile(
+            dir=output_dir,
+            prefix="youtube-cookies-",
+            suffix=".txt",
+            delete=False,
+        ) as temporary_file:
+            staged_path = Path(temporary_file.name)
+
+        shutil.copyfile(self.cookies_file, staged_path)
+        return staged_path
 
     @staticmethod
     def _find_downloaded_file(output_dir: Path) -> Path:

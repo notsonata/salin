@@ -1,5 +1,22 @@
 # Tasks
 
+### [P1] Make mounted YouTube cookies files work from read-only secrets
+
+Prevent deployed YouTube imports from failing when `yt-dlp` rewrites a cookies
+jar that was mounted read-only into the worker container.
+
+Acceptance criteria:
+
+- the worker copies a configured `YOUTUBE_COOKIES_FILE` into a writable temp file
+- `yt-dlp` receives the staged temp file instead of the read-only mount path
+- focused worker coverage reproduces the read-only mounted-cookie case
+
+- **Files**: `apps/worker/salin_worker/services/youtube.py`, `apps/worker/tests/test_youtube.py`, `docs/testing.md`, `docs/setup.md`, `docs/tasks.md`
+- **Context**: The production worker mounts `deploy/secrets` read-only, but
+  `yt-dlp` persists cookie updates on exit. Passing the mounted path directly
+  causes a runtime failure even when the configured file exists.
+- **Status**: Done
+
 ### [P1] Serve the production app and API through one domain
 
 Put a production front door in front of the web and API services so

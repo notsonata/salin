@@ -61,6 +61,8 @@ Optional YouTube import value:
 
 - `YOUTUBE_COOKIES_FILE`: path to a Netscape-format `cookies.txt` file for
   `yt-dlp` when YouTube asks the server to confirm it is not a bot.
+  The worker stages this file into a writable temp path before invoking
+  `yt-dlp`, so the mounted source file can remain read-only.
 
 ## Install
 

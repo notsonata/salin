@@ -35,6 +35,9 @@ class FakeYoutubeDL:
         assert urls == ["https://www.youtube.com/watch?v=demo123"]
         output_path = Path(str(self.options["outtmpl"]).replace("%(ext)s", "m4a"))
         output_path.write_bytes(b"youtube-audio")
+        cookiefile = self.options.get("cookiefile")
+        if cookiefile:
+            Path(cookiefile).write_text("# updated cookies\n", encoding="utf-8")
 
 
 @pytest.fixture(autouse=True)
@@ -45,7 +48,7 @@ def fake_yt_dlp(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setitem(sys.modules, "yt_dlp", module)
 
 
-def test_youtube_importer_passes_cookie_file_to_yt_dlp(tmp_path: Path) -> None:
+def test_youtube_importer_stages_cookie_file_for_yt_dlp(tmp_path: Path) -> None:
     cookies_file = tmp_path / "youtube-cookies.txt"
     cookies_file.write_text("# Netscape HTTP Cookie File\n", encoding="utf-8")
     importer = YouTubeAudioImporter(
@@ -58,8 +61,30 @@ def test_youtube_importer_passes_cookie_file_to_yt_dlp(tmp_path: Path) -> None:
         output_dir=tmp_path / "download",
     )
 
-    assert FakeYoutubeDL.options_seen[0]["cookiefile"] == str(cookies_file)
+    staged_cookiefile = Path(FakeYoutubeDL.options_seen[0]["cookiefile"])
+    assert staged_cookiefile != cookies_file
+    assert not staged_cookiefile.exists()
     assert imported_audio.filename == "Demo-recording.m4a"
+    assert imported_audio.file_size == len(b"youtube-audio")
+
+
+def test_youtube_importer_handles_read_only_cookie_mount(tmp_path: Path) -> None:
+    cookies_file = tmp_path / "youtube-cookies.txt"
+    cookies_file.write_text("# Netscape HTTP Cookie File\n", encoding="utf-8")
+    cookies_file.chmod(0o400)
+    importer = YouTubeAudioImporter(
+        max_duration_seconds=120,
+        cookies_file=cookies_file,
+    )
+
+    imported_audio = importer.download_audio(
+        url="https://www.youtube.com/watch?v=demo123",
+        output_dir=tmp_path / "download",
+    )
+
+    staged_cookiefile = Path(FakeYoutubeDL.options_seen[0]["cookiefile"])
+    assert staged_cookiefile != cookies_file
+    assert not staged_cookiefile.exists()
     assert imported_audio.file_size == len(b"youtube-audio")
 
 

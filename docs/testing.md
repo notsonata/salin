@@ -41,7 +41,7 @@ Use the lowest level that gives credible confidence:
 - Long recordings split into overlapped chunks, report chunk progress, and merge timestamps back into recording-relative transcript segments
 - Cached chunk artifacts are reused on retry so completed chunks are not transcribed again
 - YouTube import descriptors are downloaded into audio artifacts before normal transcription
-- YouTube import passes a configured `cookies.txt` file to `yt-dlp` and fails clearly when that configured file is missing
+- YouTube import stages a configured `cookies.txt` file into a writable temp path for `yt-dlp`, supports read-only mounted secrets, and still fails clearly when the configured file is missing
 - Notes generation persists Markdown notes content from stored transcript data
 - Notes failures keep transcript data intact
 - Notes regeneration replaces content only after a successful rerun
