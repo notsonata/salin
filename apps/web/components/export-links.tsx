@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Download, FileDown, FileText, Loader2 } from "lucide-react";
+import { DownloadSimple, FileArrowDown, FileText, CircleNotch, Notepad, Stack, FilePdf } from "@phosphor-icons/react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -39,7 +39,7 @@ export function ExportLinks({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button aria-label={label} size="sm" variant="secondary">
-          <Download className="h-4 w-4 text-review" />
+          <DownloadSimple weight="bold" className="h-4 w-4 text-review" />
           <span>{label}</span>
         </Button>
       </DropdownMenuTrigger>
@@ -50,9 +50,9 @@ export function ExportLinks({
           <DropdownMenuItem asChild key={item.href}>
             <a aria-label={item.ariaLabel} href={item.href}>
               {item.label.includes("PDF") ? (
-                <FileDown className="h-4 w-4 text-attention" />
+                <FileArrowDown weight="bold" className="h-4 w-4 text-attention" />
               ) : (
-                <FileText className="h-4 w-4 text-review" />
+                <FileText weight="bold" className="h-4 w-4 text-review" />
               )}
               <span>{item.label}</span>
             </a>
@@ -146,7 +146,7 @@ export function NotesExportLinks({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button aria-label={label} size="sm" variant="notes">
-          <Download className="h-4 w-4 text-accent" />
+          <DownloadSimple weight="bold" className="h-4 w-4 text-accent" />
           <span>{label}</span>
         </Button>
       </DropdownMenuTrigger>
@@ -156,14 +156,14 @@ export function NotesExportLinks({
 
         <DropdownMenuItem asChild>
           <a aria-label="Export to Markdown" href={urls.md} download>
-            <FileText className="h-4 w-4 text-accent" />
+            <FileText weight="fill" className="h-4 w-4 text-blue-500" />
             <span>Export to Markdown</span>
           </a>
         </DropdownMenuItem>
 
         <DropdownMenuItem asChild>
           <a aria-label="Export to Text" href={urls.txt} download>
-            <FileText className="h-4 w-4 text-accent" />
+            <Notepad weight="fill" className="h-4 w-4 text-emerald-500" />
             <span>Export to Text</span>
           </a>
         </DropdownMenuItem>
@@ -177,9 +177,9 @@ export function NotesExportLinks({
           }}
         >
           {pdfLoading ? (
-            <Loader2 className="h-4 w-4 animate-spin text-attention" />
+            <CircleNotch weight="bold" className="h-4 w-4 animate-spin text-attention" />
           ) : (
-            <FileDown className="h-4 w-4 text-attention" />
+            <FilePdf weight="fill" className="h-4 w-4 text-rose-500" />
           )}
           <span>{pdfLoading ? "Generating PDF…" : "Export to PDF"}</span>
         </DropdownMenuItem>

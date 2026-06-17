@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Check, CircleAlert, NotebookPen, Pencil, RefreshCw, X } from "lucide-react";
+import { ArrowLeft, Check, WarningCircle, Notepad, Pencil, ArrowsClockwise, X } from "@phosphor-icons/react";
 
 import type { RecordingDetailResponse } from "@salin/shared";
 
@@ -109,12 +109,14 @@ export function RecordingDetailHeader({
   retrying,
   onRename,
   onRetry,
+  allowRename = true,
 }: {
   data: RecordingDetailResponse;
   renaming: boolean;
   retrying: boolean;
   onRename: (newName: string) => Promise<void>;
   onRetry: () => void;
+  allowRename?: boolean;
 }) {
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameDraft, setRenameDraft] = useState(data.recording.filename);
@@ -159,13 +161,13 @@ export function RecordingDetailHeader({
           <div className="flex flex-wrap items-center gap-3">
             <Button asChild size="sm" variant="ghost" className="gap-2 -ml-2 text-muted hover:text-ink">
               <Link href="/library">
-                <ArrowLeft className="h-4 w-4" />
+                <ArrowLeft weight="bold" className="h-4 w-4" />
                 Back
               </Link>
             </Button>
             <Badge tone={stageTone(data.job.stage)}>{stageCopy(data.job.stage)}</Badge>
             <Badge tone={notesTone(data.notes.status)}>
-              <NotebookPen className="mr-1.5 h-3.5 w-3.5" />
+              <Notepad weight="fill" className="mr-1.5 h-3.5 w-3.5" />
               {notesCopy(data.notes.status)}
             </Badge>
           </div>
@@ -192,7 +194,7 @@ export function RecordingDetailHeader({
                   className="h-9 w-9 text-ink hover:bg-line/50"
                   aria-label="Save filename"
                 >
-                  <Check className="h-4 w-4" />
+                  <Check weight="bold" className="h-4 w-4" />
                 </Button>
                 <Button
                   size="icon"
@@ -206,35 +208,35 @@ export function RecordingDetailHeader({
                   }}
                   aria-label="Cancel renaming"
                 >
-                  <X className="h-4 w-4" />
+                  <X weight="bold" className="h-4 w-4" />
                 </Button>
               </form>
             ) : (
               <div className="group flex items-center gap-3">
-                <h1 className="truncate text-2xl font-semibold tracking-[-0.04em] text-ink sm:text-3xl">
+                <h1 className="truncate font-serif text-3xl sm:text-4xl text-ink pb-1">
                   {data.recording.filename}
                 </h1>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="h-8 w-8 text-muted opacity-0 hover:bg-line/50 hover:text-ink group-hover:opacity-100"
-                  aria-label="Rename recording"
-                  disabled={renaming}
-                  onClick={() => setIsRenaming(true)}
-                >
-                  <Pencil className="h-4 w-4" />
-                </Button>
+                {allowRename && (
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 text-muted opacity-0 hover:bg-line/50 hover:text-ink group-hover:opacity-100"
+                    aria-label="Rename recording"
+                    disabled={renaming}
+                    onClick={() => setIsRenaming(true)}
+                  >
+                    <Pencil weight="fill" className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
             )}
-            <p className="mt-1 text-sm leading-6 text-muted">
-              Speaker labels are automatically estimated and can be edited.
-            </p>
+
           </div>
         </div>
 
         {data.job.stage === "failed" && data.job.retryable ? (
           <Button disabled={retrying} type="button" variant="secondary" onClick={onRetry}>
-            <RefreshCw className="h-4 w-4" />
+            <ArrowsClockwise weight="bold" className="h-4 w-4" />
             {retrying ? "Retrying..." : "Retry processing"}
           </Button>
         ) : null}
@@ -243,19 +245,19 @@ export function RecordingDetailHeader({
       <div className="border-t border-line/80 px-4 py-3 sm:px-5">
         <dl className="grid gap-x-5 gap-y-2 text-sm text-muted sm:grid-cols-2 xl:grid-cols-4">
           <div className="flex items-center gap-2">
-            <dt className="font-mono text-[10px] uppercase tracking-[0.18em]">Language</dt>
+            <dt className="font-sans font-semibold text-[10px] uppercase tracking-[0.18em]">Language</dt>
             <dd className="text-ink">{languageCopy(data.recording.language)}</dd>
           </div>
           <div className="flex items-center gap-2">
-            <dt className="font-mono text-[10px] uppercase tracking-[0.18em]">Mode</dt>
+            <dt className="font-sans font-semibold text-[10px] uppercase tracking-[0.18em]">Mode</dt>
             <dd className="text-ink">{processingModeCopy(data.recording.processing_mode)}</dd>
           </div>
           <div className="flex items-center gap-2">
-            <dt className="font-mono text-[10px] uppercase tracking-[0.18em]">Size</dt>
+            <dt className="font-sans font-semibold text-[10px] uppercase tracking-[0.18em]">Size</dt>
             <dd className="text-ink">{formatBytes(data.recording.file_size)}</dd>
           </div>
           <div className="flex items-center gap-2">
-            <dt className="font-mono text-[10px] uppercase tracking-[0.18em]">Speakers</dt>
+            <dt className="font-sans font-semibold text-[10px] uppercase tracking-[0.18em]">Speakers</dt>
             <dd className="text-ink">{speakerCountCopy(data.recording.speaker_count)}</dd>
           </div>
         </dl>
@@ -264,7 +266,7 @@ export function RecordingDetailHeader({
       {data.job.stage !== "failed" && data.job.error_message ? (
         <div className="border-t border-line/80 bg-attentionFaint px-4 py-3 sm:px-5">
           <p className="flex items-start gap-2 text-sm leading-6 text-muted">
-            <CircleAlert className="mt-1 h-4 w-4 shrink-0 text-attention" />
+            <WarningCircle weight="fill" className="mt-1 h-4 w-4 shrink-0 text-attention" />
             <span>
               <span className="font-medium text-ink">Processing note:</span>{" "}
               {data.job.error_message}

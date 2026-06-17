@@ -1,11 +1,5 @@
 import Link from "next/link";
-import {
-  ArrowUpRight,
-  CircleAlert,
-  FileText,
-  Loader2,
-  Search,
-} from "lucide-react";
+import { ArrowUpRight, WarningCircle, FileText, CircleNotch, MagnifyingGlass } from "@phosphor-icons/react";
 
 import type { RecordingListItemSummary } from "@salin/shared";
 
@@ -96,10 +90,7 @@ export function RecordingsTable({
     <section className="grid gap-4" id="recent-sessions">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="grid gap-1">
-          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
-            Recent sessions
-          </p>
-          <h2 className="text-2xl font-semibold tracking-[-0.03em] text-ink">
+          <h2 className="font-serif text-4xl text-ink">
             Library
           </h2>
         </div>
@@ -115,7 +106,7 @@ export function RecordingsTable({
             </p>
           </div>
           <div className="relative w-full max-w-sm">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
+            <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
             <Input
               aria-label="Search sessions"
               className="pl-9"
@@ -128,14 +119,14 @@ export function RecordingsTable({
 
         {loading ? (
           <div className="flex items-center gap-3 px-5 py-8">
-            <Loader2 className="h-4 w-4 animate-spin text-review" />
+            <CircleNotch weight="bold" className="h-4 w-4 animate-spin text-review" />
             <p className="text-sm font-medium text-ink">Loading recent recordings...</p>
           </div>
         ) : error ? (
           <div className="grid gap-4 px-5 py-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
             <div className="grid gap-2">
               <div className="flex items-center gap-2">
-                <CircleAlert className="h-4 w-4 text-danger" />
+                <WarningCircle weight="bold" className="h-4 w-4 text-danger" />
                 <p className="text-sm font-medium text-ink">Backend is offline.</p>
               </div>
               <p className="text-sm leading-6 text-muted">
@@ -171,7 +162,7 @@ export function RecordingsTable({
                     <TableCell className="min-w-[20rem]">
                       <div className="grid gap-1">
                         <p className="font-medium text-ink">{row.recording.filename}</p>
-                        <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
+                        <p className="font-sans font-semibold text-[10px] uppercase tracking-[0.18em] text-muted">
                           {row.recording.processing_mode}
                         </p>
                       </div>
@@ -196,7 +187,7 @@ export function RecordingsTable({
                     <TableCell className="text-right">
                       <Button asChild size="sm" variant="secondary">
                         <Link href={`/workspace/${row.recording.id}`}>
-                          <FileText className="h-4 w-4" />
+                          <FileText weight="bold" className="h-4 w-4" />
                           Open
                         </Link>
                       </Button>

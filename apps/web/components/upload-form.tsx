@@ -7,7 +7,7 @@ import type { LanguageOption, ProcessingMode, SpeakerCount } from "@salin/shared
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Loader2 } from "lucide-react";
+import { CircleNotch } from "@phosphor-icons/react";
 import { createBrowserClient } from "@/lib/api";
 
 const apiClient = createBrowserClient();
@@ -142,7 +142,7 @@ export function UploadForm() {
           <Button disabled={submitting} type="submit" variant="accent">
             {submitting ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <CircleNotch weight="bold" className="mr-2 h-4 w-4 animate-spin" />
                 Starting...
               </>
             ) : (
@@ -154,7 +154,7 @@ export function UploadForm() {
 
       <aside className="grid content-start gap-4 border-t border-line pt-6 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
         <div className="grid gap-2">
-          <p className="font-mono text-[11px] uppercase text-muted">
+          <p className="font-sans font-semibold text-[11px] uppercase text-muted">
             Processing notes
           </p>
           <p className="text-sm text-ink">
@@ -163,7 +163,7 @@ export function UploadForm() {
           </p>
         </div>
         <div className="grid gap-2">
-          <p className="font-mono text-[11px] uppercase text-muted">
+          <p className="font-sans font-semibold text-[11px] uppercase text-muted">
             Recording quality
           </p>
           <ul className="grid gap-2 text-sm text-muted">

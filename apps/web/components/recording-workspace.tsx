@@ -408,7 +408,8 @@ export function RecordingWorkspace({
     data.notes.status === "generating";
 
   return (
-    <div className="mx-auto max-w-[1500px] px-3 py-3 sm:px-4 lg:px-5">
+    <div className="min-h-screen bg-canvas bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:20px_20px]">
+      <div className="mx-auto max-w-[1500px] px-3 py-3 sm:px-4 lg:px-5">
       <div className="grid gap-4" data-testid="workspace-shell">
         <RecordingDetailHeader
           data={data}
@@ -503,5 +504,6 @@ export function RecordingWorkspace({
         </Tabs>
       </div>
     </div>
+  </div>
   );
 }

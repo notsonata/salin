@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, type FormEvent, type ReactNode } from "react";
-import { CircleAlert, FileAudio2, Link2, Loader2, Sparkles, UploadCloud } from "lucide-react";
+import { WarningCircle, CircleNotch, MagicWand, CloudArrowUp, Link as LinkIcon, FileAudio } from "@phosphor-icons/react";
 
 import type { LanguageOption, ProcessingMode, SpeakerCount } from "@salin/shared";
 
@@ -103,10 +103,8 @@ export function DashboardUploadComposer() {
     <section className="grid gap-4" id="new-recording">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="grid gap-1">
-          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
-            Upload deck
-          </p>
-          <h2 className="text-2xl font-semibold tracking-[-0.03em] text-ink">
+
+          <h2 className="font-serif text-4xl text-ink">
             New recording
           </h2>
         </div>
@@ -120,9 +118,9 @@ export function DashboardUploadComposer() {
               <div className="flex flex-wrap items-start gap-4">
                 <span className="inline-flex size-11 items-center justify-center rounded-xl border border-accentSoft bg-accentFaint text-accent">
                   {source === "youtube" ? (
-                    <Link2 className="h-5 w-5" />
+                    <LinkIcon weight="fill" className="h-5 w-5" />
                   ) : (
-                    <UploadCloud className="h-5 w-5" />
+                    <CloudArrowUp weight="fill" className="h-5 w-5" />
                   )}
                 </span>
                 <div className="grid gap-2">
@@ -144,12 +142,12 @@ export function DashboardUploadComposer() {
                 }}
               >
                 <TabsList aria-label="Recording source" className="w-fit">
-                  <TabsTrigger value="file">
-                    <FileAudio2 className="h-4 w-4" />
+                  <TabsTrigger value="file" className="gap-2">
+                    <FileAudio weight="bold" className="h-4 w-4" />
                     File upload
                   </TabsTrigger>
-                  <TabsTrigger value="youtube">
-                    <Link2 className="h-4 w-4" />
+                  <TabsTrigger value="youtube" className="gap-2">
+                    <LinkIcon weight="bold" className="h-4 w-4" />
                     YouTube URL
                   </TabsTrigger>
                 </TabsList>
@@ -231,15 +229,15 @@ export function DashboardUploadComposer() {
             <Button className="lg:min-w-[11rem]" disabled={submitting} type="submit" variant="accent">
               {submitting ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <CircleNotch weight="bold" className="mr-2 h-4 w-4 animate-spin" />
                   Starting...
                 </>
               ) : (
                 <>
                   {source === "youtube" ? (
-                    <Link2 className="h-4 w-4" />
+                    <LinkIcon weight="bold" className="h-4 w-4" />
                   ) : (
-                    <UploadCloud className="h-4 w-4" />
+                    <CloudArrowUp weight="bold" className="h-4 w-4" />
                   )}
                   {source === "youtube" ? "Import link" : "Start processing"}
                 </>
@@ -250,7 +248,7 @@ export function DashboardUploadComposer() {
           {error ? (
             <div className="px-5 pb-5 lg:px-6">
               <div className="flex items-start gap-3 rounded-xl border border-dangerSoft bg-dangerFaint px-4 py-3 text-sm text-danger">
-                <CircleAlert className="mt-0.5 h-4 w-4 shrink-0" />
+                <WarningCircle weight="fill" className="mt-0.5 h-4 w-4 shrink-0" />
                 <span>{error}</span>
               </div>
             </div>
@@ -262,7 +260,7 @@ export function DashboardUploadComposer() {
 
           <div className="flex flex-col gap-3 px-5 pb-5 lg:flex-row lg:items-center lg:justify-between lg:px-6">
             <div className="flex items-start gap-3 rounded-xl border border-line/80 bg-canvas px-4 py-3">
-              <Sparkles className="mt-0.5 h-4 w-4 text-accent" />
+              <MagicWand weight="fill" className="mt-0.5 h-4 w-4 text-accent" />
               <p className="max-w-2xl text-sm leading-6 text-muted">
                 {source === "youtube"
                   ? "Great for presentation clips and public recordings. The worker downloads audio first, then the review desk opens as usual."

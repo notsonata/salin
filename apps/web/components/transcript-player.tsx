@@ -1,7 +1,7 @@
 "use client";
 
 import type { RefObject } from "react";
-import { ExternalLink, Headphones } from "lucide-react";
+import { ArrowSquareOut, Headphones } from "@phosphor-icons/react";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -22,7 +22,7 @@ export function TranscriptPlayer({
       <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
         <div className="grid gap-2">
           <div className="flex items-center gap-2">
-            <Headphones aria-hidden="true" className="h-4 w-4 text-review" />
+            <Headphones weight="bold" aria-hidden="true" className="h-4 w-4 text-review" />
             <h2 className="text-lg font-semibold text-ink">Audio review</h2>
           </div>
           <p className="text-sm leading-6 text-muted">
@@ -39,7 +39,7 @@ export function TranscriptPlayer({
             target="_blank"
           >
             <Button type="button" variant="ghost">
-              <ExternalLink aria-hidden="true" className="h-4 w-4" />
+              <ArrowSquareOut weight="bold" aria-hidden="true" className="h-4 w-4" />
               Open original upload
             </Button>
           </a>

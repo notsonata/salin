@@ -2,7 +2,7 @@
 
 import { RefObject, useEffect, useRef, useState } from "react";
 import WaveSurfer from "wavesurfer.js";
-import { Play, Pause } from "lucide-react";
+import { Play, Pause } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 
 export function AudioVisualizer({
@@ -92,12 +92,12 @@ export function AudioVisualizer({
         onClick={togglePlay}
         className="h-10 w-10 shrink-0 rounded-full"
       >
-        {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4 ml-0.5" />}
+        {isPlaying ? <Pause className="h-4 w-4" /> : <Play weight="bold" className="h-4 w-4 ml-0.5" />}
       </Button>
       <div className="flex-1 min-w-0">
         <div ref={containerRef} className="w-full" />
       </div>
-      <div className="shrink-0 font-mono text-sm text-muted">
+      <div className="shrink-0 font-sans font-medium tabular-nums text-sm text-muted">
         {formatTime(currentTime)} / {formatTime(duration)}
       </div>
     </div>

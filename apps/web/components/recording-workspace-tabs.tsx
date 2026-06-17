@@ -1,4 +1,4 @@
-import { FileText, NotebookPen } from "lucide-react";
+import { FileText, Notepad } from "@phosphor-icons/react";
 
 import { TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -10,7 +10,7 @@ const tabCopy: Array<{
   icon: typeof FileText;
 }> = [
   { id: "transcript", label: "Transcript", icon: FileText },
-  { id: "notes", label: "Notes", icon: NotebookPen },
+  { id: "notes", label: "Notes", icon: Notepad },
 ];
 
 export function RecordingWorkspaceTabs() {

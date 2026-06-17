@@ -1,5 +1,5 @@
 import type { RefObject } from "react";
-import { CircleAlert, RefreshCw } from "lucide-react";
+import { WarningCircle, ArrowsClockwise } from "@phosphor-icons/react";
 
 import type { RecordingDetailResponse, TranscriptSegment } from "@salin/shared";
 
@@ -50,7 +50,7 @@ export function TranscriptWorkspaceTab({
     <section className="grid gap-3">
       {error ? (
         <Card className="flex items-start gap-3 border-dangerSoft bg-dangerFaint p-4 text-sm text-danger">
-          <CircleAlert className="mt-0.5 h-4 w-4 shrink-0" />
+          <WarningCircle weight="bold" className="mt-0.5 h-4 w-4 shrink-0" />
           <span>{error}</span>
         </Card>
       ) : null}
@@ -75,7 +75,7 @@ export function TranscriptWorkspaceTab({
           {data.job.stage === "failed" && data.job.retryable ? (
             <div>
               <Button disabled={retrying} type="button" variant="secondary" onClick={onRetry}>
-                <RefreshCw className="h-4 w-4" />
+                <ArrowsClockwise weight="bold" className="h-4 w-4" />
                 {retrying ? "Retrying..." : "Retry processing"}
               </Button>
             </div>
@@ -97,14 +97,14 @@ export function TranscriptWorkspaceTab({
           {data.job.stage === "failed" && data.job.error_message ? (
             <Card className="grid gap-3 border-dangerSoft bg-dangerFaint p-4">
               <p className="flex items-center gap-2 text-sm font-medium text-danger">
-                <CircleAlert className="h-4 w-4" />
+                <WarningCircle weight="bold" className="h-4 w-4" />
                 Processing stopped.
               </p>
               <p className="text-sm leading-6 text-danger">{data.job.error_message}</p>
               {data.job.retryable ? (
                 <div>
                   <Button disabled={retrying} type="button" variant="secondary" onClick={onRetry}>
-                    <RefreshCw className="h-4 w-4" />
+                    <ArrowsClockwise weight="bold" className="h-4 w-4" />
                     {retrying ? "Retrying..." : "Retry processing"}
                   </Button>
                 </div>

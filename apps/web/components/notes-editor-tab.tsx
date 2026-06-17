@@ -1,6 +1,6 @@
 "use client";
 
-import { CircleAlert, NotebookPen, RefreshCw, Save } from "lucide-react";
+import { WarningCircle, Notepad, ArrowsClockwise, FloppyDisk } from "@phosphor-icons/react";
 
 import type { NotesStatus, NotesUpdateRequest, RecordingDetailResponse } from "@salin/shared";
 
@@ -78,7 +78,7 @@ export function NotesEditorTab({
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="grid gap-2">
               <div className="flex flex-wrap items-center gap-3">
-                <NotebookPen className="h-4 w-4 text-accent" />
+                <Notepad weight="bold" className="h-4 w-4 text-accent" />
                 <h2 className="text-lg font-semibold tracking-[-0.03em] text-ink">
                   Notes dock
                 </h2>
@@ -98,7 +98,7 @@ export function NotesEditorTab({
                 variant="accent"
                 onClick={onGenerate}
               >
-                <RefreshCw className="h-4 w-4" />
+                <ArrowsClockwise weight="bold" className="h-4 w-4" />
                 {notesBusy ? "Generating notes..." : buttonLabel}
               </Button>
               <Button
@@ -107,7 +107,7 @@ export function NotesEditorTab({
                 variant="secondary"
                 onClick={onSave}
               >
-                <Save className="h-4 w-4" />
+                <FloppyDisk weight="bold" className="h-4 w-4" />
                 {saveBusy ? "Saving..." : "Save edits"}
               </Button>
               {notes.status === "completed" ? (
@@ -125,13 +125,13 @@ export function NotesEditorTab({
             <div className="grid gap-2 rounded-xl border border-line/80 bg-canvas px-4 py-3">
               {error ? (
                 <div className="flex items-start gap-2 text-sm text-danger">
-                  <CircleAlert className="mt-0.5 h-4 w-4 shrink-0" />
+                  <WarningCircle weight="bold" className="mt-0.5 h-4 w-4 shrink-0" />
                   <span>{error}</span>
                 </div>
               ) : null}
               {notes.status === "failed" && notes.error_message ? (
                 <div className="flex items-start gap-2 text-sm text-danger">
-                  <CircleAlert className="mt-0.5 h-4 w-4 shrink-0" />
+                  <WarningCircle weight="bold" className="mt-0.5 h-4 w-4 shrink-0" />
                   <span>{notes.error_message}</span>
                 </div>
               ) : null}

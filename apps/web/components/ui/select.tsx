@@ -1,6 +1,6 @@
 import * as React from "react";
 import * as SelectPrimitive from "@radix-ui/react-select";
-import { Check, ChevronDown, ChevronUp } from "lucide-react";
+import { Check, CaretDown, CaretUp } from "@phosphor-icons/react";
 
 import { cn } from "@/lib/utils";
 
@@ -24,7 +24,7 @@ const SelectTrigger = React.forwardRef<
   >
     {children}
     <SelectPrimitive.Icon asChild>
-      <ChevronDown className="h-4 w-4 text-muted" />
+      <CaretDown className="h-4 w-4 text-muted" />
     </SelectPrimitive.Icon>
   </SelectPrimitive.Trigger>
 ));
@@ -40,7 +40,7 @@ const SelectScrollUpButton = React.forwardRef<
     className={cn("flex cursor-default items-center justify-center py-1 text-muted", className)}
     {...props}
   >
-    <ChevronUp className="h-4 w-4" />
+    <CaretUp className="h-4 w-4" />
   </SelectPrimitive.ScrollUpButton>
 ));
 
@@ -55,7 +55,7 @@ const SelectScrollDownButton = React.forwardRef<
     className={cn("flex cursor-default items-center justify-center py-1 text-muted", className)}
     {...props}
   >
-    <ChevronDown className="h-4 w-4" />
+    <CaretDown className="h-4 w-4" />
   </SelectPrimitive.ScrollDownButton>
 ));
 
@@ -101,7 +101,7 @@ const SelectLabel = React.forwardRef<
   <SelectPrimitive.Label
     ref={ref}
     className={cn(
-      "px-2 py-1.5 font-mono text-[10px] uppercase tracking-[0.18em] text-muted",
+      "px-2 py-1.5 font-sans font-semibold text-[10px] uppercase tracking-[0.18em] text-muted",
       className,
     )}
     {...props}
@@ -124,7 +124,7 @@ const SelectItem = React.forwardRef<
   >
     <span className="absolute left-2 flex h-4 w-4 items-center justify-center">
       <SelectPrimitive.ItemIndicator>
-        <Check className="h-4 w-4 text-accent" />
+        <Check weight="bold" className="h-4 w-4 text-accent" />
       </SelectPrimitive.ItemIndicator>
     </span>
     <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>

@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
-import { Check, ChevronRight, Circle } from "lucide-react";
+import { Check, CaretRight, Circle } from "@phosphor-icons/react";
 
 import { cn } from "@/lib/utils";
 
@@ -29,7 +29,7 @@ const DropdownMenuSubTrigger = React.forwardRef<
     {...props}
   >
     {children}
-    <ChevronRight className="ml-auto" />
+    <CaretRight className="ml-auto" />
   </DropdownMenuPrimitive.SubTrigger>
 ));
 
@@ -104,7 +104,7 @@ const DropdownMenuCheckboxItem = React.forwardRef<
   >
     <span className="absolute left-2 flex h-4 w-4 items-center justify-center">
       <DropdownMenuPrimitive.ItemIndicator>
-        <Check className="h-4 w-4 text-accent" />
+        <Check weight="bold" className="h-4 w-4 text-accent" />
       </DropdownMenuPrimitive.ItemIndicator>
     </span>
     {children}
@@ -146,7 +146,7 @@ const DropdownMenuLabel = React.forwardRef<
   <DropdownMenuPrimitive.Label
     ref={ref}
     className={cn(
-      "px-2 py-1.5 font-mono text-[10px] uppercase tracking-[0.18em] text-muted",
+      "px-2 py-1.5 font-sans font-semibold text-[10px] uppercase tracking-[0.18em] text-muted",
       inset && "pl-8",
       className,
     )}
@@ -173,7 +173,7 @@ const DropdownMenuShortcut = ({
   className,
   ...props
 }: React.HTMLAttributes<HTMLSpanElement>) => (
-  <span className={cn("ml-auto font-mono text-[10px] tracking-[0.18em] text-muted", className)} {...props} />
+  <span className={cn("ml-auto font-sans font-medium tabular-nums text-[10px] tracking-[0.18em] text-muted", className)} {...props} />
 );
 
 DropdownMenuShortcut.displayName = "DropdownMenuShortcut";

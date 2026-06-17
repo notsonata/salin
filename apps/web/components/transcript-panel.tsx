@@ -1,13 +1,7 @@
 "use client";
 
 import { type FormEvent, type RefObject, useEffect, useState } from "react";
-import {
-  AudioLines,
-  ExternalLink,
-  Pencil,
-  Search,
-  UserRound,
-} from "lucide-react";
+import { Waveform, ArrowSquareOut, Pencil, MagnifyingGlass, User } from "@phosphor-icons/react";
 
 import type { TranscriptSegment } from "@salin/shared";
 
@@ -136,7 +130,7 @@ export function TranscriptPanel({
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="grid gap-2">
               <div className="flex flex-wrap items-center gap-3">
-                <AudioLines className="h-4 w-4 text-review" />
+                <Waveform weight="bold" className="h-4 w-4 text-review" />
                 <h2 className="text-lg font-semibold tracking-[-0.03em] text-ink">
                   Transcript review
                 </h2>
@@ -152,7 +146,7 @@ export function TranscriptPanel({
               {originalUrl ? (
                 <Button asChild size="sm" variant="secondary">
                   <a href={originalUrl} rel="noreferrer" target="_blank">
-                    <ExternalLink className="h-4 w-4" />
+                    <ArrowSquareOut weight="bold" className="h-4 w-4" />
                     Original upload
                   </a>
                 </Button>
@@ -173,7 +167,7 @@ export function TranscriptPanel({
             <div className="flex">
               <label className="relative block flex-1" htmlFor="transcript-search">
                 <span className="sr-only">Search transcript</span>
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
+                <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
                 <Input
                   id="transcript-search"
                   className="pl-9"
@@ -190,7 +184,7 @@ export function TranscriptPanel({
       <div className="border-b border-line/80 bg-canvas/70 px-4 py-4 sm:px-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="grid gap-1">
-            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
+            <p className="font-sans font-semibold text-[10px] uppercase tracking-[0.18em] text-muted">
               Speaker utility
             </p>
             <p className="text-sm leading-6 text-muted">
@@ -204,7 +198,7 @@ export function TranscriptPanel({
             variant="secondary"
             onClick={() => setSpeakerToolsOpen((current) => !current)}
           >
-            <Pencil className="h-4 w-4" />
+            <Pencil weight="bold" className="h-4 w-4" />
             Rename speakers
           </Button>
         </div>
@@ -285,7 +279,7 @@ export function TranscriptPanel({
                       <button
                         aria-pressed={isActive}
                         className={cn(
-                          "inline-flex h-11 items-center justify-center rounded-md border font-mono text-sm transition-colors",
+                          "inline-flex h-11 items-center justify-center rounded-md border font-sans font-medium text-sm transition-colors",
                           canSeek
                             ? "border-reviewSoft bg-panel text-review hover:bg-reviewFaint"
                             : "border-line bg-field text-muted",
@@ -297,7 +291,7 @@ export function TranscriptPanel({
                       >
                         {timestamp}
                       </button>
-                      <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted">
+                      <span className="font-sans font-medium tabular-nums text-[10px] uppercase tracking-[0.18em] text-muted">
                         {formatTimestamp(segment.end_ms - segment.start_ms)} span
                       </span>
                     </div>
@@ -305,7 +299,7 @@ export function TranscriptPanel({
                     <div className="grid gap-3">
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="inline-flex items-center gap-2 text-sm font-medium text-ink">
-                          <UserRound className="h-4 w-4 text-muted" />
+                          <User className="h-4 w-4 text-muted" />
                           {segment.speaker_label}
                         </span>
                       </div>
@@ -387,7 +381,7 @@ export function TranscriptPanel({
                               )
                             }
                           >
-                            <Pencil className="h-4 w-4" />
+                            <Pencil weight="bold" className="h-4 w-4" />
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent>Edit segment at {timestamp}</TooltipContent>

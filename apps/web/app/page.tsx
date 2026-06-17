@@ -1,314 +1,397 @@
+"use client";
+
 import Link from "next/link";
+import { useState, useEffect } from "react";
 import {
+  MagnifyingGlass,
+  GridFour,
+  Stack,
+  Tag,
+  List,
+  X,
+  Note,
+  Calendar,
+  Brain,
   ArrowRight,
-  AudioLines,
-  FileDown,
+  PlayCircle,
+  Tray,
+  CalendarBlank,
+  Star,
+  PlusCircle,
+  Bell,
+  ClockCounterClockwise,
   FileText,
-  Languages,
-  NotebookPen,
-  Search,
+  CaretRight,
+  Kanban,
+  Table,
+  DotsThree,
+  Fire,
+  MagicWand,
+  TextAa,
+  Images,
+  Code,
+  ArrowLeft,
+  SquaresFour,
+  Briefcase,
+  Plant,
+  CloudArrowUp,
+  Notepad,
+  FileArrowDown,
   ShieldCheck,
-  Sparkles,
-  UploadCloud,
-} from "lucide-react";
-
-import { HomeScrollReveal } from "@/components/home-scroll-reveal";
-import { Button } from "@/components/ui/button";
-
-const workflowSteps = [
-  {
-    icon: UploadCloud,
-    title: "Upload",
-    copy: "Send one supported audio or video file into the processing queue.",
-  },
-  {
-    icon: FileText,
-    title: "Review",
-    copy: "Search timestamped transcript blocks and click back into the audio.",
-  },
-  {
-    icon: NotebookPen,
-    title: "Notes",
-    copy: "Generate structured notes from saved transcript data.",
-  },
-  {
-    icon: FileDown,
-    title: "Export",
-    copy: "Download transcript, notes, or a combined handoff packet.",
-  },
-];
-
-const specimenRows = [
-  {
-    time: "00:00:05",
-    speaker: "Speaker 1",
-    text: "Kailangan natin i-review yung second answer before notes.",
-  },
-  {
-    time: "00:00:18",
-    speaker: "Speaker 2",
-    text: "Yes, keep the Taglish example tied to the timestamp.",
-  },
-  {
-    time: "00:00:34",
-    speaker: "Teacher",
-    text: "Mark this part for the summary and export later.",
-  },
-];
-
-const proofPoints = [
-  {
-    icon: Search,
-    title: "Evidence stays one click away",
-    copy: "Clickable timestamps keep the transcript tied to the original recording.",
-  },
-  {
-    icon: ShieldCheck,
-    title: "Estimates stay honest",
-    copy: "Speaker labels are useful starting points, and the UI keeps them editable.",
-  },
-  {
-    icon: NotebookPen,
-    title: "Notes stay grounded",
-    copy: "Structured notes are generated from saved transcript blocks, not loose audio guesses.",
-  },
-];
-
-const useCases = [
-  "Lectures and class discussions",
-  "Research interviews",
-  "Client calls and planning sessions",
-  "Podcasts and long-form conversations",
-];
+  Translate,
+  FilePdf,
+} from "@phosphor-icons/react";
+import { LandingPreview } from "@/components/landing-preview";
 
 export default function LandingPage() {
-  return (
-    <div className="min-h-screen bg-canvas text-ink">
-      <HomeScrollReveal />
-      <header className="home-nav sticky top-0 z-50 text-ink backdrop-blur">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-          <Link className="flex min-w-0 items-center gap-3" href="/">
-            <span className="inline-flex size-9 items-center justify-center rounded-md border border-accentSoft bg-accentFaint text-accent">
-              <AudioLines aria-hidden="true" className="h-4 w-4" />
-            </span>
-            <span className="grid gap-0.5">
-              <span className="text-base font-semibold">Salin</span>
-              <span className="hidden font-mono text-[10px] uppercase tracking-[0.18em] text-muted sm:block">
-                Transcript console
-              </span>
-            </span>
-          </Link>
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-          <nav className="flex items-center gap-2">
-            <Button asChild className="home-nav-action" variant="secondary">
-              <Link href="/dashboard">
-                Dashboard
-                <ArrowRight aria-hidden="true" className="h-4 w-4" />
+  // Close mobile menu on escape
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsMobileMenuOpen(false);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  return (
+    <div className="bg-[#FAFAF9] bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:20px_20px] text-stone-900 font-sans antialiased overflow-x-hidden selection:bg-emerald-200 selection:text-emerald-900 min-h-screen">
+      {/* Desktop Header */}
+      <header className="fixed top-6 left-1/2 -translate-x-1/2 z-[100] group/header hidden lg:block w-full max-w-5xl px-6">
+        <div className="flex flex-col gap-3">
+          <nav className="h-20 bg-stone-900/95 backdrop-blur-xl border border-white/10 rounded-full flex items-center justify-between px-4 shadow-2xl transition-all duration-500 group-hover/header:-translate-y-1">
+            <div className="flex items-center gap-4">
+              <Link href="/" className="relative group/logo">
+                <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-stone-900 font-serif text-2xl shadow-lg group-hover/logo:rotate-[360deg] transition-transform duration-1000">
+                  S
+                </div>
               </Link>
-            </Button>
+              <div className="h-8 w-px bg-white/10 mx-2"></div>
+              <div className="flex items-center gap-6">
+                <a
+                  href="#features"
+                  className="flex items-center gap-2 text-stone-400 hover:text-white transition-colors text-sm font-medium px-3 py-2 rounded-lg hover:bg-white/5"
+                >
+                  <GridFour weight="bold" />
+                  Product
+                </a>
+                <a
+                  href="#workflow"
+                  className="flex items-center gap-2 text-stone-400 hover:text-white transition-colors text-sm font-medium px-3 py-2 rounded-lg hover:bg-white/5"
+                >
+                  <Stack weight="bold" />
+                  Workflow
+                </a>
+
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+
+              <Link
+                href="/dashboard"
+                className="bg-emerald-600 text-white text-sm font-bold px-6 py-3 rounded-full hover:bg-white hover:text-emerald-600 transition-all shadow-[0_0_20px_rgba(5,150,105,0.4)] hover:shadow-[0_0_30px_rgba(5,150,105,0.6)] active:scale-95"
+              >
+                Get Salin
+              </Link>
+            </div>
           </nav>
         </div>
       </header>
 
-      <main>
-        <section
-          className="relative overflow-hidden border-b border-brandLine bg-brandDeep bg-cover bg-center"
-          style={{
-            backgroundImage:
-              "linear-gradient(180deg, rgba(20, 34, 47, 0.72) 0%, rgba(20, 34, 47, 0.62) 48%, rgba(20, 34, 47, 0.88) 100%), linear-gradient(90deg, rgba(20, 34, 47, 0.92) 0%, rgba(20, 34, 47, 0.78) 46%, rgba(20, 34, 47, 0.34) 100%), url('/salin-review-console.png')",
-          }}
+      {/* Mobile Header */}
+      <nav className="lg:hidden fixed top-6 left-6 right-6 z-[100] h-16 bg-stone-950/90 backdrop-blur-xl border border-white/10 rounded-full flex items-center justify-between px-6 shadow-2xl">
+        <Link href="/">
+          <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center font-serif text-lg font-bold text-stone-900">
+            S
+          </div>
+        </Link>
+        <div className="flex gap-6 text-stone-400">
+          <Link href="#features">
+            <GridFour className="text-xl hover:text-white transition" />
+          </Link>
+          <Link href="#workflow">
+            <Stack className="text-xl hover:text-white transition" />
+          </Link>
+        </div>
+        <button
+          onClick={() => setIsMobileMenuOpen(true)}
+          className="w-10 h-10 rounded-full bg-emerald-600 flex items-center justify-center text-white"
         >
-          <div className="home-hero-inner mx-auto grid max-w-7xl place-items-center px-4 py-14 sm:px-6 sm:py-16 lg:px-8">
-            <div className="mx-auto max-w-3xl text-center text-panel">
-              <p className="mb-5 inline-flex items-center justify-center gap-2 rounded-md border border-white/20 bg-white/10 px-3 py-2 font-mono text-xs uppercase text-brandMuted">
-                <Sparkles aria-hidden="true" className="h-3.5 w-3.5 text-attention" />
-                Uploaded recording review
-              </p>
-              <h1 className="mx-auto max-w-3xl text-4xl font-semibold leading-tight sm:text-6xl">
-                From raw recording to reviewed notes.
-              </h1>
-              <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-brandMuted">
-                Salin turns Tagalog, English, and Taglish recordings into timestamped
-                transcripts, editable speaker labels, structured notes, and clean exports.
-              </p>
-              <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
-                <Button
-                  asChild
-                  className="hero-primary-cta h-12 border-accent bg-accent px-5 text-panel hover:bg-accent/95"
-                  variant="accent"
-                >
-                  <Link href="/dashboard">
-                    Open dashboard
-                    <ArrowRight aria-hidden="true" className="h-4 w-4" />
-                  </Link>
-                </Button>
-              </div>
+          <List weight="bold" className="text-lg" />
+        </button>
+      </nav>
 
-              <div className="mx-auto mt-10 grid max-w-2xl gap-3 text-left sm:grid-cols-3">
-                {[
-                  ["Upload first", "No live meeting bot"],
-                  ["Timestamped", "Click back to audio"],
-                  ["Editable", "Speaker labels stay estimated"],
-                ].map(([label, value]) => (
-                  <div className="border-l border-white/20 pl-4" key={label}>
-                    <p className="font-mono text-xs uppercase text-brandMuted">{label}</p>
-                    <p className="mt-1 text-sm font-medium text-panel">{value}</p>
-                  </div>
-                ))}
-              </div>
+      {/* Mobile Menu Overlay */}
+      {isMobileMenuOpen && (
+        <div className="fixed inset-4 bg-white rounded-[2.5rem] shadow-2xl border border-stone-100 z-[110] p-8 flex flex-col transition-all duration-500 ease-out md:hidden">
+          <div className="flex justify-between items-center mb-12">
+            <div className="w-10 h-10 bg-stone-900 rounded-full flex items-center justify-center text-white font-serif text-xl">
+              S
+            </div>
+            <button
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="w-10 h-10 rounded-full bg-stone-100 flex items-center justify-center text-stone-900"
+            >
+              <X weight="bold" className="text-xl" />
+            </button>
+          </div>
+
+          <div className="flex flex-col gap-6">
+            <a
+              href="#features"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="text-4xl font-serif text-stone-950 hover:italic"
+            >
+              Product
+            </a>
+            <a
+              href="#workflow"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="text-4xl font-serif text-stone-950 hover:italic"
+            >
+              Workflow
+            </a>
+          </div>
+
+          <div className="mt-auto space-y-4">
+            <Link href="/dashboard" className="w-full bg-stone-950 text-white py-4 rounded-2xl font-bold text-lg flex items-center justify-center">
+              Get Salin
+            </Link>
+          </div>
+        </div>
+      )}
+
+      <main>
+        {/* HERO SECTION */}
+        <section className="min-h-[90vh] flex flex-col justify-center pt-32 pb-12 px-6 lg:pt-40 relative overflow-hidden bg-transparent">
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-emerald-200/20 blur-[120px] rounded-full -z-10 animate-float pointer-events-none"></div>
+
+          <div className="max-w-4xl mx-auto text-center z-10 relative">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-stone-200 shadow-sm mb-8 hover:border-emerald-200 transition duration-300 cursor-default">
+              <span className="flex h-2 w-2 relative">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              </span>
+              <span className="text-sm font-medium text-stone-600">
+                Tagalog, English & Taglish Support
+              </span>
+            </div>
+
+            <h1 className="font-serif text-6xl md:text-8xl text-stone-900 leading-[0.9] md:leading-[1.1] mb-8">
+              From raw recording <br className="hidden md:block" />
+              to <span className="italic text-stone-500">reviewed</span> notes.
+            </h1>
+
+            <p className="text-lg md:text-xl text-stone-500 max-w-2xl mx-auto mb-10 leading-relaxed">
+              Salin turns audio into timestamped transcripts, editable speaker
+              labels, structured notes, and clean exports without the noise of a
+              live meeting bot.
+            </p>
+
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Link
+                href="/dashboard"
+                className="bg-stone-900 text-white px-8 py-4 rounded-full text-base font-medium hover:bg-stone-800 transition shadow-lg hover:shadow-xl hover:-translate-y-1 transform duration-300 flex items-center gap-2 group"
+              >
+                Open workspace
+                <ArrowRight
+                  weight="bold"
+                  className="group-hover:translate-x-1 transition-transform"
+                />
+              </Link>
             </div>
           </div>
+
+          {/* Hero Mockup */}
+          <LandingPreview />
         </section>
 
-        <section className="border-b border-line bg-panel py-14 sm:py-16">
-          <div className="mx-auto grid max-w-7xl gap-6 px-4 sm:px-6 lg:grid-cols-[1.2fr_0.8fr] lg:px-8">
-            <div
-              className="reveal-on-scroll overflow-hidden rounded-lg border border-line bg-panel shadow-lift"
-              data-testid="home-workspace-specimen"
-            >
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line bg-field px-5 py-4">
-                <div>
-                  <p className="font-mono text-xs uppercase text-muted">Transcript specimen</p>
-                  <h2 className="mt-1 text-2xl font-semibold">Review across languages.</h2>
-                </div>
-                <span className="rounded-md border border-attentionSoft bg-attentionFaint px-3 py-2 text-sm font-medium text-attention">
-                  Speaker labels estimated
-                </span>
-              </div>
-              <div className="grid divide-y divide-line">
-                {specimenRows.map((row) => (
-                  <article className="grid gap-4 px-5 py-5 sm:grid-cols-[7rem_1fr]" key={row.time}>
-                    <div className="flex items-start">
-                      <span className="rounded-md bg-brandDeep px-3 py-2 font-mono text-sm text-panel">
-                        {row.time}
-                      </span>
-                    </div>
-                    <div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="font-semibold">{row.speaker}</p>
-                        <span className="rounded-md border border-attentionSoft bg-attentionFaint px-2 py-1 text-xs font-medium text-attention">
-                          Estimated
-                        </span>
-                      </div>
-                      <p className="mt-2 text-base leading-7 text-muted">{row.text}</p>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            </div>
+        {/* FEATURES SECTION */}
+        <section id="features" className="py-24 px-6 overflow-hidden bg-transparent">
+          <div className="max-w-7xl mx-auto rounded-3xl bg-stone-50 border border-stone-200 p-8 md:p-16 relative overflow-hidden shadow-xl">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
+              <div className="relative group">
+                <div className="absolute top-4 left-4 w-full h-full bg-emerald-100/50 rounded-2xl transform rotate-3 -z-10 transition group-hover:rotate-6"></div>
+                <div className="rounded-2xl shadow-xl border border-stone-200 bg-white w-full h-[450px] overflow-hidden p-8 relative transform -rotate-1 group-hover:rotate-0 transition duration-500">
+                  <div className="flex items-center justify-between mb-6 border-b border-stone-100 pb-4">
+                    <h2 className="text-2xl font-serif font-bold text-stone-900">
+                      Export Notes
+                    </h2>
+                    <span className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-600 uppercase">
+                      Action
+                    </span>
+                  </div>
 
-            <div
-              className="reveal-on-scroll reveal-delay-1 rounded-lg border border-line bg-field p-5 shadow-panel"
-              data-testid="home-proof-panel"
-            >
+                  <div className="space-y-6">
+                    <p className="text-sm text-stone-600 leading-relaxed">
+                      Download your reviewed insights directly to your knowledge base.
+                    </p>
+
+                    <ul className="space-y-3">
+                      <li className="flex items-center justify-between p-3 border border-stone-100 rounded-lg hover:bg-stone-50 transition cursor-pointer">
+                        <div className="flex items-center gap-3">
+                          <FileText weight="fill" className="text-blue-500 text-xl" />
+                          <span className="text-sm font-medium text-stone-700">
+                            Transcript Text
+                          </span>
+                        </div>
+                        <FileArrowDown weight="bold" className="text-stone-400" />
+                      </li>
+                      <li className="flex items-center justify-between p-3 border border-emerald-200 bg-emerald-50 rounded-lg transition cursor-pointer">
+                        <div className="flex items-center gap-3">
+                          <Notepad weight="fill" className="text-emerald-500 text-xl" />
+                          <span className="text-sm font-bold text-emerald-900">
+                            Structured Notes
+                          </span>
+                        </div>
+                        <FileArrowDown weight="bold" className="text-emerald-600" />
+                      </li>
+                      <li className="flex items-center justify-between p-3 border border-stone-100 rounded-lg hover:bg-stone-50 transition cursor-pointer">
+                        <div className="flex items-center gap-3">
+                          <FilePdf weight="fill" className="text-rose-500 text-xl" />
+                          <span className="text-sm font-medium text-stone-700">
+                            Combined Handoff
+                          </span>
+                        </div>
+                        <FileArrowDown weight="bold" className="text-stone-400" />
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
               <div>
-                <p className="font-mono text-xs uppercase text-muted">Review promise</p>
-                <h2 className="mt-1 text-2xl font-semibold">
-                  No dashboard noise. Just a path to verified notes.
+                <span className="text-xs font-bold tracking-widest text-emerald-600 uppercase mb-2 block">
+                  Truth in Transcription
+                </span>
+                <h2 className="font-serif text-5xl mb-6 text-stone-900 leading-tight">
+                  Ground every insight in the original audio.
                 </h2>
-                <p className="mt-3 text-sm leading-6 text-muted">
-                  The homepage should sell the workflow, then let the app surface handle
-                  uploads, progress, and session history.
+                <p className="text-lg text-stone-600 mb-8 leading-relaxed">
+                  Salin treats your transcript as the ultimate source of truth. Your structured notes are generated directly from the reviewed transcript—not the raw audio—ensuring every detail remains completely verifiable.
                 </p>
-              </div>
-              <div className="mt-5 grid gap-3">
-                {proofPoints.map((point) => (
-                  <div className="rounded-md border border-line bg-panel px-4 py-4" key={point.title}>
-                    <div className="flex items-start gap-3">
-                      <span className="mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-md border border-accentSoft bg-accentFaint text-accent">
-                        <point.icon aria-hidden="true" className="h-4 w-4" />
-                      </span>
-                      <div>
-                        <p className="font-medium">{point.title}</p>
-                        <p className="mt-1 text-sm leading-6 text-muted">{point.copy}</p>
-                      </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-6 gap-x-4 mb-8">
+                  <div className="flex items-start gap-3">
+                    <MagnifyingGlass
+                      weight="fill"
+                      className="text-xl text-stone-400 mt-1"
+                    />
+                    <div>
+                      <h4 className="font-bold text-sm text-stone-900">
+                        Instant playback
+                      </h4>
+                      <p className="text-xs text-stone-500 leading-relaxed">
+                        Click any timestamp to jump straight to that exact moment in the recording.
+                      </p>
                     </div>
                   </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="border-b border-line bg-canvas py-16 sm:py-20">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="max-w-3xl">
-              <p className="font-mono text-xs uppercase text-muted">Workflow proof</p>
-              <h2 className="mt-3 text-3xl font-semibold sm:text-4xl">
-                A cleaner path from upload to usable notes.
-              </h2>
-              <p className="mt-4 text-lg leading-8 text-muted">
-                Editorial transcription tools are strong because the workflow is obvious.
-                Salin keeps that same clarity for uploaded recordings: process, review,
-                generate, export.
-              </p>
-            </div>
-            <div className="mt-10 grid gap-4 md:grid-cols-4">
-              {workflowSteps.map((step, index) => (
-                <div
-                  className={`reveal-on-scroll rounded-lg border border-line bg-panel p-5 shadow-panel ${
-                    index === 1 ? "reveal-delay-1" : index === 2 ? "reveal-delay-2" : ""
-                  }`}
-                  key={step.title}
-                >
-                  <step.icon aria-hidden="true" className="h-5 w-5 text-accent" />
-                  <h3 className="mt-5 text-lg font-semibold">{step.title}</h3>
-                  <p className="mt-2 text-sm leading-6 text-muted">{step.copy}</p>
+                  <div className="flex items-start gap-3">
+                    <ShieldCheck
+                      weight="fill"
+                      className="text-xl text-stone-400 mt-1"
+                    />
+                    <div>
+                      <h4 className="font-bold text-sm text-stone-900">
+                        Smart speaker tracking
+                      </h4>
+                      <p className="text-xs text-stone-500 leading-relaxed">
+                        Get a helpful head start with automatically estimated speaker labels that are easy to adjust.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <Translate
+                      weight="fill"
+                      className="text-xl text-stone-400 mt-1"
+                    />
+                    <div>
+                      <h4 className="font-bold text-sm text-stone-900">
+                        Built for Taglish
+                      </h4>
+                      <p className="text-xs text-stone-500 leading-relaxed">
+                        Seamlessly transcribe Tagalog, English, and natural conversational Taglish.
+                      </p>
+                    </div>
+                  </div>
                 </div>
-              ))}
+              </div>
             </div>
           </div>
         </section>
 
-        <section className="bg-panel py-16 sm:py-20">
-          <div className="mx-auto grid max-w-7xl gap-10 px-4 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:px-8">
-            <div className="reveal-on-scroll">
-              <p className="font-mono text-xs uppercase text-muted">Built for review</p>
-              <h2 className="mt-3 text-3xl font-semibold sm:text-4xl">
-                Bilingual audio stays anchored to evidence.
-              </h2>
-              <p className="mt-4 text-lg leading-8 text-muted">
-                The transcript remains the source of truth. Notes come from saved transcript
-                blocks, and exports stay downstream from review.
-              </p>
-              <div className="mt-7 flex flex-wrap gap-3">
-                <span className="inline-flex items-center gap-2 rounded-md border border-accentSoft bg-accentFaint px-3 py-2 text-sm font-medium text-accent">
-                  <Languages aria-hidden="true" className="h-4 w-4" />
-                  Tagalog, English, Taglish
+        {/* WORKFLOW SECTION */}
+        <section id="workflow" className="py-24 px-6 bg-transparent">
+          <div className="max-w-7xl mx-auto rounded-3xl p-4 md:p-0 relative">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+              <div className="lg:col-span-4 flex flex-col justify-center order-2 lg:order-1">
+                <span className="text-xs font-bold tracking-widest text-emerald-600 uppercase mb-2 block">
+                  How it works
                 </span>
-                <span className="inline-flex items-center gap-2 rounded-md border border-reviewSoft bg-reviewFaint px-3 py-2 text-sm font-medium text-review">
-                  <Search aria-hidden="true" className="h-4 w-4" />
-                  Searchable transcript
-                </span>
-                <span className="inline-flex items-center gap-2 rounded-md border border-line bg-field px-3 py-2 text-sm font-medium text-ink">
-                  <ShieldCheck aria-hidden="true" className="h-4 w-4 text-success" />
-                  Editable estimates
-                </span>
-              </div>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {useCases.map((useCase, index) => (
-                <div
-                  className={`reveal-on-scroll rounded-lg border border-line bg-field p-5 ${
-                    index % 2 === 1 ? "reveal-delay-1" : ""
-                  }`}
-                  key={useCase}
+                <h2 className="font-serif text-5xl mb-4 text-stone-900 leading-tight">
+                  A simpler path to perfect notes.
+                </h2>
+                <p className="text-stone-600 mb-8 leading-relaxed">
+                  The best tools get out of your way. Salin keeps your workflow entirely focused and friction-free across four clear steps: upload, review, generate, and export.
+                </p>
+                <Link
+                  href="/dashboard"
+                  className="inline-flex items-center gap-2 text-stone-900 font-bold border-b-2 border-stone-900 hover:text-emerald-600 hover:border-emerald-600 transition pb-1 w-fit"
                 >
-                  <p className="text-base font-semibold">{useCase}</p>
-                  <p className="mt-2 text-sm leading-6 text-muted">
-                    Review timestamps, speakers, notes, and exports in one workspace.
+                  Start uploading <ArrowRight weight="bold" />
+                </Link>
+              </div>
+
+              {/* Bento Grid */}
+              <div className="lg:col-span-8 grid grid-cols-2 gap-4 order-1 lg:order-2">
+                <div className="bg-white p-6 rounded-3xl shadow-sm border border-stone-200 col-span-2 md:col-span-1 hover:shadow-lg transition duration-300">
+                  <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600 mb-6">
+                    <CloudArrowUp weight="fill" className="text-2xl" />
+                  </div>
+                  <h4 className="font-bold text-lg text-stone-900 mb-2">Upload</h4>
+                  <p className="text-sm text-stone-500 leading-relaxed">
+                    Send one supported audio or video file into the processing queue.
                   </p>
                 </div>
-              ))}
+                <div className="bg-white p-6 rounded-3xl shadow-sm border border-stone-200 col-span-2 md:col-span-1 hover:shadow-lg transition duration-300">
+                  <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 mb-6">
+                    <FileText weight="fill" className="text-2xl" />
+                  </div>
+                  <h4 className="font-bold text-lg text-stone-900 mb-2">Review</h4>
+                  <p className="text-sm text-stone-500 leading-relaxed">
+                    Search timestamped transcript blocks and click back into the audio.
+                  </p>
+                </div>
+                <div className="bg-white p-6 rounded-3xl shadow-sm border border-stone-200 col-span-2 md:col-span-1 hover:shadow-lg transition duration-300">
+                  <div className="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center text-purple-600 mb-6">
+                    <Notepad weight="fill" className="text-2xl" />
+                  </div>
+                  <h4 className="font-bold text-lg text-stone-900 mb-2">Notes</h4>
+                  <p className="text-sm text-stone-500 leading-relaxed">
+                    Generate structured notes natively from your saved transcript data.
+                  </p>
+                </div>
+                <div className="bg-white p-6 rounded-3xl shadow-sm border border-stone-200 col-span-2 md:col-span-1 hover:shadow-lg transition duration-300">
+                  <div className="w-12 h-12 bg-rose-50 rounded-xl flex items-center justify-center text-rose-600 mb-6">
+                    <FileArrowDown weight="fill" className="text-2xl" />
+                  </div>
+                  <h4 className="font-bold text-lg text-stone-900 mb-2">Export</h4>
+                  <p className="text-sm text-stone-500 leading-relaxed">
+                    Download transcript, notes, or a combined handoff packet securely.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </section>
       </main>
 
-      <footer className="border-t border-line bg-canvas py-8">
-        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 text-sm text-muted sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
-          <p>Salin. Uploaded recording review for transcript-first notes.</p>
-          <p>Speaker labels are automatically estimated and can be edited.</p>
+      <footer className="border-t border-stone-200 bg-white py-8">
+        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-6 text-sm text-stone-500 sm:flex-row sm:items-center sm:justify-between">
+          <p>Salin.</p>
+          <p>App Dev 2026</p>
         </div>
       </footer>
     </div>
