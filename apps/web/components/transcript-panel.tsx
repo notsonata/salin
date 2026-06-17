@@ -65,6 +65,12 @@ export function TranscriptPanel({
   const [textDrafts, setTextDrafts] = useState<Record<string, string>>({});
   const [expandedSegmentId, setExpandedSegmentId] = useState<string | null>(null);
   const [speakerToolsOpen, setSpeakerToolsOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 50;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [query]);
 
   useEffect(() => {
     if (!speakerLabels.length) {
@@ -119,6 +125,12 @@ export function TranscriptPanel({
   }
 
   const speakerBusy = speakerSavingTarget !== null;
+
+  const totalPages = Math.ceil(filteredSegments.length / PAGE_SIZE);
+  const paginatedSegments = filteredSegments.slice(
+    (currentPage - 1) * PAGE_SIZE,
+    currentPage * PAGE_SIZE,
+  );
 
   return (
     <Card className="overflow-hidden">
@@ -260,7 +272,7 @@ export function TranscriptPanel({
         <TooltipProvider delayDuration={150}>
           <div>
             <div className="divide-y divide-line/80 bg-panel">
-              {filteredSegments.map((segment) => {
+              {paginatedSegments.map((segment) => {
                 const isActive = activeSegmentId === segment.id;
                 const draftSpeaker = speakerDrafts[segment.id] ?? segment.speaker_label;
                 const draftText = textDrafts[segment.id] ?? segment.text;
@@ -391,6 +403,43 @@ export function TranscriptPanel({
                 );
               })}
             </div>
+            {totalPages > 1 ? (
+              <div className="flex items-center justify-between border-t border-line/80 bg-canvas px-4 py-3 sm:px-5">
+                <Select
+                  value={String(currentPage)}
+                  onValueChange={(val) => setCurrentPage(Number(val))}
+                >
+                  <SelectTrigger className="w-fit border-none bg-transparent px-2 text-sm font-medium text-muted shadow-none hover:bg-hover/50 hover:text-ink focus-visible:ring-0">
+                    Page {currentPage} of {totalPages}
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                      <SelectItem key={page} value={String(page)}>
+                        {page}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <div className="flex items-center gap-2">
+                  <Button
+                    disabled={currentPage === 1}
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  >
+                    Previous
+                  </Button>
+                  <Button
+                    disabled={currentPage === totalPages}
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  >
+                    Next
+                  </Button>
+                </div>
+              </div>
+            ) : null}
           </div>
         </TooltipProvider>
       ) : (
