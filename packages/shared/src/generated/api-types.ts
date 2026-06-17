@@ -22,6 +22,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/recordings/imports/youtube": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Youtube Import */
+        post: operations["create_youtube_import_recordings_imports_youtube_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/recordings/{recording_id}": {
         parameters: {
             query?: never;
@@ -90,6 +107,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/recordings/{recording_id}/exports/notes.md": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Export Notes Md */
+        get: operations["export_notes_md_recordings__recording_id__exports_notes_md_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/recordings/{recording_id}/exports/notes.txt": {
         parameters: {
             query?: never;
@@ -133,6 +167,23 @@ export interface paths {
         };
         /** Export Combined Txt */
         get: operations["export_combined_txt_recordings__recording_id__exports_combined_txt_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/recordings/{recording_id}/exports/combined.md": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Export Combined Md */
+        get: operations["export_combined_md_recordings__recording_id__exports_combined_md_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -466,6 +517,17 @@ export interface components {
             /** Context */
             ctx?: Record<string, never>;
         };
+        /** YouTubeImportRequest */
+        YouTubeImportRequest: {
+            /** Url */
+            url: string;
+            /** @default auto */
+            language: components["schemas"]["LanguageOption"];
+            /** @default accurate */
+            processing_mode: components["schemas"]["ProcessingMode"];
+            /** @default auto */
+            speaker_count: components["schemas"]["SpeakerCount"];
+        };
     };
     responses: never;
     parameters: never;
@@ -505,6 +567,39 @@ export interface operations {
         requestBody: {
             content: {
                 "multipart/form-data": components["schemas"]["Body_create_recording_recordings_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecordingCreateResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_youtube_import_recordings_imports_youtube_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["YouTubeImportRequest"];
             };
         };
         responses: {
@@ -656,6 +751,37 @@ export interface operations {
             };
         };
     };
+    export_notes_md_recordings__recording_id__exports_notes_md_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                recording_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     export_notes_txt_recordings__recording_id__exports_notes_txt_get: {
         parameters: {
             query?: never;
@@ -719,6 +845,37 @@ export interface operations {
         };
     };
     export_combined_txt_recordings__recording_id__exports_combined_txt_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                recording_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_combined_md_recordings__recording_id__exports_combined_md_get: {
         parameters: {
             query?: never;
             header?: never;

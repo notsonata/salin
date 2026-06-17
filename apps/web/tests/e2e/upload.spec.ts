@@ -6,11 +6,7 @@ const now = () => new Date().toISOString();
 function idleNotes(): GeneratedNotesSummary {
   return {
     status: "idle",
-    summary: null,
-    key_points: [],
-    decisions: [],
-    action_items: [],
-    questions: [],
+    content: null,
     error_message: null,
     source_provider: null,
     generation_count: 0,
@@ -140,31 +136,13 @@ test("home frames the product as a transcript review board", async ({ page }) =>
   await expect(page.getByText("Transcript specimen")).toBeVisible();
 });
 
-test("dashboard home shows upload composer and recent recordings", async ({ page }) => {
-  await page.route("http://localhost:8000/recordings", async (route) => {
-    await route.fulfill({
-      status: 200,
-      headers: {
-        "access-control-allow-origin": "*",
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        recordings: [
-          recordingsListRow({ id: "rec_1", filename: "lecture.mp3" }),
-          recordingsListRow({ id: "rec_2", filename: "client-call.mp3", stage: "transcribing" }),
-        ],
-      }),
-    });
-  });
-
+test("dashboard home shows the recording intake composer", async ({ page }) => {
   await page.goto("/dashboard");
 
   await expect(page.getByRole("heading", { name: "New recording", exact: true })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Library" })).toBeVisible();
   await expect(page.getByTestId("dashboard-command-deck")).toBeVisible();
-  await expect(page.getByTestId("recordings-library")).toBeVisible();
-  await expect(page.getByRole("cell", { name: "lecture.mp3" })).toBeVisible();
-  await expect(page.getByRole("cell", { name: "client-call.mp3" })).toBeVisible();
+  await expect(page.getByRole("tab", { name: "File upload" })).toBeVisible();
+  await expect(page.getByRole("tab", { name: "YouTube URL" })).toBeVisible();
 });
 
 test("supported upload transitions into the interactive transcript workspace", async ({
@@ -321,6 +299,102 @@ test("supported upload transitions into the interactive transcript workspace", a
   expect(currentTimeValue).toBeGreaterThanOrEqual(5);
 });
 
+test("youtube import transitions into the transcript workspace", async ({ page }) => {
+  await page.route("**/recordings/imports/youtube", async (route) => {
+    if (route.request().method() === "OPTIONS") {
+      await route.fulfill({
+        status: 204,
+        headers: {
+          "access-control-allow-origin": "*",
+          "access-control-allow-methods": "POST, OPTIONS",
+          "access-control-allow-headers": "content-type",
+        },
+      });
+      return;
+    }
+
+    const body = JSON.stringify({
+      recording: {
+        id: "rec_youtube",
+        filename: "YouTube import",
+        content_type: "application/vnd.salin.youtube-import+json",
+        file_size: 128,
+        language: "auto",
+        processing_mode: "accurate",
+        speaker_count: "auto",
+        created_at: now(),
+        updated_at: now(),
+      },
+      job: {
+        id: "job_youtube",
+        recording_id: "rec_youtube",
+        stage: "uploaded",
+        retryable: false,
+        retry_count: 0,
+        error_message: null,
+        last_provider: null,
+        created_at: now(),
+        updated_at: now(),
+        started_at: null,
+        completed_at: null,
+      },
+    });
+    await route.fulfill({
+      status: 201,
+      headers: {
+        "access-control-allow-origin": "*",
+        "content-length": String(Buffer.byteLength(body)),
+        "content-type": "application/json",
+      },
+      body,
+    });
+  });
+
+  await page.route("**/recordings/rec_youtube", async (route) => {
+    await route.fulfill({
+      status: 200,
+      headers: {
+        "access-control-allow-origin": "*",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        ...completedDetail(),
+        recording: {
+          ...completedDetail().recording,
+          id: "rec_youtube",
+          filename: "Class-discussion.m4a",
+          content_type: "audio/mp4",
+        },
+        job: {
+          ...completedDetail().job,
+          id: "job_youtube",
+          recording_id: "rec_youtube",
+        },
+      }),
+    });
+  });
+
+  await page.goto("/dashboard");
+  await page.getByRole("tab", { name: "YouTube URL" }).click();
+  await page
+    .getByLabel("YouTube video link")
+    .fill("https://www.youtube.com/watch?v=demo123");
+  const importResponsePromise = page.waitForResponse(
+    (response) =>
+      response.url().endsWith("/recordings/imports/youtube")
+      && response.request().method() === "POST",
+  );
+  await page.getByRole("button", { name: "Import link" }).click();
+  const importResponse = await importResponsePromise;
+  expect(importResponse.ok()).toBe(true);
+
+  await page.waitForURL("**/workspace/rec_youtube", {
+    timeout: 15_000,
+    waitUntil: "commit",
+  });
+  await expect(page.getByRole("heading", { name: "Class-discussion.m4a" })).toBeVisible();
+});
+
 test("mobile workspace falls back to transcript and notes tabs", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
 
@@ -388,7 +462,7 @@ test("speaker labels can be renamed and reassigned from the transcript", async (
   );
 
   await page.route(
-    "http://localhost:8000/recordings/rec_1/transcript-segments/seg_1/speaker",
+    "http://localhost:8000/recordings/rec_1/transcript-segments/seg_1",
     async (route) => {
       const updatedSegments = detail.transcript_segments.map((segment) =>
         segment.id === "seg_1"
@@ -427,9 +501,9 @@ test("speaker labels can be renamed and reassigned from the transcript", async (
   await expect(desktopGrid.getByText("Edited").first()).toBeVisible();
 
   await page.getByLabel("Speaker label for 00:00").fill("Student");
-  await page.getByRole("button", { name: "Apply speaker" }).first().click();
+  await page.getByRole("button", { name: "Apply edits" }).first().click();
 
-  await expect(desktopGrid.getByText("Speaker label updated.")).toBeVisible();
+  await expect(desktopGrid.getByText("Segment updated.")).toBeVisible();
   await expect(page.getByLabel("Speaker label for 00:00")).toHaveValue("Student");
 });
 
@@ -476,11 +550,18 @@ test("manual notes generation renders the completed structured notes", async ({ 
       detailCount > 3
         ? completedDetail({
             status: "completed",
-            summary: "Clear summary",
-            key_points: ["Key point"],
-            decisions: ["Decision"],
-            action_items: ["Action item"],
-            questions: ["Question"],
+            content: (
+              "# Summary\n\n"
+              + "Clear summary\n\n"
+              + "## Key Points\n\n"
+              + "- Key point\n\n"
+              + "## Decisions\n\n"
+              + "- Decision\n\n"
+              + "## Action Items\n\n"
+              + "- [ ] Action item\n\n"
+              + "## Questions\n\n"
+              + "- Question"
+            ),
             error_message: null,
             source_provider: "openrouter:test-model",
             generation_count: 1,
@@ -490,11 +571,7 @@ test("manual notes generation renders the completed structured notes", async ({ 
           })
         : completedDetail({
             status: detailCount === 1 ? "idle" : "generating",
-            summary: null,
-            key_points: [],
-            decisions: [],
-            action_items: [],
-            questions: [],
+            content: null,
             error_message: null,
             source_provider: null,
             generation_count: 0,
@@ -537,11 +614,11 @@ test("manual notes generation renders the completed structured notes", async ({ 
   await expect(desktopGrid.getByRole("button", { name: "Generate notes" })).toBeVisible();
   await desktopGrid.getByRole("button", { name: "Generate notes" }).click();
 
-  await expect(page.getByLabel("Summary")).toHaveValue("Clear summary");
-  await expect(page.getByLabel("Key points 1")).toHaveValue("Key point");
-  await expect(page.getByLabel("Decisions 1")).toHaveValue("Decision");
-  await expect(page.getByLabel("Action items 1")).toHaveValue("Action item");
-  await expect(page.getByLabel("Questions 1")).toHaveValue("Question");
+  await expect(page.getByText("Clear summary")).toBeVisible();
+  await expect(page.getByText("Key point")).toBeVisible();
+  await expect(page.getByText("Decision")).toBeVisible();
+  await expect(page.getByText("Action item")).toBeVisible();
+  await expect(page.getByText("Question")).toBeVisible();
   await expect(desktopGrid.getByRole("button", { name: "Regenerate notes" })).toBeVisible();
   await desktopGrid.getByRole("button", { name: "Export notes" }).click();
   await expect(desktopGrid.getByRole("link", { name: "Export notes TXT" })).toHaveAttribute(
@@ -625,11 +702,7 @@ test("notes edits save through the structured editor", async ({ page }) => {
       body: JSON.stringify(
         completedDetail({
           status: "completed",
-          summary: "Initial summary",
-          key_points: ["Initial key point"],
-          decisions: ["Initial decision"],
-          action_items: ["Initial action item"],
-          questions: ["Initial question"],
+          content: "# Summary\n\nInitial summary\n\n## Key Points\n\n- Initial key point",
           error_message: null,
           source_provider: "openrouter:test-model",
           generation_count: 1,
@@ -652,11 +725,7 @@ test("notes edits save through the structured editor", async ({ page }) => {
         recording_id: "rec_1",
         notes: {
           status: "completed",
-          summary: "Updated summary",
-          key_points: ["Initial key point"],
-          decisions: ["Initial decision"],
-          action_items: ["Initial action item"],
-          questions: ["Initial question"],
+          content: "# Summary\n\nUpdated summary\n\n## Key Points\n\n- Initial key point",
           error_message: null,
           source_provider: "openrouter:test-model",
           generation_count: 1,
@@ -669,11 +738,14 @@ test("notes edits save through the structured editor", async ({ page }) => {
   });
 
   await page.goto("/workspace/rec_1");
-  await page.getByLabel("Summary").fill("Updated summary");
+  const notesEditor = page.locator("[contenteditable='true']").first();
+  await notesEditor.click();
+  await page.keyboard.press("Control+A");
+  await page.keyboard.type("# Summary\n\nUpdated summary\n\n## Key Points\n\n- Initial key point");
   await page.getByRole("button", { name: "Save edits" }).click();
 
   await expect(page.getByText("Notes saved.")).toBeVisible();
-  await expect(page.getByLabel("Summary")).toHaveValue("Updated summary");
+  await expect(page.getByText("Updated summary")).toBeVisible();
 });
 
 test("unsupported upload shows the API validation message", async ({ page }) => {

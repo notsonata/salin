@@ -10,7 +10,7 @@ Salin now has the transcript spine plus the first review-and-notes layer as a re
 - `packages/shared`: generated-type boundary plus typed fetch client for the web app
 - `infra/docker-compose.yml`: local orchestration for `web`, `api`, `worker`, `postgres`, and `redis`
 
-This slice now covers an upload-first dashboard, persistent jobs, canonical transcript segments, normalized-audio review, transcript search, transcript TXT/PDF export controls, manual notes generation, structured notes editing, basic speaker correction workflows, non-blocking transcript-first diarization, configurable pyannote-backed diarization, chunked long-recording transcription, and backend TXT/PDF exports for transcript, notes, and a combined bundle.
+This slice now covers an upload-first dashboard, public single-video YouTube URL import for presentation intake, persistent jobs, canonical transcript segments, normalized-audio review, transcript search, transcript TXT/PDF export controls, manual notes generation, Markdown notes editing, basic speaker correction workflows, non-blocking transcript-first diarization, configurable pyannote-backed diarization, chunked long-recording transcription, and backend TXT/PDF exports for transcript, notes, and a combined bundle.
 
 ## System Overview
 
@@ -25,6 +25,7 @@ This slice now covers an upload-first dashboard, persistent jobs, canonical tran
     |
     +--> [Redis Queue] ---> [RQ Worker]
                                |
+                               +--> yt-dlp (YouTube import only)
                                +--> ffmpeg
                                +--> Groq Whisper
                                +--> faster-whisper fallback
@@ -49,24 +50,26 @@ salin/
 
 ### `apps/web`
 
-- Render the upload-first dashboard at `/`
-- Render recent recordings history from `GET /recordings`
-- Redirect to `/recordings/[id]` after upload
+- Render the product home at `/`
+- Render the recording intake dashboard at `/dashboard`
+- Render recent recordings history on `/library` from `GET /recordings`
+- Redirect to `/workspace/{id}` after upload or YouTube import
 - Poll `GET /recordings/{id}` every 2 seconds until the transcript job and notes lifecycle reach terminal states
 - Render recording detail header plus transcript/notes tabs
 - Render normalized-audio review, timestamp seeking, transcript search, and transcript TXT/PDF export links inside the transcript tab
 - Keep transcript review visible while the worker is in the `diarizing` stage
 - Render non-fatal processing notes such as local-backup fallback and diarization failure details
 - Render estimated/edited speaker state, speaker rename, and per-block speaker reassignment controls inside the transcript tab
-- Render manual notes generation, regeneration, and structured notes editing without blocking transcript review
+- Render manual notes generation, regeneration, and Markdown notes editing without blocking transcript review
 - Render notes TXT/PDF and combined TXT/PDF export links once notes have completed
 - Show retry affordance only when the API marks a failed job as retryable
 
 ### `apps/api`
 
 - Accept multipart recording uploads
+- Accept public single-video YouTube import requests at `POST /recordings/imports/youtube`
 - Validate supported file types and size limit
-- Store original uploads in Cloudflare R2
+- Store original uploads and YouTube import descriptors in Cloudflare R2
 - Persist `Recording` and `ProcessingJob` rows
 - Persist `GeneratedNotes` rows separately from transcript segments
 - Return dashboard recording rows through `GET /recordings`
@@ -74,7 +77,7 @@ salin/
 - Return synthesized idle notes state when notes have not been generated yet
 - Reset retryable failed jobs and re-enqueue them
 - Queue manual notes generation requests against stored transcript data once segments exist, including during the `diarizing` stage
-- Persist structured notes edits through `PUT /recordings/{id}/notes`
+- Persist Markdown notes edits through `PUT /recordings/{id}/notes`
 - Persist speaker rename and per-block speaker correction edits against transcript segments
 - Export transcript TXT/PDF, notes TXT/PDF, and combined TXT/PDF from stored database rows without reprocessing audio
 - Export OpenAPI schema for the shared TypeScript client/types workflow
@@ -82,6 +85,7 @@ salin/
 ### `apps/worker`
 
 - Download original upload from R2
+- Detect YouTube import descriptors, download audio with `yt-dlp`, store the downloaded audio as the recording's original artifact, and then continue through the normal processing path
 - Normalize audio to mono 16 kHz with `ffmpeg`
 - Upload normalized audio artifact back to R2
 - Split normalized audio into overlapped transcription chunks when the recording exceeds the configured chunk length
@@ -96,7 +100,7 @@ salin/
 - Replace generic speaker labels with aligned estimated speaker labels when diarization succeeds
 - Keep generic estimated speaker labels when diarization is not configured or fails
 - Mark job state transitions in Postgres
-- Generate structured notes from stored transcript segments through the OpenRouter provider boundary
+- Generate Markdown structured notes from stored transcript segments through the OpenRouter provider boundary
 - Preserve completed transcript data even when notes generation fails
 
 ### `packages/shared`
@@ -122,15 +126,19 @@ The API currently initializes tables with `Base.metadata.create_all(...)` on sta
 Current object keys:
 
 - `recordings/{id}/original/{filename}`
+- `recordings/{id}/original/youtube-import.json` before a YouTube import is downloaded
 - `recordings/{id}/normalized/audio.wav`
 - `recordings/{id}/artifacts/{provider}-raw.json`
+- `recordings/{id}/artifacts/youtube-import.json`
 - `recordings/{id}/artifacts/transcription-chunks/chunk-{index}-result.json`
 
 Canonical persisted transcript segments stay in Postgres, not in provider-specific JSON.
 
 Chunk result artifacts store provider-neutral segment timestamps relative to each chunk plus the provider raw payload for that chunk. The final `{provider}-raw.json` artifact records the chunk map and source providers used for the merged transcript.
 
-Notes stay in Postgres as separate structured content so notes retries and failures do not disturb transcript rows.
+Notes stay in Postgres as separate Markdown content so notes retries and failures do not disturb transcript rows.
+
+For YouTube imports, the API first stores a small descriptor with content type `application/vnd.salin.youtube-import+json`. During `preprocessing`, the worker downloads the audio, uploads it to `recordings/{id}/original/{filename}`, updates the recording metadata to point at that audio file, and preserves a small import artifact for debugging.
 
 ## Canonical Transcript Contract
 
@@ -155,11 +163,7 @@ User speaker corrections update transcript segment rows directly and set `speake
 `generated_notes` stores:
 
 - `status`: `idle`, `queued`, `generating`, `completed`, or `failed`
-- `summary`
-- `key_points`
-- `decisions`
-- `action_items`
-- `questions`
+- `content`: generated or edited Markdown notes
 - `error_message`
 - `source_provider`
 - `generation_count`
@@ -169,7 +173,7 @@ User speaker corrections update transcript segment rows directly and set `speake
 
 The transcript job remains transcript-only. Notes generation is queued manually after transcript segments exist, and the last successful notes remain visible during regeneration attempts.
 
-Structured notes edits are saved back into the same `generated_notes` row shape so note cleanup does not require regeneration.
+Notes edits are saved back into the same `generated_notes.content` field so note cleanup does not require regeneration.
 
 ## Provider Boundaries
 

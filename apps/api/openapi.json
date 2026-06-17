@@ -60,6 +60,44 @@
         }
       }
     },
+    "/recordings/imports/youtube": {
+      "post": {
+        "summary": "Create Youtube Import",
+        "operationId": "create_youtube_import_recordings_imports_youtube_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/YouTubeImportRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecordingCreateResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/recordings/{recording_id}": {
       "get": {
         "summary": "Get Recording",
@@ -222,6 +260,43 @@
         }
       }
     },
+    "/recordings/{recording_id}/exports/notes.md": {
+      "get": {
+        "summary": "Export Notes Md",
+        "operationId": "export_notes_md_recordings__recording_id__exports_notes_md_get",
+        "parameters": [
+          {
+            "name": "recording_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Recording Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/recordings/{recording_id}/exports/notes.txt": {
       "get": {
         "summary": "Export Notes Txt",
@@ -300,6 +375,43 @@
       "get": {
         "summary": "Export Combined Txt",
         "operationId": "export_combined_txt_recordings__recording_id__exports_combined_txt_get",
+        "parameters": [
+          {
+            "name": "recording_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Recording Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/recordings/{recording_id}/exports/combined.md": {
+      "get": {
+        "summary": "Export Combined Md",
+        "operationId": "export_combined_md_recordings__recording_id__exports_combined_md_get",
         "parameters": [
           {
             "name": "recording_id",
@@ -1279,6 +1391,33 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "YouTubeImportRequest": {
+        "properties": {
+          "url": {
+            "type": "string",
+            "maxLength": 2048,
+            "minLength": 1,
+            "title": "Url"
+          },
+          "language": {
+            "$ref": "#/components/schemas/LanguageOption",
+            "default": "auto"
+          },
+          "processing_mode": {
+            "$ref": "#/components/schemas/ProcessingMode",
+            "default": "accurate"
+          },
+          "speaker_count": {
+            "$ref": "#/components/schemas/SpeakerCount",
+            "default": "auto"
+          }
+        },
+        "type": "object",
+        "required": [
+          "url"
+        ],
+        "title": "YouTubeImportRequest"
       }
     }
   }

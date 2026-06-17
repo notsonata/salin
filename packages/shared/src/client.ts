@@ -12,6 +12,7 @@ import type {
   SpeakerCount,
   SpeakerRenameRequest,
   TranscriptSegmentsUpdateResponse,
+  YouTubeImportRequest,
 } from "./api-types";
 
 export interface CreateRecordingInput {
@@ -85,6 +86,20 @@ export class SalinApiClient {
     const response = await fetch(`${this.baseUrl}/recordings`, {
       method: "POST",
       body: formData,
+    });
+
+    return parseResponse<RecordingCreateResponse>(response);
+  }
+
+  async importYouTubeRecording(
+    input: YouTubeImportRequest,
+  ): Promise<RecordingCreateResponse> {
+    const response = await fetch(`${this.baseUrl}/recordings/imports/youtube`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(input),
     });
 
     return parseResponse<RecordingCreateResponse>(response);

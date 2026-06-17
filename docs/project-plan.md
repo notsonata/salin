@@ -15,6 +15,8 @@ Salin is a recording-to-notes workspace for uploaded audio and video files. It t
 
 The product must be framed as a post-recording review tool. It is not a live meeting assistant.
 
+For the presentation build, Salin also supports importing a public single YouTube video by URL. This is an intake shortcut only: the worker downloads the video's audio, stores it as the recording's original artifact, and then runs the same post-recording processing path as a normal upload.
+
 ## Target Users
 
 ### Primary
@@ -87,6 +89,7 @@ This is the first slice that must work before the rest of the scope matters:
 - Notes generation from transcript
 - TXT export for transcript and notes
 - PDF export for transcript and notes
+- Public single-video YouTube URL import for presentation/demo intake, routed through the same recording pipeline after audio download
 
 ### Later
 
@@ -111,9 +114,9 @@ This is the first slice that must work before the rest of the scope matters:
 ## Primary User Flow
 
 1. User opens the upload page.
-2. User uploads an audio or video file.
+2. User uploads an audio or video file, or imports a public single YouTube video URL for the demo flow.
 3. User chooses language, processing mode, and expected speaker count.
-4. System creates a processing job, stores metadata in local Postgres, and stores the original file in Cloudflare R2.
+4. System creates a processing job, stores metadata in local Postgres, and stores the original file or YouTube import descriptor in Cloudflare R2.
 5. Worker extracts audio, normalizes it, chunks if needed, and transcribes it.
 6. If Groq is unavailable or intentionally bypassed, worker can switch to local backup transcription mode.
 7. System stores transcript blocks immediately after transcription.
@@ -161,6 +164,7 @@ The canonical transcript representation should remain provider-agnostic.
 - A failed transcription chunk can be retried independently.
 - The system can complete transcription through local backup mode when Groq is unavailable.
 - The user can export transcript and notes.
+- A public single YouTube video URL can be imported for the presentation flow without changing downstream transcript, notes, or export behavior.
 
 ## Milestones
 
@@ -211,6 +215,7 @@ The canonical transcript representation should remain provider-agnostic.
 - Backend TXT export endpoints for transcript, notes, and combined text (Done)
 - Backend PDF export endpoints for transcript, notes, and combined output (Done)
 - Current-style export UI controls for transcript, notes, and combined TXT/PDF (Done)
+- YouTube URL import for presentation/demo intake, routed through the normal recording job path (Done)
 - Export presentation polish for the UI revamp
 - Retry/error-state UI polish for downstream failures
 - Better processing progress presentation

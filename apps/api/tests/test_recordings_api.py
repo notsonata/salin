@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import json
 from datetime import UTC, datetime, timedelta
 
+from salin_api.recording_sources import YOUTUBE_IMPORT_CONTENT_TYPE, YOUTUBE_IMPORT_KIND
 from salin_api.repositories.recordings import RecordingRepository, TranscriptSegmentInput
 
 
@@ -54,6 +56,48 @@ def test_unsupported_upload_is_rejected(client) -> None:
 
     assert response.status_code == 400
     assert "Unsupported file type" in response.json()["detail"]
+
+
+def test_youtube_import_persists_descriptor_and_enqueues_job(client, app) -> None:
+    response = client.post(
+        "/recordings/imports/youtube",
+        json={
+            "url": "https://www.youtube.com/watch?v=demo123",
+            "language": "auto",
+            "processing_mode": "accurate",
+            "speaker_count": "auto",
+        },
+    )
+
+    assert response.status_code == 201
+    payload = response.json()
+    recording_id = payload["recording"]["id"]
+    storage = app.state.services.storage
+    queue = app.state.services.job_queue
+    object_key = f"recordings/{recording_id}/original/youtube-import.json"
+    descriptor = json.loads(storage.objects[object_key].decode("utf-8"))
+
+    assert payload["recording"]["filename"] == "YouTube import"
+    assert payload["recording"]["content_type"] == YOUTUBE_IMPORT_CONTENT_TYPE
+    assert payload["job"]["stage"] == "uploaded"
+    assert queue.enqueued_recordings == [recording_id]
+    assert descriptor["kind"] == YOUTUBE_IMPORT_KIND
+    assert descriptor["url"] == "https://www.youtube.com/watch?v=demo123"
+
+
+def test_youtube_import_rejects_non_youtube_url(client) -> None:
+    response = client.post(
+        "/recordings/imports/youtube",
+        json={
+            "url": "https://example.com/audio",
+            "language": "auto",
+            "processing_mode": "accurate",
+            "speaker_count": "auto",
+        },
+    )
+
+    assert response.status_code == 400
+    assert "Only YouTube video links" in response.json()["detail"]
 
 
 def create_completed_recording(
@@ -121,11 +165,7 @@ def test_recording_detail_synthesizes_idle_notes_state(client, app) -> None:
     payload = response.json()
     assert payload["notes"] == {
         "status": "idle",
-        "summary": None,
-        "key_points": [],
-        "decisions": [],
-        "action_items": [],
-        "questions": [],
+        "content": None,
         "error_message": None,
         "source_provider": None,
         "generation_count": 0,
@@ -224,11 +264,7 @@ def test_update_notes_persists_structured_edits(client, app) -> None:
     response = client.put(
         f"/recordings/{recording_id}/notes",
         json={
-            "summary": "Updated summary",
-            "key_points": ["Point A"],
-            "decisions": ["Decision A"],
-            "action_items": ["Action A"],
-            "questions": ["Question A"],
+            "content": "# Summary\n\nUpdated summary\n\n## Key Points\n\n- Point A",
         },
     )
 
@@ -236,11 +272,9 @@ def test_update_notes_persists_structured_edits(client, app) -> None:
     payload = response.json()
     assert payload["recording_id"] == recording_id
     assert payload["notes"]["status"] == "completed"
-    assert payload["notes"]["summary"] == "Updated summary"
-    assert payload["notes"]["key_points"] == ["Point A"]
-    assert payload["notes"]["decisions"] == ["Decision A"]
-    assert payload["notes"]["action_items"] == ["Action A"]
-    assert payload["notes"]["questions"] == ["Question A"]
+    assert payload["notes"]["content"] == (
+        "# Summary\n\nUpdated summary\n\n## Key Points\n\n- Point A"
+    )
 
 
 def test_export_transcript_txt_uses_stored_segments_without_queueing(client, app) -> None:
@@ -348,11 +382,15 @@ def test_export_notes_txt_uses_completed_notes_without_queueing(client, app) -> 
     save_response = client.put(
         f"/recordings/{recording_id}/notes",
         json={
-            "summary": "The class discussed interviews.",
-            "key_points": ["Review the transcript", "Prepare follow-up questions"],
-            "decisions": ["Use Salin for the next session"],
-            "action_items": ["Export notes"],
-            "questions": ["Who will edit speaker labels?"],
+            "content": (
+                "# Summary\n\n"
+                "The class discussed interviews.\n\n"
+                "## Key Points\n\n"
+                "- Review the transcript\n"
+                "- Prepare follow-up questions\n\n"
+                "## Action Items\n\n"
+                "- [ ] Export notes"
+            ),
         },
     )
     assert save_response.status_code == 200
@@ -364,10 +402,10 @@ def test_export_notes_txt_uses_completed_notes_without_queueing(client, app) -> 
     assert response.headers["content-disposition"] == (
         'attachment; filename="salin-lecture-notes.txt"'
     )
-    assert "Notes\nRecording: lecture.mp3" in response.text
-    assert "Summary\nThe class discussed interviews." in response.text
+    assert "# Notes\n**Recording:** lecture.mp3" in response.text
+    assert "# Summary\n\nThe class discussed interviews." in response.text
     assert "- Review the transcript" in response.text
-    assert "- Export notes" in response.text
+    assert "- [ ] Export notes" in response.text
     assert app.state.services.job_queue.enqueued_notes == enqueued_notes
 
 
@@ -385,11 +423,7 @@ def test_export_notes_pdf_uses_completed_notes_without_queueing(client, app) -> 
     save_response = client.put(
         f"/recordings/{recording_id}/notes",
         json={
-            "summary": "PDF notes summary.",
-            "key_points": ["Point A"],
-            "decisions": [],
-            "action_items": [],
-            "questions": [],
+            "content": "# Summary\n\nPDF notes summary.\n\n## Key Points\n\n- Point A",
         },
     )
     assert save_response.status_code == 200
@@ -421,11 +455,7 @@ def test_export_combined_txt_includes_notes_and_transcript(client, app) -> None:
     save_response = client.put(
         f"/recordings/{recording_id}/notes",
         json={
-            "summary": "Combined export summary.",
-            "key_points": ["Point A"],
-            "decisions": [],
-            "action_items": [],
-            "questions": [],
+            "content": "# Summary\n\nCombined export summary.\n\n## Key Points\n\n- Point A",
         },
     )
     assert save_response.status_code == 200
@@ -436,9 +466,9 @@ def test_export_combined_txt_includes_notes_and_transcript(client, app) -> None:
     assert response.headers["content-disposition"] == (
         'attachment; filename="salin-lecture-combined.txt"'
     )
-    assert response.text.startswith("Salin Export\nRecording: lecture.mp3")
-    assert "Notes\n\nSummary\nCombined export summary." in response.text
-    assert "Transcript\n\nSpeaker labels are automatically estimated" in response.text
+    assert response.text.startswith("# Salin Export\n**Recording:** lecture.mp3")
+    assert "# Summary\n\nCombined export summary." in response.text
+    assert "## Transcript\n\nSpeaker labels are automatically estimated" in response.text
     assert "[00:00:00.000 - 00:00:01.200] Speaker (estimated):" in response.text
 
 
@@ -447,11 +477,7 @@ def test_export_combined_pdf_includes_notes_and_transcript(client, app) -> None:
     save_response = client.put(
         f"/recordings/{recording_id}/notes",
         json={
-            "summary": "Combined PDF summary.",
-            "key_points": ["Point A"],
-            "decisions": [],
-            "action_items": [],
-            "questions": [],
+            "content": "# Summary\n\nCombined PDF summary.\n\n## Key Points\n\n- Point A",
         },
     )
     assert save_response.status_code == 200
@@ -559,8 +585,8 @@ def test_update_segment_speaker_changes_one_transcript_block(client, app) -> Non
     segment_id = detail_response.json()["transcript_segments"][0]["id"]
 
     response = client.put(
-        f"/recordings/{recording_id}/transcript-segments/{segment_id}/speaker",
-        json={"speaker_label": "Student"},
+        f"/recordings/{recording_id}/transcript-segments/{segment_id}",
+        json={"speaker_label": "Student", "text": "First block."},
     )
 
     assert response.status_code == 200
@@ -577,11 +603,7 @@ def test_update_notes_refreshes_dashboard_recency(client, app) -> None:
     save_response = client.put(
         f"/recordings/{first_id}/notes",
         json={
-            "summary": "Fresh edit",
-            "key_points": [],
-            "decisions": [],
-            "action_items": [],
-            "questions": [],
+            "content": "# Summary\n\nFresh edit",
         },
     )
 

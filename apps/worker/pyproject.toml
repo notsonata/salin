@@ -9,7 +9,8 @@ dependencies = [
   "pyannote.audio>=3.1.0",
   "redis>=5.2.0",
   "rq>=1.16.2",
-  "salin-api"
+  "salin-api",
+  "yt-dlp>=2024.12.13"
 ]
 
 [tool.uv.sources]

@@ -3,19 +3,29 @@ from __future__ import annotations
 import json
 import logging
 import time
+from dataclasses import dataclass
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from salin_api.core.settings import Settings
 from salin_api.db.session import create_session_factory
+from salin_api.recording_sources import YOUTUBE_IMPORT_CONTENT_TYPE, YOUTUBE_IMPORT_KIND
 from salin_api.repositories.recordings import RecordingRepository, TranscriptSegmentInput
 
 from salin_worker.providers.base import ProviderSegment, TranscriptionProvider, TranscriptionResult
 from salin_worker.providers.diarization import DiarizationProvider
 from salin_worker.services.audio import AudioChunk, AudioChunker, AudioNormalizer
 from salin_worker.services.diarization import align_speaker_labels
+from salin_worker.services.youtube import YouTubeAudioImporter
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True, slots=True)
+class PreparedOriginal:
+    path: Path
+    recording: object
+    processing_note: str | None = None
 
 
 class RecordingProcessor:
@@ -29,6 +39,7 @@ class RecordingProcessor:
         diarization_provider: DiarizationProvider | None = None,
         audio_normalizer: AudioNormalizer | None = None,
         audio_chunker: AudioChunker | None = None,
+        youtube_importer: YouTubeAudioImporter | None = None,
         session_factory=None,
         groq_retry_delays: tuple[float, ...] = (1.0, 2.0),
         sleep_fn=time.sleep,
@@ -40,6 +51,9 @@ class RecordingProcessor:
         self.diarization_provider = diarization_provider
         self.audio_normalizer = audio_normalizer or AudioNormalizer()
         self.audio_chunker = audio_chunker or AudioChunker()
+        self.youtube_importer = youtube_importer or YouTubeAudioImporter(
+            max_duration_seconds=settings.youtube_import_max_minutes * 60,
+        )
         self.session_factory = session_factory or create_session_factory(settings.database_url)
         self.groq_retry_delays = groq_retry_delays
         self.sleep_fn = sleep_fn
@@ -53,9 +67,15 @@ class RecordingProcessor:
                 recording = repository.require_recording(recording_id)
                 repository.update_job_stage(recording_id, stage="preprocessing", retryable=False)
 
-                original_path = tmpdir_path / recording.filename
                 normalized_path = tmpdir_path / "audio.wav"
-                self.storage.download_file(recording.original_object_key, original_path)
+                prepared_original = self._prepare_original(
+                    recording_id=recording_id,
+                    recording=recording,
+                    repository=repository,
+                    work_dir=tmpdir_path,
+                )
+                recording = prepared_original.recording
+                original_path = prepared_original.path
                 self.audio_normalizer.normalize(
                     source_path=original_path,
                     destination_path=normalized_path,
@@ -74,6 +94,8 @@ class RecordingProcessor:
                     processing_mode=recording.processing_mode,
                     work_dir=tmpdir_path,
                 )
+                if prepared_original.processing_note:
+                    processing_notes.insert(0, prepared_original.processing_note)
 
                 artifact_key = (
                     f"recordings/{recording_id}/artifacts/{result.source_provider}-raw.json"
@@ -128,6 +150,70 @@ class RecordingProcessor:
                 raise
             finally:
                 session.close()
+
+    def _prepare_original(
+        self,
+        *,
+        recording_id: str,
+        recording,
+        repository: RecordingRepository,
+        work_dir: Path,
+    ) -> PreparedOriginal:
+        if recording.content_type != YOUTUBE_IMPORT_CONTENT_TYPE:
+            original_path = work_dir / recording.filename
+            self.storage.download_file(recording.original_object_key, original_path)
+            return PreparedOriginal(path=original_path, recording=recording)
+
+        repository.update_job_stage(
+            recording_id,
+            stage="preprocessing",
+            retryable=False,
+            error_message="Importing audio from YouTube.",
+        )
+        descriptor = self._load_youtube_import_descriptor(recording.original_object_key)
+        import_dir = work_dir / "youtube-import"
+        imported_audio = self.youtube_importer.download_audio(
+            url=descriptor["url"],
+            output_dir=import_dir,
+        )
+        original_key = f"recordings/{recording_id}/original/{imported_audio.filename}"
+        self.storage.upload_file(
+            original_key,
+            imported_audio.path,
+            imported_audio.content_type,
+        )
+        self._upload_optional_json_artifact(
+            recording_id=recording_id,
+            artifact_name="youtube-import",
+            payload={
+                "url": imported_audio.webpage_url,
+                "title": imported_audio.title,
+                "duration_seconds": imported_audio.duration_seconds,
+                "filename": imported_audio.filename,
+            },
+        )
+        updated_recording = repository.update_original_metadata(
+            recording_id,
+            filename=imported_audio.filename,
+            content_type=imported_audio.content_type,
+            file_size=imported_audio.file_size,
+            original_object_key=original_key,
+        )
+        return PreparedOriginal(
+            path=imported_audio.path,
+            recording=updated_recording,
+            processing_note="Imported YouTube audio before transcription.",
+        )
+
+    def _load_youtube_import_descriptor(self, object_key: str) -> dict[str, str]:
+        try:
+            payload = json.loads(self.storage.download_bytes(object_key).decode("utf-8"))
+        except Exception as exc:
+            raise ValueError("YouTube import descriptor could not be read.") from exc
+
+        if payload.get("kind") != YOUTUBE_IMPORT_KIND or not isinstance(payload.get("url"), str):
+            raise ValueError("YouTube import descriptor is invalid.")
+        return {"url": payload["url"]}
 
     def _transcribe_audio(
         self,

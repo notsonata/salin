@@ -80,22 +80,26 @@ Route: `/dashboard`
 Required elements:
 
 - upload command deck as first priority
+- source selector for local file upload or public YouTube URL import
 - recording file picker
+- YouTube video link input for presentation/demo intake
 - language selector
 - processing mode selector
 - speaker count selector
 - start-processing action
-- recent recordings library directly below
+- route users into the workspace after either source is queued
+- recent recordings library lives on `/library`
 
 Dashboard expectations:
 
 - upload remains visually strongest
+- YouTube import must be framed as importing a saved public recording, not live capture
 - the library is dense and calm
 - backend-off state routes into preview workspace
 
 ### Recording workspace
 
-Route: `/recordings/[id]`
+Route: `/workspace/[id]`
 
 Required structure:
 
@@ -123,8 +127,7 @@ Notes dock requirements:
 - save action
 - dirty state
 - grouped notes export menu once notes exist
-- summary textarea
-- editable lists for key points, decisions, action items, and questions
+- Markdown editor for generated or edited notes content
 
 ## State design
 
@@ -152,7 +155,7 @@ Every major surface should cover:
 Web E2E should cover:
 
 - home page review-board framing and CTAs
-- upload command deck plus recordings library
+- upload command deck with file and YouTube source paths
 - desktop split workspace shell
 - mobile transcript and notes tabs
 - transcript search and timestamp seeking

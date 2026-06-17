@@ -57,6 +57,11 @@ class Settings(BaseSettings):
         ge=1,
         alias="NOTES_JOB_TIMEOUT_SECONDS",
     )
+    youtube_import_max_minutes: int = Field(
+        default=180,
+        ge=1,
+        alias="YOUTUBE_IMPORT_MAX_MINUTES",
+    )
     diarization_provider: str = Field(default="none", alias="DIARIZATION_PROVIDER")
     pyannote_auth_token: str = Field(default="", alias="PYANNOTE_AUTH_TOKEN")
     pyannote_model: str = Field(

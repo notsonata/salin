@@ -38,7 +38,7 @@
     "wavesurfer.js": "^7.12.8"
   },
   "devDependencies": {
-    "@playwright/test": "^1.49.0",
+    "@playwright/test": "^1.61.0",
     "@tailwindcss/typography": "^0.5.20",
     "@types/markdown-it": "^14.1.2",
     "@types/node": "^22.9.0",

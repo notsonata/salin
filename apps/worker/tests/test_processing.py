@@ -7,12 +7,14 @@ from pathlib import Path
 from salin_api.core.settings import Settings
 from salin_api.db.base import Base
 from salin_api.db.session import create_engine_for_url, create_session_factory
+from salin_api.recording_sources import YOUTUBE_IMPORT_CONTENT_TYPE, YOUTUBE_IMPORT_KIND
 from salin_api.repositories.recordings import RecordingRepository, TranscriptSegmentInput
 from salin_api.services.notes import NotesGenerationResult
 from salin_worker.providers.base import ProviderSegment, TranscriptionResult
 from salin_worker.providers.diarization import DiarizationResult, DiarizationSegment
 from salin_worker.services.audio import AudioChunk
 from salin_worker.services.processing import RecordingProcessor
+from salin_worker.services.youtube import YouTubeImportedAudio
 
 
 class FakeStorage:
@@ -97,6 +99,38 @@ class FakeChunker:
                 AudioChunk(index=index, path=chunk_path, start_ms=start_ms, end_ms=end_ms)
             )
         return chunks
+
+
+class FakeYouTubeImporter:
+    def __init__(
+        self,
+        *,
+        filename: str = "Class-discussion.m4a",
+        payload: bytes = b"youtube-audio",
+        error: Exception | None = None,
+    ) -> None:
+        self.filename = filename
+        self.payload = payload
+        self.error = error
+        self.urls: list[str] = []
+
+    def download_audio(self, *, url: str, output_dir: Path) -> YouTubeImportedAudio:
+        self.urls.append(url)
+        if self.error is not None:
+            raise self.error
+
+        output_dir.mkdir(parents=True, exist_ok=True)
+        audio_path = output_dir / self.filename
+        audio_path.write_bytes(self.payload)
+        return YouTubeImportedAudio(
+            path=audio_path,
+            filename=self.filename,
+            content_type="audio/mp4",
+            file_size=len(self.payload),
+            title="Class discussion",
+            duration_seconds=120,
+            webpage_url=url,
+        )
 
 
 class FakeNotesProvider:
@@ -201,6 +235,28 @@ def seed_recording(session_factory, storage: FakeStorage) -> str:
     return recording_id
 
 
+def seed_youtube_import(session_factory, storage: FakeStorage) -> str:
+    session = session_factory()
+    repository = RecordingRepository(session)
+    recording_id = "recording-youtube"
+    object_key = "recordings/recording-youtube/original/youtube-import.json"
+    descriptor = {"kind": YOUTUBE_IMPORT_KIND, "url": "https://youtu.be/demo123"}
+    repository.create_recording_with_job(
+        recording_id=recording_id,
+        filename="YouTube import",
+        content_type=YOUTUBE_IMPORT_CONTENT_TYPE,
+        file_size=len(json.dumps(descriptor)),
+        language="auto",
+        processing_mode="accurate",
+        speaker_count="auto",
+        original_object_key=object_key,
+        job_id="job-youtube",
+    )
+    session.close()
+    storage.objects[object_key] = json.dumps(descriptor).encode("utf-8")
+    return recording_id
+
+
 def seed_completed_transcript(session_factory, storage: FakeStorage) -> str:
     recording_id = seed_recording(session_factory, storage)
     session = session_factory()
@@ -264,6 +320,49 @@ def test_processing_persists_canonical_segments_from_groq(tmp_path: Path) -> Non
     assert json.loads(
         storage.objects["recordings/recording-1/artifacts/groq-raw.json"].decode("utf-8")
     )["provider"] == "groq"
+
+
+def test_processing_imports_youtube_audio_before_transcription(tmp_path: Path) -> None:
+    database_url = f"sqlite:///{tmp_path / 'worker-youtube.db'}"
+    engine = create_engine_for_url(database_url)
+    Base.metadata.create_all(engine)
+    session_factory = create_session_factory(database_url)
+    storage = FakeStorage()
+    recording_id = seed_youtube_import(session_factory, storage)
+    youtube_importer = FakeYouTubeImporter()
+    processor = RecordingProcessor(
+        settings=Settings(DATABASE_URL=database_url),
+        storage=storage,
+        groq_provider=FakeProvider(result=build_result("groq")),
+        local_provider=FakeProvider(result=build_result("faster-whisper")),
+        audio_normalizer=FakeNormalizer(),
+        audio_chunker=FakeChunker(),
+        youtube_importer=youtube_importer,
+        session_factory=session_factory,
+        groq_retry_delays=(),
+    )
+
+    processor.process(recording_id)
+
+    session = session_factory()
+    repository = RecordingRepository(session)
+    recording = repository.require_recording(recording_id)
+    job = repository.require_job(recording_id)
+    segments = repository.list_segments(recording_id)
+    session.close()
+
+    assert youtube_importer.urls == ["https://youtu.be/demo123"]
+    assert recording.filename == "Class-discussion.m4a"
+    assert recording.content_type == "audio/mp4"
+    assert recording.file_size == len(b"youtube-audio")
+    assert recording.original_object_key == (
+        "recordings/recording-youtube/original/Class-discussion.m4a"
+    )
+    assert storage.objects[recording.original_object_key] == b"youtube-audio"
+    assert job.stage == "completed"
+    assert job.error_message == "Imported YouTube audio before transcription."
+    assert segments[0].text == "Kamusta"
+    assert "recordings/recording-youtube/artifacts/youtube-import.json" in storage.objects
 
 
 def test_processing_falls_back_to_local_provider(tmp_path: Path) -> None:
@@ -558,11 +657,7 @@ def test_notes_generation_persists_structured_sections(tmp_path: Path) -> None:
         settings=Settings(DATABASE_URL=database_url),
         notes_provider=FakeNotesProvider(
             result=NotesGenerationResult(
-                summary="Summary text",
-                key_points=["Key point"],
-                decisions=["Decision"],
-                action_items=["Action item"],
-                questions=["Question"],
+                content="# Summary\n\nSummary text\n\n## Key Points\n\n- Key point",
                 source_provider="openrouter:test-model",
             )
         ),
@@ -577,11 +672,7 @@ def test_notes_generation_persists_structured_sections(tmp_path: Path) -> None:
     session.close()
 
     assert notes.status == "completed"
-    assert notes.summary == "Summary text"
-    assert json.loads(notes.key_points_json) == ["Key point"]
-    assert json.loads(notes.decisions_json) == ["Decision"]
-    assert json.loads(notes.action_items_json) == ["Action item"]
-    assert json.loads(notes.questions_json) == ["Question"]
+    assert notes.content == "# Summary\n\nSummary text\n\n## Key Points\n\n- Key point"
     assert notes.source_provider == "openrouter:test-model"
     assert notes.generation_count == 1
 
@@ -617,7 +708,7 @@ def test_notes_generation_failure_keeps_transcript_intact(tmp_path: Path) -> Non
     assert len(segments) == 1
     assert notes.status == "failed"
     assert notes.error_message == "OpenRouter failed"
-    assert notes.summary is None
+    assert notes.content is None
     assert notes.generation_count == 0
 
 
@@ -634,11 +725,7 @@ def test_notes_regeneration_replaces_content_after_success(tmp_path: Path) -> No
         settings=Settings(DATABASE_URL=database_url),
         notes_provider=FakeNotesProvider(
             result=NotesGenerationResult(
-                summary="First summary",
-                key_points=["First point"],
-                decisions=["First decision"],
-                action_items=["First action"],
-                questions=["First question"],
+                content="# Summary\n\nFirst summary\n\n## Key Points\n\n- First point",
                 source_provider="openrouter:model-a",
             )
         ),
@@ -648,11 +735,7 @@ def test_notes_regeneration_replaces_content_after_success(tmp_path: Path) -> No
         settings=Settings(DATABASE_URL=database_url),
         notes_provider=FakeNotesProvider(
             result=NotesGenerationResult(
-                summary="Second summary",
-                key_points=["Second point"],
-                decisions=["Second decision"],
-                action_items=["Second action"],
-                questions=["Second question"],
+                content="# Summary\n\nSecond summary\n\n## Key Points\n\n- Second point",
                 source_provider="openrouter:model-b",
             )
         ),
@@ -668,7 +751,6 @@ def test_notes_regeneration_replaces_content_after_success(tmp_path: Path) -> No
     session.close()
 
     assert notes.status == "completed"
-    assert notes.summary == "Second summary"
-    assert json.loads(notes.key_points_json) == ["Second point"]
+    assert notes.content == "# Summary\n\nSecond summary\n\n## Key Points\n\n- Second point"
     assert notes.source_provider == "openrouter:model-b"
     assert notes.generation_count == 2

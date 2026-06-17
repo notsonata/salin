@@ -23,3 +23,4 @@ export type SpeakerRenameRequest = components["schemas"]["SpeakerRenameRequest"]
 export type TranscriptSegment = components["schemas"]["TranscriptSegmentSummary"];
 export type TranscriptSegmentsUpdateResponse =
   components["schemas"]["TranscriptSegmentsUpdateResponse"];
+export type YouTubeImportRequest = components["schemas"]["YouTubeImportRequest"];

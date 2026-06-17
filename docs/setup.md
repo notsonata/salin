@@ -42,6 +42,7 @@ Required values:
 - `TRANSCRIPTION_CHUNK_OVERLAP_SECONDS`
 - `RECORDING_JOB_TIMEOUT_SECONDS`
 - `NOTES_JOB_TIMEOUT_SECONDS`
+- `YOUTUBE_IMPORT_MAX_MINUTES`
 - `MAX_UPLOAD_MB`
 - `NEXT_PUBLIC_API_BASE_URL`
 - `SALIN_API_INTERNAL_BASE_URL`
@@ -167,6 +168,8 @@ pnpm --filter @salin/shared generate
 - `CORS_ALLOWED_ORIGINS` must include the browser-facing web origin, which is `http://localhost:3000` for the default Docker Compose setup.
 - Cloudflare R2 remains the source of truth for original, normalized, and raw-provider artifacts.
 - The phase 1 worker supports Groq-first transcription with `faster-whisper` fallback.
+- The presentation YouTube importer uses the worker's `yt-dlp` dependency to download audio from public single-video links, then continues through the normal recording pipeline.
+- `YOUTUBE_IMPORT_MAX_MINUTES` limits public YouTube imports before transcription starts. The default is 180 minutes.
 - Long recordings are split into overlapped transcription chunks. The default chunk size is controlled by `TRANSCRIPTION_CHUNK_MINUTES`, and overlap is controlled by `TRANSCRIPTION_CHUNK_OVERLAP_SECONDS`.
 - Completed transcription chunks are cached as R2 artifacts, so retrying a failed job can resume from the first missing chunk instead of retranscribing completed chunks.
 - Diarization is disabled by default. To enable pyannote-backed diarization, accept the selected model's Hugging Face conditions, create a token, set `DIARIZATION_PROVIDER=pyannote`, and set `PYANNOTE_AUTH_TOKEN`.
@@ -189,6 +192,8 @@ pnpm --filter @salin/shared generate
 - Browser cannot reach the API because `CORS_ALLOWED_ORIGINS` does not include the active web origin
 - API or worker cannot authenticate to Cloudflare R2
 - Worker cannot import `groq` or `faster-whisper`
+- Worker cannot import `yt-dlp`: rerun `uv sync --all-packages --dev` before using YouTube import
+- YouTube import fails before transcription: confirm the link is a public single video, not a playlist, private video, age-gated video, or livestream
 - Recording fails with `Task exceeded maximum timeout value`: raise `RECORDING_JOB_TIMEOUT_SECONDS` and retry the failed recording
 - Long recording appears stuck: check the job note for chunk progress such as `Transcribing chunk 3/12`, and confirm the worker is still running
 - Browser-facing API base URL and server-side internal API base URL diverge

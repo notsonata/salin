@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, type FormEvent, type ReactNode } from "react";
-import { CircleAlert, Loader2, Sparkles, UploadCloud } from "lucide-react";
+import { CircleAlert, FileAudio2, Link2, Loader2, Sparkles, UploadCloud } from "lucide-react";
 
 import type { LanguageOption, ProcessingMode, SpeakerCount } from "@salin/shared";
 
@@ -16,10 +16,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { createBrowserClient } from "@/lib/api";
 
 const apiClient = createBrowserClient();
 const supportedFormats = [".mp3", ".wav", ".m4a", ".aac", ".mp4", ".mov", ".webm"];
+type RecordingSource = "file" | "youtube";
 
 function SelectField({
   ariaLabel,
@@ -48,10 +50,12 @@ function SelectField({
 }
 
 export function DashboardUploadComposer() {
+  const [source, setSource] = useState<RecordingSource>("file");
   const [language, setLanguage] = useState<LanguageOption>("auto");
   const [processingMode, setProcessingMode] = useState<ProcessingMode>("accurate");
   const [speakerCount, setSpeakerCount] = useState<SpeakerCount>("auto");
   const [file, setFile] = useState<File | null>(null);
+  const [youtubeUrl, setYoutubeUrl] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -59,8 +63,12 @@ export function DashboardUploadComposer() {
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!file) {
+    if (source === "file" && !file) {
       setError("Choose a recording before starting processing.");
+      return;
+    }
+    if (source === "youtube" && !youtubeUrl.trim()) {
+      setError("Paste a YouTube video link before importing.");
       return;
     }
 
@@ -68,12 +76,20 @@ export function DashboardUploadComposer() {
     setError(null);
 
     try {
-      const response = await apiClient.createRecording({
-        file,
-        language,
-        processing_mode: processingMode,
-        speaker_count: speakerCount,
-      });
+      const response =
+        source === "youtube"
+          ? await apiClient.importYouTubeRecording({
+              url: youtubeUrl.trim(),
+              language,
+              processing_mode: processingMode,
+              speaker_count: speakerCount,
+            })
+          : await apiClient.createRecording({
+              file: file as File,
+              language,
+              processing_mode: processingMode,
+              speaker_count: speakerCount,
+            });
       window.location.assign(`/workspace/${response.recording.id}`);
     } catch (submissionError) {
       setError(
@@ -103,30 +119,74 @@ export function DashboardUploadComposer() {
             <div className="grid gap-5">
               <div className="flex flex-wrap items-start gap-4">
                 <span className="inline-flex size-11 items-center justify-center rounded-xl border border-accentSoft bg-accentFaint text-accent">
-                  <UploadCloud className="h-5 w-5" />
+                  {source === "youtube" ? (
+                    <Link2 className="h-5 w-5" />
+                  ) : (
+                    <UploadCloud className="h-5 w-5" />
+                  )}
                 </span>
                 <div className="grid gap-2">
                   <h3 className="text-lg font-semibold tracking-[-0.03em] text-ink">
-                    Upload your media
+                    Choose your recording source
                   </h3>
                   <p className="max-w-2xl text-sm leading-6 text-muted">
-                    Select an audio or video recording to begin. Once uploaded, you can review the transcript, edit speaker labels, and generate structured notes.
+                    Upload a local recording or import audio from a public YouTube video. Both paths open the same transcript and notes workspace.
                   </p>
                 </div>
               </div>
 
-              <label className="grid gap-2">
-                <span className="text-sm font-medium text-ink">Recording</span>
-                <Input
-                  accept={supportedFormats.join(",")}
-                  aria-label="Recording"
-                  className="h-auto min-h-12 px-3 py-2 file:mr-4 file:cursor-pointer file:rounded-md file:border-0 file:bg-accent file:px-3 file:py-2 file:text-sm file:font-medium file:text-panel file:hover:opacity-95"
-                  data-testid="upload-file-field"
-                  type="file"
-                  onChange={(event) => setFile(event.target.files?.[0] ?? null)}
-                />
-                <p className="text-sm text-muted">Supported formats: {supportedCopy}</p>
-              </label>
+              <Tabs
+                className="grid gap-4"
+                value={source}
+                onValueChange={(value) => {
+                  setSource(value as RecordingSource);
+                  setError(null);
+                }}
+              >
+                <TabsList aria-label="Recording source" className="w-fit">
+                  <TabsTrigger value="file">
+                    <FileAudio2 className="h-4 w-4" />
+                    File upload
+                  </TabsTrigger>
+                  <TabsTrigger value="youtube">
+                    <Link2 className="h-4 w-4" />
+                    YouTube URL
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent className="mt-0" value="file">
+                  <label className="grid gap-2">
+                    <span className="text-sm font-medium text-ink">Recording</span>
+                    <Input
+                      accept={supportedFormats.join(",")}
+                      aria-label="Recording"
+                      className="h-auto min-h-12 px-3 py-2 file:mr-4 file:cursor-pointer file:rounded-md file:border-0 file:bg-accent file:px-3 file:py-2 file:text-sm file:font-medium file:text-panel file:hover:opacity-95"
+                      data-testid="upload-file-field"
+                      type="file"
+                      onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+                    />
+                    <p className="text-sm text-muted">Supported formats: {supportedCopy}</p>
+                  </label>
+                </TabsContent>
+
+                <TabsContent className="mt-0" value="youtube">
+                  <label className="grid gap-2">
+                    <span className="text-sm font-medium text-ink">YouTube video link</span>
+                    <Input
+                      aria-label="YouTube video link"
+                      data-testid="youtube-url-field"
+                      inputMode="url"
+                      placeholder="https://www.youtube.com/watch?v=..."
+                      type="url"
+                      value={youtubeUrl}
+                      onChange={(event) => setYoutubeUrl(event.target.value)}
+                    />
+                    <p className="text-sm text-muted">
+                      Public single-video links only. Salin imports the audio, then processes it like an uploaded recording.
+                    </p>
+                  </label>
+                </TabsContent>
+              </Tabs>
             </div>
 
 
@@ -175,7 +235,14 @@ export function DashboardUploadComposer() {
                   Starting...
                 </>
               ) : (
-                "Start processing"
+                <>
+                  {source === "youtube" ? (
+                    <Link2 className="h-4 w-4" />
+                  ) : (
+                    <UploadCloud className="h-4 w-4" />
+                  )}
+                  {source === "youtube" ? "Import link" : "Start processing"}
+                </>
               )}
             </Button>
           </div>
@@ -197,8 +264,9 @@ export function DashboardUploadComposer() {
             <div className="flex items-start gap-3 rounded-xl border border-line/80 bg-canvas px-4 py-3">
               <Sparkles className="mt-0.5 h-4 w-4 text-accent" />
               <p className="max-w-2xl text-sm leading-6 text-muted">
-                Best with one clean source file. The review desk opens as soon as the
-                transcript becomes usable.
+                {source === "youtube"
+                  ? "Great for presentation clips and public recordings. The worker downloads audio first, then the review desk opens as usual."
+                  : "Best with one clean source file. The review desk opens as soon as the transcript becomes usable."}
               </p>
             </div>
           </div>

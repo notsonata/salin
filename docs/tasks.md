@@ -26,7 +26,7 @@ Acceptance criteria:
 - `Recording` and `ProcessingJob` metadata persisted to Postgres
 - Background preprocessing and Groq-first transcription with `faster-whisper` fallback
 - Canonical transcript segments persisted regardless of provider path
-- Poll-based transcript workspace rendered at `/recordings/[id]`
+- Poll-based transcript workspace rendered at `/workspace/[id]`
 - One focused happy-path web E2E and one unsupported-file failure path
 
 - **Files**: `apps/web`, `apps/api`, `apps/worker`, `packages/shared`, `infra`, `docs/testing.md`, `docs/setup.md`, `docs/architecture.md`, `docs/ui.md`
@@ -57,7 +57,7 @@ Acceptance criteria:
 
 - `/dashboard` becomes an upload-first dashboard with recent recordings history
 - `/` becomes a dedicated product home that routes users into the dashboard
-- `/recordings/[id]` gains obvious dashboard return navigation
+- `/workspace/[id]` gains obvious dashboard/library return navigation
 - recording detail splits into `Transcript` and `Notes` tabs
 - notes become editable and savable in their structured section form
 - API and shared client support recordings listing and notes updates
@@ -244,6 +244,24 @@ Acceptance criteria:
 - **Backend status**: Transcript TXT/PDF, notes TXT/PDF, and combined TXT/PDF endpoints are implemented.
 - **Web status**: Current-style transcript, notes, and combined export controls are implemented in the recording workspace.
 - **Deferred**: Export presentation polish belongs with the later UI revamp.
+- **Status**: Done
+
+### [P2] Add public YouTube import for the presentation build
+
+Let the dashboard accept a public single YouTube video URL as a demo-friendly
+recording intake path without changing the downstream transcript, notes, speaker,
+or export workflow.
+
+Acceptance criteria:
+
+- Dashboard exposes a clear choice between local file upload and YouTube URL import
+- API validates YouTube-only URLs and stores a small import descriptor instead of blocking on download
+- Worker downloads the audio with `yt-dlp`, stores it as the recording's original artifact, and continues through the existing normalization and transcription path
+- Public single-video imports respect a configurable duration limit
+- Playwright, API, and worker coverage document the importer boundary
+
+- **Files**: `apps/web/components/dashboard-upload-composer.tsx`, `apps/api/salin_api/api/routes.py`, `apps/worker/salin_worker/services/processing.py`, `apps/worker/salin_worker/services/youtube.py`, `packages/shared/src/client.ts`, `docs/setup.md`, `docs/testing.md`, `docs/architecture.md`, `docs/ui.md`
+- **Context**: The professor demo may use web-hosted public recordings. This remains an importer for saved recordings, not live meeting capture or realtime transcription.
 - **Status**: Done
 
 ### [P2] Revamp the Salin web UI around the Study Desk direction

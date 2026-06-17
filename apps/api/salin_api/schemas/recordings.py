@@ -108,6 +108,13 @@ class RecordingCreateResponse(BaseModel):
     job: ProcessingJobSummary
 
 
+class YouTubeImportRequest(BaseModel):
+    url: str = Field(min_length=1, max_length=2048)
+    language: LanguageOption = LanguageOption.AUTO
+    processing_mode: ProcessingMode = ProcessingMode.ACCURATE
+    speaker_count: SpeakerCount = SpeakerCount.AUTO
+
+
 class RecordingDetailResponse(BaseModel):
     recording: RecordingSummary
     job: ProcessingJobSummary

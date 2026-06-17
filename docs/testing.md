@@ -18,6 +18,7 @@ Use the lowest level that gives credible confidence:
 - Recording routes return CORS headers for the configured browser origin
 - Supported upload persists metadata and enqueues a job
 - Unsupported file type returns the expected validation error
+- YouTube import persists a descriptor, validates the URL boundary, and enqueues the normal recording job
 - `GET /recordings` returns recent dashboard rows
 - Recording detail synthesizes idle notes state before the first notes run
 - Speaker rename updates matching transcript segments and marks them edited
@@ -39,7 +40,8 @@ Use the lowest level that gives credible confidence:
 - Diarization failure keeps generic speaker labels, stores a non-fatal note, and does not fail completed transcription
 - Long recordings split into overlapped chunks, report chunk progress, and merge timestamps back into recording-relative transcript segments
 - Cached chunk artifacts are reused on retry so completed chunks are not transcribed again
-- Notes generation persists structured sections from stored transcript data
+- YouTube import descriptors are downloaded into audio artifacts before normal transcription
+- Notes generation persists Markdown notes content from stored transcript data
 - Notes failures keep transcript data intact
 - Notes regeneration replaces content only after a successful rerun
 
@@ -72,12 +74,13 @@ Use the lowest level that gives credible confidence:
 `apps/web/tests/e2e/upload.spec.ts`
 
 - Home page frames Salin as a review board and routes into the dashboard and preview workspace
-- Dashboard renders the upload command deck plus the denser recordings library
+- Dashboard renders the recording intake command deck with file upload and YouTube URL options
 - Supported upload redirects into the split transcript workspace, renders normalized playback, keeps the transcript toolbar sticky, supports transcript search, and exposes grouped transcript export links
+- YouTube URL import redirects into the same transcript workspace path
 - Desktop renders the transcript column and notes dock together while mobile falls back to transcript/notes tabs
 - Transcript content remains visible while speaker labels are still being estimated
 - Speaker labels can be renamed globally and reassigned per row from the transcript workspace
-- Manual notes generation renders completed structured notes and exposes grouped notes/combined export links
+- Manual notes generation renders completed Markdown notes and exposes grouped notes/combined export links
 - Structured notes edits save successfully from the notes dock
 - Notes failure keeps transcript review available and allows regeneration
 - Unsupported upload surfaces the API error in the form

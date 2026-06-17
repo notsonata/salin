@@ -45,11 +45,7 @@ class FakeQueue:
 class FakeNotesProvider:
     def generate_notes(self, *, request) -> dict:
         return {
-            "summary": "Generated summary",
-            "key_points": ["Point one"],
-            "decisions": ["Decision one"],
-            "action_items": ["Action one"],
-            "questions": ["Question one"],
+            "content": "# Summary\n\nGenerated summary\n\n## Key Points\n\n- Point one",
             "source_provider": "fake-notes",
         }
 

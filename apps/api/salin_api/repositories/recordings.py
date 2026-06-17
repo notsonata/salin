@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
@@ -209,6 +208,25 @@ class RecordingRepository:
     def update_normalized_key(self, recording_id: str, normalized_object_key: str) -> Recording:
         recording = self.require_recording(recording_id)
         recording.normalized_object_key = normalized_object_key
+        recording.updated_at = datetime.now(UTC)
+        self.session.commit()
+        self.session.refresh(recording)
+        return recording
+
+    def update_original_metadata(
+        self,
+        recording_id: str,
+        *,
+        filename: str,
+        content_type: str,
+        file_size: int,
+        original_object_key: str,
+    ) -> Recording:
+        recording = self.require_recording(recording_id)
+        recording.filename = filename
+        recording.content_type = content_type
+        recording.file_size = file_size
+        recording.original_object_key = original_object_key
         recording.updated_at = datetime.now(UTC)
         self.session.commit()
         self.session.refresh(recording)

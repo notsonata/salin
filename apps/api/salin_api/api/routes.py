@@ -1,14 +1,17 @@
 from __future__ import annotations
 
 import json
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated
+from urllib.parse import urlparse
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile, status
 from fastapi.responses import PlainTextResponse, Response
 from sqlalchemy.orm import Session
 
+from salin_api.recording_sources import YOUTUBE_IMPORT_CONTENT_TYPE, YOUTUBE_IMPORT_KIND
 from salin_api.repositories.recordings import RecordingRepository
 from salin_api.schemas.recordings import (
     ArtifactUrls,
@@ -31,6 +34,7 @@ from salin_api.schemas.recordings import (
     SpeakerRenameRequest,
     TranscriptSegmentSummary,
     TranscriptSegmentsUpdateResponse,
+    YouTubeImportRequest,
 )
 from salin_api.services.exports import (
     BinaryExport,
@@ -47,6 +51,8 @@ from salin_api.services.exports import (
 )
 
 SUPPORTED_EXTENSIONS = {".mp3", ".wav", ".m4a", ".aac", ".mp4", ".mov", ".webm"}
+YOUTUBE_ALLOWED_HOSTS = {"youtube.com", "youtu.be"}
+YOUTUBE_IMPORT_FILENAME = "youtube-import.json"
 
 router = APIRouter()
 
@@ -78,6 +84,20 @@ def ensure_supported_file(filename: str) -> None:
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Unsupported file type. Supported formats: {supported}.",
         )
+
+
+def ensure_supported_youtube_url(url: str) -> str:
+    normalized_url = url.strip()
+    parsed = urlparse(normalized_url)
+    hostname = (parsed.hostname or "").lower()
+    base_hostname = hostname[4:] if hostname.startswith("www.") else hostname
+    if parsed.scheme not in {"http", "https"}:
+        raise HTTPException(status_code=400, detail="Use a valid YouTube URL.")
+    if base_hostname not in YOUTUBE_ALLOWED_HOSTS and not base_hostname.endswith(".youtube.com"):
+        raise HTTPException(status_code=400, detail="Only YouTube video links are supported.")
+    if not parsed.path and not parsed.query:
+        raise HTTPException(status_code=400, detail="Use a direct YouTube video link.")
+    return normalized_url
 
 
 def build_notes_summary(notes) -> GeneratedNotesSummary:
@@ -118,6 +138,17 @@ def build_binary_export_response(export: BinaryExport) -> Response:
         media_type=export.media_type,
         headers={"Content-Disposition": f'attachment; filename="{export.filename}"'},
     )
+
+
+def build_youtube_import_descriptor(url: str) -> bytes:
+    return json.dumps(
+        {
+            "kind": YOUTUBE_IMPORT_KIND,
+            "url": url,
+            "requested_at": datetime.now(UTC).isoformat(),
+        },
+        separators=(",", ":"),
+    ).encode("utf-8")
 
 
 @router.post(
@@ -171,6 +202,56 @@ async def create_recording(
         job = repository.mark_job_failed(
             recording_id,
             error_message="Recording saved but could not be queued for processing.",
+            retryable=True,
+        )
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+    return RecordingCreateResponse(
+        recording=RecordingSummary.model_validate(recording),
+        job=ProcessingJobSummary.model_validate(job),
+    )
+
+
+@router.post(
+    "/recordings/imports/youtube",
+    response_model=RecordingCreateResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_youtube_import(
+    payload: YouTubeImportRequest,
+    request: Request,
+    session: SessionDep,
+) -> RecordingCreateResponse:
+    youtube_url = ensure_supported_youtube_url(payload.url)
+    descriptor = build_youtube_import_descriptor(youtube_url)
+    recording_id = str(uuid4())
+    job_id = str(uuid4())
+    object_key = f"recordings/{recording_id}/original/{YOUTUBE_IMPORT_FILENAME}"
+    repository = RecordingRepository(session)
+
+    request.app.state.services.storage.upload_bytes(
+        object_key,
+        descriptor,
+        YOUTUBE_IMPORT_CONTENT_TYPE,
+    )
+    recording, job = repository.create_recording_with_job(
+        recording_id=recording_id,
+        filename="YouTube import",
+        content_type=YOUTUBE_IMPORT_CONTENT_TYPE,
+        file_size=len(descriptor),
+        language=payload.language.value,
+        processing_mode=payload.processing_mode.value,
+        speaker_count=payload.speaker_count.value,
+        original_object_key=object_key,
+        job_id=job_id,
+    )
+
+    try:
+        request.app.state.services.job_queue.enqueue_recording(recording_id)
+    except Exception as exc:  # pragma: no cover - exercised via integration behavior
+        job = repository.mark_job_failed(
+            recording_id,
+            error_message="YouTube import saved but could not be queued for processing.",
             retryable=True,
         )
         raise HTTPException(status_code=500, detail=str(exc)) from exc
