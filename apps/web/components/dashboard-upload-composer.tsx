@@ -118,7 +118,7 @@ export function DashboardUploadComposer() {
               <div className="flex flex-wrap items-start gap-4">
                 <span className="inline-flex size-11 items-center justify-center rounded-xl border border-accentSoft bg-accentFaint text-accent">
                   {source === "youtube" ? (
-                    <LinkIcon weight="fill" className="h-5 w-5" />
+                    <LinkIcon weight="bold" className="h-5 w-5" />
                   ) : (
                     <CloudArrowUp weight="fill" className="h-5 w-5" />
                   )}

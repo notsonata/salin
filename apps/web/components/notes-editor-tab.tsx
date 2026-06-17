@@ -10,10 +10,10 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { MarkdownEditor } from "@/components/markdown-editor";
 
-function statusCopy(status: NotesStatus) {
+function statusCopy(status: NotesStatus, canGenerate: boolean) {
   switch (status) {
     case "idle":
-      return "Ready to generate";
+      return canGenerate ? "Ready to generate" : "Waiting for transcript";
     case "queued":
       return "Queued";
     case "generating":
@@ -82,7 +82,7 @@ export function NotesEditorTab({
                 <h2 className="text-lg font-semibold tracking-[-0.03em] text-ink">
                   Notes dock
                 </h2>
-                <Badge tone={statusTone(notes.status)}>{statusCopy(notes.status)}</Badge>
+                <Badge tone={statusTone(notes.status)}>{statusCopy(notes.status, canGenerate)}</Badge>
                 {dirty ? <Badge tone="attention">Dirty draft</Badge> : null}
               </div>
               <p className="max-w-3xl text-sm leading-6 text-muted">

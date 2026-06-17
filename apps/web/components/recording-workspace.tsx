@@ -356,7 +356,7 @@ export function RecordingWorkspace({
     setActiveSegmentId(segment.id);
     const targetId = segment.id;
     const startTime = segment.start_ms / 1000;
-    const targetTime = (segment.end_ms / 1000) + 0.5; // 0.5 second padding
+    const targetTime = (segment.end_ms / 1000) + 0.25; // 0.25 second padding
     targetPauseTimeRef.current = { id: targetId, time: targetTime };
 
     const isDesktop = window.innerWidth >= 1280;
