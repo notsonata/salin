@@ -103,28 +103,29 @@ export function DashboardUploadComposer() {
     <section className="grid gap-4" id="new-recording">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="grid gap-1">
-
-          <h2 className="font-serif text-4xl text-ink">
+          <p className="font-sans font-semibold text-[10px] uppercase tracking-[0.18em] text-muted">
+            Dashboard
+          </p>
+          <h2 className="font-serif text-3xl text-ink sm:text-4xl">
             New recording
           </h2>
         </div>
-
       </div>
 
       <Card className="overflow-hidden" data-testid="dashboard-command-deck">
         <form className="grid gap-0" onSubmit={onSubmit}>
-          <div className="grid gap-6 border-b border-line/80 px-5 py-5 lg:px-6">
+          <div className="grid gap-6 border-b border-line/80 px-4 py-5 sm:px-5 lg:px-6">
             <div className="grid gap-5">
-              <div className="flex flex-wrap items-start gap-4">
-                <span className="inline-flex size-11 items-center justify-center rounded-xl border border-accentSoft bg-accentFaint text-accent">
+              <div className="flex items-start gap-3 sm:gap-4">
+                <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl border border-accentSoft bg-accentFaint text-accent sm:size-11">
                   {source === "youtube" ? (
                     <LinkIcon weight="bold" className="h-5 w-5" />
                   ) : (
                     <CloudArrowUp weight="fill" className="h-5 w-5" />
                   )}
                 </span>
-                <div className="grid gap-2">
-                  <h3 className="text-lg font-semibold tracking-[-0.03em] text-ink">
+                <div className="grid min-w-0 gap-2">
+                  <h3 className="text-base font-semibold tracking-[-0.03em] text-ink sm:text-lg">
                     Choose your recording source
                   </h3>
                   <p className="max-w-2xl text-sm leading-6 text-muted">
@@ -141,12 +142,12 @@ export function DashboardUploadComposer() {
                   setError(null);
                 }}
               >
-                <TabsList aria-label="Recording source" className="w-fit">
-                  <TabsTrigger value="file" className="gap-2">
+                <TabsList aria-label="Recording source" className="grid h-auto w-full max-w-md grid-cols-2">
+                  <TabsTrigger value="file" className="min-w-0 gap-2 px-2 sm:px-3">
                     <FileAudio weight="bold" className="h-4 w-4" />
                     File upload
                   </TabsTrigger>
-                  <TabsTrigger value="youtube" className="gap-2">
+                  <TabsTrigger value="youtube" className="min-w-0 gap-2 px-2 sm:px-3">
                     <LinkIcon weight="bold" className="h-4 w-4" />
                     YouTube URL
                   </TabsTrigger>
@@ -158,7 +159,7 @@ export function DashboardUploadComposer() {
                     <Input
                       accept={supportedFormats.join(",")}
                       aria-label="Recording"
-                      className="h-auto min-h-12 px-3 py-2 file:mr-4 file:cursor-pointer file:rounded-md file:border-0 file:bg-accent file:px-3 file:py-2 file:text-sm file:font-medium file:text-panel file:hover:opacity-95"
+                      className="h-auto min-h-12 px-3 py-2 text-sm file:mr-3 file:cursor-pointer file:rounded-md file:border-0 file:bg-accent file:px-3 file:py-2 file:text-sm file:font-medium file:text-panel file:hover:opacity-95 sm:file:mr-4"
                       data-testid="upload-file-field"
                       type="file"
                       onChange={(event) => setFile(event.target.files?.[0] ?? null)}
@@ -186,11 +187,9 @@ export function DashboardUploadComposer() {
                 </TabsContent>
               </Tabs>
             </div>
-
-
           </div>
 
-          <div className="grid gap-4 px-5 py-5 lg:grid-cols-[repeat(3,minmax(0,1fr))_auto] lg:items-end lg:px-6">
+          <div className="grid gap-4 px-4 py-5 sm:px-5 lg:grid-cols-[repeat(3,minmax(0,1fr))_auto] lg:items-end lg:px-6">
             <SelectField
               ariaLabel="Language"
               label="Language"
@@ -226,7 +225,7 @@ export function DashboardUploadComposer() {
               <SelectItem value="5_plus">5+</SelectItem>
             </SelectField>
 
-            <Button className="lg:min-w-[11rem]" disabled={submitting} type="submit" variant="accent">
+            <Button className="w-full lg:min-w-[11rem] lg:w-auto" disabled={submitting} type="submit" variant="accent">
               {submitting ? (
                 <>
                   <CircleNotch weight="bold" className="mr-2 h-4 w-4 animate-spin" />
@@ -246,7 +245,7 @@ export function DashboardUploadComposer() {
           </div>
 
           {error ? (
-            <div className="px-5 pb-5 lg:px-6">
+            <div className="px-4 pb-5 sm:px-5 lg:px-6">
               <div className="flex items-start gap-3 rounded-xl border border-dangerSoft bg-dangerFaint px-4 py-3 text-sm text-danger">
                 <WarningCircle weight="fill" className="mt-0.5 h-4 w-4 shrink-0" />
                 <span>{error}</span>
@@ -254,13 +253,13 @@ export function DashboardUploadComposer() {
             </div>
           ) : null}
 
-          <div className="px-5 pb-5 lg:px-6">
+          <div className="px-4 pb-5 sm:px-5 lg:px-6">
             <Separator />
           </div>
 
-          <div className="flex flex-col gap-3 px-5 pb-5 lg:flex-row lg:items-center lg:justify-between lg:px-6">
-            <div className="flex items-start gap-3 rounded-xl border border-line/80 bg-canvas px-4 py-3">
-              <MagicWand weight="fill" className="mt-0.5 h-4 w-4 text-accent" />
+          <div className="flex flex-col gap-3 px-4 pb-5 sm:px-5 lg:flex-row lg:items-center lg:justify-between lg:px-6">
+            <div className="flex w-full items-start gap-3 rounded-xl border border-line/80 bg-canvas px-4 py-3">
+              <MagicWand weight="fill" className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
               <p className="max-w-2xl text-sm leading-6 text-muted">
                 {source === "youtube"
                   ? "Great for presentation clips and public recordings. The worker downloads audio first, then the review desk opens as usual."

@@ -1,39 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useEffect, useState, type MouseEvent } from "react";
 import {
   MagnifyingGlass,
   GridFour,
   Stack,
-  Tag,
   List,
   X,
-  Note,
-  Calendar,
-  Brain,
   ArrowRight,
-  PlayCircle,
-  Tray,
-  CalendarBlank,
-  Star,
-  PlusCircle,
-  Bell,
-  ClockCounterClockwise,
   FileText,
-  CaretRight,
-  Kanban,
-  Table,
-  DotsThree,
-  Fire,
-  MagicWand,
-  TextAa,
-  Images,
-  Code,
-  ArrowLeft,
-  SquaresFour,
-  Briefcase,
-  Plant,
   CloudArrowUp,
   Notepad,
   FileArrowDown,
@@ -41,10 +17,50 @@ import {
   Translate,
   FilePdf,
 } from "@phosphor-icons/react";
+import { HomeScrollReveal } from "@/components/home-scroll-reveal";
 import { LandingPreview } from "@/components/landing-preview";
 
 export default function LandingPage() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  function scrollToHomeSection(sectionId: "features" | "workflow") {
+    const section = document.getElementById(sectionId);
+    if (!section) {
+      return;
+    }
+
+    const target =
+      section.querySelector<HTMLElement>("[data-home-scroll-panel]") ?? section;
+    const headerClearance = window.innerWidth >= 1024 ? 128 : 88;
+    const targetRect = target.getBoundingClientRect();
+    const availableHeight = Math.max(window.innerHeight - headerClearance, 1);
+    const centeredOffset = Math.max(
+      (availableHeight - targetRect.height) / 2,
+      0,
+    );
+    const top = Math.max(
+      window.scrollY + targetRect.top - headerClearance - centeredOffset,
+      0,
+    );
+    const prefersReducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+
+    window.history.pushState(null, "", `#${sectionId}`);
+    window.scrollTo({
+      top,
+      behavior: prefersReducedMotion ? "auto" : "smooth",
+    });
+  }
+
+  function onSectionLinkClick(
+    event: MouseEvent<HTMLAnchorElement>,
+    sectionId: "features" | "workflow",
+  ) {
+    event.preventDefault();
+    setIsMobileMenuOpen(false);
+    scrollToHomeSection(sectionId);
+  }
 
   // Close mobile menu on escape
   useEffect(() => {
@@ -57,6 +73,8 @@ export default function LandingPage() {
 
   return (
     <div className="bg-[#FAFAF9] bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:20px_20px] text-stone-900 font-sans antialiased overflow-x-hidden selection:bg-emerald-200 selection:text-emerald-900 min-h-screen">
+      <HomeScrollReveal />
+
       {/* Desktop Header */}
       <header className="fixed top-6 left-1/2 -translate-x-1/2 z-[100] group/header hidden lg:block w-full max-w-5xl px-6">
         <div className="flex flex-col gap-3">
@@ -71,6 +89,7 @@ export default function LandingPage() {
               <div className="flex items-center gap-6">
                 <a
                   href="#features"
+                  onClick={(event) => onSectionLinkClick(event, "features")}
                   className="flex items-center gap-2 text-stone-400 hover:text-white transition-colors text-sm font-medium px-3 py-2 rounded-lg hover:bg-white/5"
                 >
                   <GridFour weight="bold" />
@@ -78,17 +97,16 @@ export default function LandingPage() {
                 </a>
                 <a
                   href="#workflow"
+                  onClick={(event) => onSectionLinkClick(event, "workflow")}
                   className="flex items-center gap-2 text-stone-400 hover:text-white transition-colors text-sm font-medium px-3 py-2 rounded-lg hover:bg-white/5"
                 >
                   <Stack weight="bold" />
                   Workflow
                 </a>
-
               </div>
             </div>
 
             <div className="flex items-center gap-3">
-
               <Link
                 href="/dashboard"
                 className="bg-emerald-600 text-white text-sm font-bold px-6 py-3 rounded-full hover:bg-white hover:text-emerald-600 transition-all shadow-[0_0_20px_rgba(5,150,105,0.4)] hover:shadow-[0_0_30px_rgba(5,150,105,0.6)] active:scale-95"
@@ -101,23 +119,36 @@ export default function LandingPage() {
       </header>
 
       {/* Mobile Header */}
-      <nav className="lg:hidden fixed top-6 left-6 right-6 z-[100] h-16 bg-stone-950/90 backdrop-blur-xl border border-white/10 rounded-full flex items-center justify-between px-6 shadow-2xl">
+      <nav className="lg:hidden fixed top-3 left-3 right-3 z-[100] h-14 bg-stone-950/90 backdrop-blur-xl border border-white/10 rounded-full flex items-center justify-between gap-3 px-3 shadow-2xl sm:top-6 sm:left-6 sm:right-6 sm:h-16 sm:px-6">
         <Link href="/">
-          <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center font-serif text-lg font-bold text-stone-900">
+          <div className="w-9 h-9 bg-white rounded-full flex items-center justify-center font-serif text-lg font-bold text-stone-900 shadow-sm sm:w-8 sm:h-8 sm:rounded-lg">
             S
           </div>
         </Link>
-        <div className="flex gap-6 text-stone-400">
-          <Link href="#features">
-            <GridFour className="text-xl hover:text-white transition" />
-          </Link>
-          <Link href="#workflow">
-            <Stack className="text-xl hover:text-white transition" />
-          </Link>
+        <div className="flex min-w-0 flex-1 justify-center gap-2 text-stone-300 sm:gap-5">
+          <a
+            aria-label="View product features"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-full transition hover:bg-white/10 hover:text-white"
+            href="#features"
+            onClick={(event) => onSectionLinkClick(event, "features")}
+          >
+            <GridFour className="text-lg" weight="bold" />
+          </a>
+          <a
+            aria-label="View workflow"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-full transition hover:bg-white/10 hover:text-white"
+            href="#workflow"
+            onClick={(event) => onSectionLinkClick(event, "workflow")}
+          >
+            <Stack className="text-lg" weight="bold" />
+          </a>
         </div>
         <button
+          aria-label="Open navigation"
+          aria-expanded={isMobileMenuOpen}
           onClick={() => setIsMobileMenuOpen(true)}
-          className="w-10 h-10 rounded-full bg-emerald-600 flex items-center justify-center text-white"
+          className="w-10 h-10 shrink-0 rounded-full bg-emerald-600 flex items-center justify-center text-white transition hover:bg-emerald-500 active:scale-95"
+          type="button"
         >
           <List weight="bold" className="text-lg" />
         </button>
@@ -125,14 +156,16 @@ export default function LandingPage() {
 
       {/* Mobile Menu Overlay */}
       {isMobileMenuOpen && (
-        <div className="fixed inset-4 bg-white rounded-[2.5rem] shadow-2xl border border-stone-100 z-[110] p-8 flex flex-col transition-all duration-500 ease-out md:hidden">
-          <div className="flex justify-between items-center mb-12">
+        <div className="fixed inset-3 bg-white rounded-[2rem] shadow-2xl border border-stone-100 z-[110] p-6 flex flex-col transition-all duration-500 ease-out sm:inset-6 sm:rounded-[2.5rem] sm:p-8 lg:hidden">
+          <div className="flex justify-between items-center mb-10 sm:mb-12">
             <div className="w-10 h-10 bg-stone-900 rounded-full flex items-center justify-center text-white font-serif text-xl">
               S
             </div>
             <button
+              aria-label="Close navigation"
               onClick={() => setIsMobileMenuOpen(false)}
               className="w-10 h-10 rounded-full bg-stone-100 flex items-center justify-center text-stone-900"
+              type="button"
             >
               <X weight="bold" className="text-xl" />
             </button>
@@ -141,22 +174,22 @@ export default function LandingPage() {
           <div className="flex flex-col gap-6">
             <a
               href="#features"
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="text-4xl font-serif text-stone-950 hover:italic"
+              onClick={(event) => onSectionLinkClick(event, "features")}
+              className="text-3xl font-serif text-stone-950 hover:italic sm:text-4xl"
             >
               Product
             </a>
             <a
               href="#workflow"
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="text-4xl font-serif text-stone-950 hover:italic"
+              onClick={(event) => onSectionLinkClick(event, "workflow")}
+              className="text-3xl font-serif text-stone-950 hover:italic sm:text-4xl"
             >
               Workflow
             </a>
           </div>
 
           <div className="mt-auto space-y-4">
-            <Link href="/dashboard" className="w-full bg-stone-950 text-white py-4 rounded-2xl font-bold text-lg flex items-center justify-center">
+            <Link href="/dashboard" className="w-full bg-stone-950 text-white py-4 rounded-2xl font-bold text-base sm:text-lg flex items-center justify-center">
               Get Salin
             </Link>
           </div>
@@ -165,7 +198,7 @@ export default function LandingPage() {
 
       <main>
         {/* HERO SECTION */}
-        <section className="min-h-[90vh] flex flex-col justify-center pt-32 pb-12 px-6 lg:pt-40 relative overflow-hidden bg-transparent">
+        <section className="min-h-[90vh] flex flex-col justify-center pt-28 pb-12 px-4 sm:px-6 lg:pt-40 relative overflow-hidden bg-transparent">
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-emerald-200/20 blur-[120px] rounded-full -z-10 animate-float pointer-events-none"></div>
 
           <div className="max-w-4xl mx-auto text-center z-10 relative">
@@ -205,16 +238,18 @@ export default function LandingPage() {
           </div>
 
           {/* Hero Mockup */}
-          <LandingPreview />
+          <div className="reveal-on-scroll reveal-delay-1">
+            <LandingPreview />
+          </div>
         </section>
 
         {/* FEATURES SECTION */}
-        <section id="features" className="py-24 px-6 overflow-hidden bg-transparent">
-          <div className="max-w-7xl mx-auto rounded-3xl bg-stone-50 border border-stone-200 p-8 md:p-16 relative overflow-hidden shadow-xl">
+        <section id="features" className="scroll-mt-24 py-20 px-4 overflow-hidden bg-transparent sm:px-6 lg:scroll-mt-32 lg:py-24">
+          <div data-home-scroll-panel className="reveal-on-scroll max-w-7xl mx-auto rounded-3xl bg-stone-50 border border-stone-200 p-5 sm:p-8 md:p-16 relative overflow-hidden shadow-xl">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
-              <div className="relative group">
+              <div className="relative group reveal-on-scroll">
                 <div className="absolute top-4 left-4 w-full h-full bg-emerald-100/50 rounded-2xl transform rotate-3 -z-10 transition group-hover:rotate-6"></div>
-                <div className="rounded-2xl shadow-xl border border-stone-200 bg-white w-full h-[450px] overflow-hidden p-8 relative transform -rotate-1 group-hover:rotate-0 transition duration-500">
+                <div className="rounded-2xl shadow-xl border border-stone-200 bg-white w-full min-h-[390px] overflow-hidden p-5 relative transform -rotate-1 group-hover:rotate-0 transition duration-500 sm:h-[450px] sm:p-8">
                   <div className="flex items-center justify-between mb-6 border-b border-stone-100 pb-4">
                     <h2 className="text-2xl font-serif font-bold text-stone-900">
                       Export Notes
@@ -262,11 +297,11 @@ export default function LandingPage() {
                 </div>
               </div>
 
-              <div>
+              <div className="reveal-on-scroll reveal-delay-1">
                 <span className="text-xs font-bold tracking-widest text-emerald-600 uppercase mb-2 block">
                   Truth in Transcription
                 </span>
-                <h2 className="font-serif text-5xl mb-6 text-stone-900 leading-tight">
+                <h2 className="font-serif text-4xl mb-6 text-stone-900 leading-tight sm:text-5xl">
                   Ground every insight in the original audio.
                 </h2>
                 <p className="text-lg text-stone-600 mb-8 leading-relaxed">
@@ -323,15 +358,15 @@ export default function LandingPage() {
         </section>
 
         {/* WORKFLOW SECTION */}
-        <section id="workflow" className="py-24 px-6 bg-transparent">
-          <div className="max-w-7xl mx-auto rounded-3xl p-4 md:p-0 relative">
+        <section id="workflow" className="scroll-mt-24 py-20 px-4 bg-transparent sm:px-6 lg:scroll-mt-32 lg:py-24">
+          <div data-home-scroll-panel className="max-w-7xl mx-auto rounded-3xl p-4 md:p-0 relative">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-              <div className="lg:col-span-4 flex flex-col justify-center order-2 lg:order-1">
+              <div className="reveal-on-scroll lg:col-span-4 flex flex-col justify-center order-2 lg:order-1">
                 <span className="text-xs font-bold tracking-widest text-emerald-600 uppercase mb-2 block">
                   How it works
                 </span>
-                <h2 className="font-serif text-5xl mb-4 text-stone-900 leading-tight">
-                  A simpler path to perfect notes.
+                <h2 className="font-serif text-4xl mb-4 text-stone-900 leading-tight sm:text-5xl">
+                  A simpler path to reviewed notes.
                 </h2>
                 <p className="text-stone-600 mb-8 leading-relaxed">
                   The best tools get out of your way. Salin keeps your workflow entirely focused and friction-free across four clear steps: upload, review, generate, and export.
@@ -346,7 +381,7 @@ export default function LandingPage() {
 
               {/* Bento Grid */}
               <div className="lg:col-span-8 grid grid-cols-2 gap-4 order-1 lg:order-2">
-                <div className="bg-white p-6 rounded-3xl shadow-sm border border-stone-200 col-span-2 md:col-span-1 hover:shadow-lg transition duration-300">
+                <div className="reveal-on-scroll bg-white p-6 rounded-3xl shadow-sm border border-stone-200 col-span-2 md:col-span-1 hover:shadow-lg transition duration-300">
                   <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600 mb-6">
                     <CloudArrowUp weight="fill" className="text-2xl" />
                   </div>
@@ -355,7 +390,7 @@ export default function LandingPage() {
                     Send one supported audio or video file into the processing queue.
                   </p>
                 </div>
-                <div className="bg-white p-6 rounded-3xl shadow-sm border border-stone-200 col-span-2 md:col-span-1 hover:shadow-lg transition duration-300">
+                <div className="reveal-on-scroll reveal-delay-1 bg-white p-6 rounded-3xl shadow-sm border border-stone-200 col-span-2 md:col-span-1 hover:shadow-lg transition duration-300">
                   <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600 mb-6">
                     <FileText weight="fill" className="text-2xl" />
                   </div>
@@ -364,7 +399,7 @@ export default function LandingPage() {
                     Search timestamped transcript blocks and click back into the audio.
                   </p>
                 </div>
-                <div className="bg-white p-6 rounded-3xl shadow-sm border border-stone-200 col-span-2 md:col-span-1 hover:shadow-lg transition duration-300">
+                <div className="reveal-on-scroll reveal-delay-2 bg-white p-6 rounded-3xl shadow-sm border border-stone-200 col-span-2 md:col-span-1 hover:shadow-lg transition duration-300">
                   <div className="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center text-purple-600 mb-6">
                     <Notepad weight="fill" className="text-2xl" />
                   </div>
@@ -373,7 +408,7 @@ export default function LandingPage() {
                     Generate structured notes natively from your saved transcript data.
                   </p>
                 </div>
-                <div className="bg-white p-6 rounded-3xl shadow-sm border border-stone-200 col-span-2 md:col-span-1 hover:shadow-lg transition duration-300">
+                <div className="reveal-on-scroll reveal-delay-3 bg-white p-6 rounded-3xl shadow-sm border border-stone-200 col-span-2 md:col-span-1 hover:shadow-lg transition duration-300">
                   <div className="w-12 h-12 bg-rose-50 rounded-xl flex items-center justify-center text-rose-600 mb-6">
                     <FileArrowDown weight="fill" className="text-2xl" />
                   </div>

@@ -71,8 +71,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname() ?? "/";
 
   return (
-    <div className="min-h-screen bg-canvas bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:20px_20px]">
-      <div className="mx-auto flex min-h-screen max-w-[1500px] gap-4 px-3 py-3 sm:px-4 lg:px-5">
+    <div className="min-h-[100dvh] bg-canvas bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:20px_20px]">
+      <div className="mx-auto flex min-h-[100dvh] max-w-[1500px] gap-0 px-0 py-0 sm:gap-4 sm:px-4 sm:py-4 lg:px-5">
         <aside className="hidden w-[15.5rem] shrink-0 lg:block">
           <div className="sticky top-3 flex h-[calc(100vh-1.5rem)] flex-col overflow-hidden rounded-[1.35rem] border border-line bg-panel shadow-sm">
             <div className="border-b border-line px-5 py-5">
@@ -101,8 +101,8 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </aside>
 
-        <div className="min-w-0 flex-1 relative bg-panel rounded-[1.35rem] border border-line shadow-sm overflow-hidden flex flex-col">
-          <header className="mb-4 flex items-center justify-between border-b border-line bg-white/80 px-4 py-3 backdrop-blur lg:hidden sticky top-0 z-10">
+        <div className="min-w-0 flex-1 relative bg-panel border-line shadow-sm overflow-hidden flex flex-col sm:rounded-[1.35rem] sm:border">
+          <header className="flex items-center justify-between border-b border-line bg-white/85 px-4 py-3 backdrop-blur lg:hidden sticky top-0 z-10">
             <Link className="inline-flex items-center gap-3" href="/">
               <span className="inline-flex size-9 items-center justify-center rounded-lg bg-stone-100 text-stone-900 shadow-sm">
                 <span className="font-serif text-lg font-bold">S</span>
@@ -118,7 +118,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                   <List weight="bold" className="h-5 w-5 text-ink" />
                 </Button>
               </SheetTrigger>
-              <SheetContent className="w-[22rem]" side="left">
+              <SheetContent className="w-[min(22rem,calc(100vw-1.5rem))]" side="left">
                 <SheetHeader>
                   <SheetTitle className="text-left font-serif text-2xl">Salin</SheetTitle>
                   <SheetDescription className="text-left">
@@ -134,7 +134,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </header>
 
           <main className="flex-1 h-full overflow-auto">
-            <div className="h-full p-4 md:p-8">
+            <div className="h-full p-4 sm:p-5 md:p-8">
               {children}
             </div>
           </main>
