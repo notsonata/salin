@@ -93,7 +93,7 @@ salin/
 
 - Download original upload from R2
 - Detect YouTube import descriptors, download audio with `yt-dlp`, store the downloaded audio as the recording's original artifact, and then continue through the normal processing path
-- Pass an optional mounted `cookies.txt` file to `yt-dlp` when `YOUTUBE_COOKIES_FILE` is configured for YouTube bot-check recovery
+- Pass an optional mounted `cookies.txt` file to `yt-dlp`, stage it into a writable temp file, and enable a Deno-backed JS challenge runtime when `YOUTUBE_COOKIES_FILE` is configured for YouTube bot-check recovery
 - Normalize audio to mono 16 kHz with `ffmpeg`
 - Upload normalized audio artifact back to R2
 - Split normalized audio into overlapped transcription chunks when the recording exceeds the configured chunk length

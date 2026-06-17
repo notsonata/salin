@@ -1,5 +1,26 @@
 # Tasks
 
+### [P1] Ship a JS challenge runtime for deployed YouTube imports
+
+Make the production worker image include the upstream pieces that current
+`yt-dlp` needs to solve YouTube's JS challenges after bot-check cookies are
+mounted.
+
+Acceptance criteria:
+
+- the worker dependency set installs `yt-dlp[default]` so `yt-dlp-ejs` is available
+- the worker image includes a supported JS runtime for `yt-dlp`
+- the YouTube importer enables that runtime explicitly in its `yt-dlp` options
+- focused worker coverage locks the runtime option in place
+- setup and architecture docs describe the runtime requirement
+
+- **Files**: `apps/worker/Dockerfile`, `apps/worker/pyproject.toml`, `apps/worker/salin_worker/services/youtube.py`, `apps/worker/tests/test_youtube.py`, `docs/setup.md`, `docs/testing.md`, `docs/architecture.md`, `docs/tasks.md`
+- **Context**: On the Droplet, fresh cookies removed the bot-check error but
+  `yt-dlp` still saw only storyboard formats because the worker image lacked a
+  supported JS runtime and the companion EJS package required by current
+  YouTube extraction.
+- **Status**: Done
+
 ### [P1] Make mounted YouTube cookies files work from read-only secrets
 
 Prevent deployed YouTube imports from failing when `yt-dlp` rewrites a cookies

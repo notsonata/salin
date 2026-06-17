@@ -42,6 +42,9 @@ Use the lowest level that gives credible confidence:
 - Cached chunk artifacts are reused on retry so completed chunks are not transcribed again
 - YouTube import descriptors are downloaded into audio artifacts before normal transcription
 - YouTube import stages a configured `cookies.txt` file into a writable temp path for `yt-dlp`, supports read-only mounted secrets, and still fails clearly when the configured file is missing
+- YouTube import explicitly enables the Deno JS runtime for `yt-dlp` so the
+  worker can solve current YouTube JS challenges once the image ships the
+  matching runtime and EJS package
 - Notes generation persists Markdown notes content from stored transcript data
 - Notes failures keep transcript data intact
 - Notes regeneration replaces content only after a successful rerun
@@ -122,6 +125,12 @@ Container smoke:
 
 ```bash
 docker compose -f infra/docker-compose.yml build
+```
+
+Worker-runtime smoke for YouTube import changes:
+
+```bash
+docker compose -f infra/docker-compose.prod.yml build worker
 ```
 
 ## What To Prefer

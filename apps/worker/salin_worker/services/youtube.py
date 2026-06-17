@@ -48,6 +48,7 @@ class YouTubeAudioImporter:
             "retries": 2,
             "fragment_retries": 2,
             "socket_timeout": 30,
+            "js_runtimes": {"deno": {}},
         }
         staged_cookies_file: Path | None = None
         if self.cookies_file is not None:

@@ -88,6 +88,17 @@ def test_youtube_importer_handles_read_only_cookie_mount(tmp_path: Path) -> None
     assert imported_audio.file_size == len(b"youtube-audio")
 
 
+def test_youtube_importer_enables_deno_runtime_for_yt_dlp(tmp_path: Path) -> None:
+    importer = YouTubeAudioImporter(max_duration_seconds=120)
+
+    importer.download_audio(
+        url="https://www.youtube.com/watch?v=demo123",
+        output_dir=tmp_path / "download",
+    )
+
+    assert FakeYoutubeDL.options_seen[0]["js_runtimes"] == {"deno": {}}
+
+
 def test_youtube_importer_fails_clearly_when_cookie_file_is_missing(
     tmp_path: Path,
 ) -> None:
