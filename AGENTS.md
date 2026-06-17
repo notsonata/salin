@@ -42,11 +42,11 @@ Explicitly out of scope for v1:
 - Storage: S3 compatible Cloudflare R2 for object storage
 - Containerization: Dockerfiles for each app plus Docker Compose for local orchestration
 - Audio tooling: `ffmpeg`
-- Transcription: Groq Whisper as the primary provider, plus a local backup transcription mode behind the same interface
+- Transcription: Groq Whisper exclusively
 - Diarization: `pyannote.audio` first, WhisperX as fallback or prototype simplification
 - Notes: provider abstraction behind a notes interface
 
-Unknown implementation choices must stay marked as `TBD` until decided. Do not guess package managers, deployment target, auth provider, or production infrastructure.
+Unknown implementation choices must stay marked as `TBD` until decided. The deployment target is a DigitalOcean CPU Droplet via Docker Compose. Do not guess package managers, auth provider, or production infrastructure.
 
 ## Important Paths
 

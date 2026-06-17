@@ -28,7 +28,6 @@ This slice now covers an upload-first dashboard, public single-video YouTube URL
                                +--> yt-dlp (YouTube import only)
                                +--> ffmpeg
                                +--> Groq Whisper
-                               +--> faster-whisper fallback
                                +--> pyannote.audio diarization (optional)
 ```
 
@@ -90,7 +89,6 @@ salin/
 - Upload normalized audio artifact back to R2
 - Split normalized audio into overlapped transcription chunks when the recording exceeds the configured chunk length
 - Retry Groq transcription with bounded backoff
-- Fall back to `faster-whisper` when Groq fails
 - Cache completed chunk transcript artifacts so retries can resume without retranscribing completed chunks
 - Merge chunk-relative timestamps back into recording-relative transcript segments
 - Persist raw transcription provider artifact JSON

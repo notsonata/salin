@@ -1,0 +1,66 @@
+services:
+  web:
+    build:
+      context: ..
+      dockerfile: apps/web/Dockerfile
+    env_file:
+      - ../.env
+    ports:
+      - "80:3000"
+    restart: always
+    depends_on:
+      api:
+        condition: service_started
+
+  api:
+    build:
+      context: ..
+      dockerfile: apps/api/Dockerfile
+    env_file:
+      - ../.env
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker:
+    build:
+      context: ..
+      dockerfile: apps/worker/Dockerfile
+    env_file:
+      - ../.env
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: salin
+      POSTGRES_USER: salin
+      POSTGRES_PASSWORD: salin
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U salin -d salin"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  postgres-data:
