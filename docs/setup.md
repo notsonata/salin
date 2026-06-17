@@ -159,10 +159,11 @@ path through `infra/docker-compose.prod.yml`.
 
 Important current constraints:
 
-- The browser calls the FastAPI service directly, so the production compose file
-  publishes the API on port `8000` in addition to the web app on port `80`.
+- The production compose file uses an Nginx front door on port `80`. Browser
+  requests to `/recordings`, `/docs`, `/redoc`, and `/openapi.json` are routed to
+  FastAPI; all other paths are routed to the Next.js web app.
 - HTTPS termination is not checked in yet. The steps below assume plain HTTP on
-  a Droplet IP or a domain that you terminate elsewhere.
+  a Droplet IP or Cloudflare Flexible/edge-only HTTPS in front of the Droplet.
 - Postgres data stays on the Droplet in the `postgres-data` Docker volume. R2
   stores uploaded artifacts, but it does not replace your database backups.
 
@@ -188,11 +189,10 @@ Attach a firewall to the Droplet with these inbound rules:
 
 - `SSH` from your IP
 - `HTTP` on port `80` from `0.0.0.0/0` and `::/0`
-- Custom `TCP` on port `8000` from `0.0.0.0/0` and `::/0`
 
 Optional:
 
-- `HTTPS` on port `443` if you plan to add a reverse proxy later
+- `HTTPS` on port `443` if you later add TLS termination on the Droplet
 
 ### 3. Connect to the server
 
@@ -245,8 +245,8 @@ Edit `.env` and set the required secrets plus these deployment-specific values:
 APP_ENV=production
 DATABASE_URL=postgresql+psycopg://salin:salin@postgres:5432/salin
 REDIS_URL=redis://redis:6379/0
-CORS_ALLOWED_ORIGINS=http://<droplet-ip>
-NEXT_PUBLIC_API_BASE_URL=http://<droplet-ip>:8000
+CORS_ALLOWED_ORIGINS=http://<droplet-ip>,http://salin.notsonata.dev
+NEXT_PUBLIC_API_BASE_URL=
 SALIN_API_INTERNAL_BASE_URL=http://api:8000
 DIARIZATION_PROVIDER=none
 # Optional, but recommended if YouTube imports hit bot checks:
@@ -266,15 +266,11 @@ Then fill in the real provider values for:
 
 Notes:
 
-- If you use a domain without a reverse proxy, keep the API URL on `:8000`, for
-  example `NEXT_PUBLIC_API_BASE_URL=http://salin.example.com:8000`.
 - For `salin.notsonata.dev`, point the DNS `A` record at the Droplet public IP
-  `157.230.245.202`. If the record is proxied through Cloudflare and the API
-  still lives on public port `8000`, use a DNS-only record or keep
-  `NEXT_PUBLIC_API_BASE_URL` pointed at the Droplet IP until a reverse proxy
-  moves the API behind port `80` or `443`.
-- If you later front the stack with Caddy or Nginx, you can move the API behind
-  the same origin and stop exposing port `8000` publicly.
+  `157.230.245.202`. The app no longer needs public `:8000` access because Nginx
+  routes API paths behind the same origin on port `80`.
+- Leave `NEXT_PUBLIC_API_BASE_URL` empty in production so uploads, polling, and
+  exports use same-origin relative paths such as `/recordings`.
 - Start with `DIARIZATION_PROVIDER=none` unless you have the CPU budget and a
   working `PYANNOTE_AUTH_TOKEN`.
 
@@ -316,7 +312,9 @@ docker compose -f infra/docker-compose.prod.yml logs -f web
 Then verify from your local machine:
 
 - Open `http://<droplet-ip>` for the web app
-- Open `http://<droplet-ip>:8000/docs` for FastAPI docs
+- Open `http://<droplet-ip>/docs` for FastAPI docs through Nginx
+- Open `http://salin.notsonata.dev` after the DNS `A` record points at the
+  Droplet
 - Upload a small supported recording and confirm the worker moves it through
   `uploaded -> preprocessing -> transcribing -> completed`
 
@@ -336,9 +334,7 @@ docker compose -f infra/docker-compose.prod.yml restart
 
 ### 11. Recommended next hardening steps
 
-- Put a reverse proxy in front of `web` and `api`
-- Add HTTPS on `443`
-- Move the API off the public `8000` port once same-origin routing exists
+- Add HTTPS on `443`, either on the Droplet or at the Cloudflare edge
 - Add Droplet backups and restore practice for Postgres
 - Consider moving Postgres off the Droplet before treating this as a durable
   production environment

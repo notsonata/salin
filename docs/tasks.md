@@ -1,5 +1,25 @@
 # Tasks
 
+### [P1] Serve the production app and API through one domain
+
+Put a production front door in front of the web and API services so
+`salin.notsonata.dev` can serve the app and API through port `80` without
+browser calls to public `:8000`.
+
+Acceptance criteria:
+
+- production Compose includes an Nginx front door on port `80`
+- Next.js web is reachable behind the proxy
+- FastAPI recording routes and docs are reachable behind the same domain
+- browser-facing `NEXT_PUBLIC_API_BASE_URL` can be the domain root
+- setup and architecture docs describe the same-origin production route
+
+- **Files**: `infra/docker-compose.prod.yml`, `infra/nginx.prod.conf`, `docs/setup.md`, `docs/architecture.md`, `docs/tasks.md`
+- **Context**: Cloudflare-proxied domains do not work well with a separate
+  public browser API port, so the Droplet should serve web and API paths through
+  one origin.
+- **Status**: Done
+
 ### [P1] Make deployed YouTube imports recover from bot checks
 
 Allow the worker to pass a mounted `cookies.txt` file to `yt-dlp` when public
