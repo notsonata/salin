@@ -3,18 +3,19 @@
 ### [P1] Serve the production app and API through one domain
 
 Put a production front door in front of the web and API services so
-`salin.notsonata.dev` can serve the app and API through port `80` without
-browser calls to public `:8000`.
+`salin.notsonata.dev` can serve the app and API through ports `80` and `443`
+without browser calls to public `:8000`.
 
 Acceptance criteria:
 
-- production Compose includes an Nginx front door on port `80`
+- production Compose includes a Caddy front door on ports `80` and `443`
+- Caddy automatically issues and renews TLS for `salin.notsonata.dev`
 - Next.js web is reachable behind the proxy
 - FastAPI recording routes and docs are reachable behind the same domain
 - browser-facing `NEXT_PUBLIC_API_BASE_URL` can be the domain root
 - setup and architecture docs describe the same-origin production route
 
-- **Files**: `infra/docker-compose.prod.yml`, `infra/nginx.prod.conf`, `docs/setup.md`, `docs/architecture.md`, `docs/tasks.md`
+- **Files**: `infra/docker-compose.prod.yml`, `infra/Caddyfile.prod`, `docs/setup.md`, `docs/architecture.md`, `docs/tasks.md`
 - **Context**: Cloudflare-proxied domains do not work well with a separate
   public browser API port, so the Droplet should serve web and API paths through
   one origin.
@@ -48,7 +49,7 @@ production Compose file match the way the browser reaches the API.
 Acceptance criteria:
 
 - `docs/setup.md` includes a step-by-step DigitalOcean Droplet guide
-- The guide documents the current HTTP-only and public-`8000` constraint
+- The guide documents the current Caddy HTTPS front door and same-origin API routing
 - `infra/docker-compose.prod.yml` publishes the API port required by the web app
 
 - **Files**: `docs/setup.md`, `infra/docker-compose.prod.yml`, `docs/tasks.md`

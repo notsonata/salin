@@ -10,7 +10,7 @@ Salin now has the transcript spine plus the first review-and-notes layer as a re
 - `packages/shared`: generated-type boundary plus typed fetch client for the web app
 - `infra/docker-compose.yml`: local orchestration for `web`, `api`, `worker`, `postgres`, and `redis`
 - `infra/docker-compose.prod.yml`: single-Droplet production orchestration with
-  Nginx routing browser-facing web and API traffic through port `80`
+  Caddy routing browser-facing web and API traffic through ports `80` and `443`
 
 This slice now covers an upload-first dashboard, public single-video YouTube URL import for presentation intake, persistent jobs, canonical transcript segments, normalized-audio review, transcript search, transcript TXT/PDF export controls, manual notes generation, Markdown notes editing, basic speaker correction workflows, non-blocking transcript-first diarization, configurable pyannote-backed diarization, chunked long-recording transcription, and backend TXT/PDF exports for transcript, notes, and a combined bundle.
 
@@ -20,7 +20,7 @@ This slice now covers an upload-first dashboard, public single-video YouTube URL
 [Browser]
     |
     v
-[Nginx production front door]
+[Caddy production front door]
     |             |
     v             v
 [Next.js Web]  [FastAPI API] ---> [Postgres]
@@ -85,7 +85,7 @@ salin/
 - Persist speaker rename and per-block speaker correction edits against transcript segments
 - Export transcript TXT/PDF, notes TXT/PDF, and combined TXT/PDF from stored database rows without reprocessing audio
 - Export OpenAPI schema for the shared TypeScript client/types workflow
-- In production, receive browser traffic through Nginx-routed `/recordings`,
+- In production, receive browser traffic through Caddy-routed `/recordings`,
   `/docs`, `/redoc`, and `/openapi.json` paths instead of a public `:8000`
   browser API origin
 

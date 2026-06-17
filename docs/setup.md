@@ -159,11 +159,12 @@ path through `infra/docker-compose.prod.yml`.
 
 Important current constraints:
 
-- The production compose file uses an Nginx front door on port `80`. Browser
-  requests to `/recordings`, `/docs`, `/redoc`, and `/openapi.json` are routed to
-  FastAPI; all other paths are routed to the Next.js web app.
-- HTTPS termination is not checked in yet. The steps below assume plain HTTP on
-  a Droplet IP or Cloudflare Flexible/edge-only HTTPS in front of the Droplet.
+- The production compose file uses a Caddy front door on ports `80` and `443`.
+  Browser requests to `/recordings`, `/docs`, `/redoc`, and `/openapi.json` are
+  routed to FastAPI; all other paths are routed to the Next.js web app.
+- Caddy requests and renews the TLS certificate for `salin.notsonata.dev`
+  automatically. Keep the DNS record pointed directly at the Droplet while Caddy
+  is issuing the certificate.
 - Postgres data stays on the Droplet in the `postgres-data` Docker volume. R2
   stores uploaded artifacts, but it does not replace your database backups.
 
@@ -189,10 +190,7 @@ Attach a firewall to the Droplet with these inbound rules:
 
 - `SSH` from your IP
 - `HTTP` on port `80` from `0.0.0.0/0` and `::/0`
-
-Optional:
-
-- `HTTPS` on port `443` if you later add TLS termination on the Droplet
+- `HTTPS` on port `443` from `0.0.0.0/0` and `::/0`
 
 ### 3. Connect to the server
 
@@ -267,8 +265,8 @@ Then fill in the real provider values for:
 Notes:
 
 - For `salin.notsonata.dev`, point the DNS `A` record at the Droplet public IP
-  `157.230.245.202`. The app no longer needs public `:8000` access because Nginx
-  routes API paths behind the same origin on port `80`.
+  `157.230.245.202`. The app no longer needs public `:8000` access because Caddy
+  routes API paths behind the same origin on ports `80` and `443`.
 - Leave `NEXT_PUBLIC_API_BASE_URL` empty in production so uploads, polling, and
   exports use same-origin relative paths such as `/recordings`.
 - Start with `DIARIZATION_PROVIDER=none` unless you have the CPU budget and a
@@ -312,9 +310,9 @@ docker compose -f infra/docker-compose.prod.yml logs -f web
 Then verify from your local machine:
 
 - Open `http://<droplet-ip>` for the web app
-- Open `http://<droplet-ip>/docs` for FastAPI docs through Nginx
-- Open `http://salin.notsonata.dev` after the DNS `A` record points at the
-  Droplet
+- Open `https://salin.notsonata.dev` for the web app after the DNS `A` record
+  points at the Droplet and Caddy finishes certificate issuance
+- Open `https://salin.notsonata.dev/docs` for FastAPI docs through Caddy
 - Upload a small supported recording and confirm the worker moves it through
   `uploaded -> preprocessing -> transcribing -> completed`
 
@@ -334,7 +332,8 @@ docker compose -f infra/docker-compose.prod.yml restart
 
 ### 11. Recommended next hardening steps
 
-- Add HTTPS on `443`, either on the Droplet or at the Cloudflare edge
+- Keep Droplet firewall rules limited to `22`, `80`, and `443` once the demo API
+  no longer needs direct debug access
 - Add Droplet backups and restore practice for Postgres
 - Consider moving Postgres off the Droplet before treating this as a durable
   production environment

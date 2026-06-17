@@ -1,0 +1,14 @@
+salin.notsonata.dev {
+    encode zstd gzip
+
+    request_body {
+        max_size 120MB
+    }
+
+    reverse_proxy /recordings* api:8000
+    reverse_proxy /docs* api:8000
+    reverse_proxy /redoc* api:8000
+    reverse_proxy /openapi.json api:8000
+
+    reverse_proxy web:3000
+}
