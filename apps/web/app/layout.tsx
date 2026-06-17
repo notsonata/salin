@@ -21,6 +21,10 @@ const instrumentSerif = Instrument_Serif({
 export const metadata: Metadata = {
   title: "Salin",
   description: "Recording-to-notes workspace for uploaded recordings.",
+  icons: {
+    icon: "/icon/Salin.png",
+    apple: "/icon/Salin.png",
+  },
 };
 
 export default function RootLayout({

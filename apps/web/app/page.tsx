@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useState, useEffect } from "react";
 import {
   MagnifyingGlass,
@@ -63,8 +64,8 @@ export default function LandingPage() {
           <nav className="h-20 bg-stone-900/95 backdrop-blur-xl border border-white/10 rounded-full flex items-center justify-between px-4 shadow-2xl transition-all duration-500 group-hover/header:-translate-y-1">
             <div className="flex items-center gap-4">
               <Link href="/" className="relative group/logo">
-                <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-stone-900 font-serif text-2xl shadow-lg group-hover/logo:rotate-[360deg] transition-transform duration-1000">
-                  S
+                <div className="w-12 h-12 bg-white rounded-2xl overflow-hidden flex items-center justify-center shadow-lg group-hover/logo:rotate-[360deg] transition-transform duration-1000">
+                  <Image src="/icon/Salin.png" alt="Salin" width={48} height={48} className="object-cover" />
                 </div>
               </Link>
               <div className="h-8 w-px bg-white/10 mx-2"></div>
@@ -103,8 +104,8 @@ export default function LandingPage() {
       {/* Mobile Header */}
       <nav className="lg:hidden fixed top-6 left-6 right-6 z-[100] h-16 bg-stone-950/90 backdrop-blur-xl border border-white/10 rounded-full flex items-center justify-between px-6 shadow-2xl">
         <Link href="/">
-          <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center font-serif text-lg font-bold text-stone-900">
-            S
+          <div className="w-8 h-8 bg-white rounded-lg overflow-hidden flex items-center justify-center">
+            <Image src="/icon/Salin.png" alt="Salin" width={32} height={32} className="object-cover" />
           </div>
         </Link>
         <div className="flex gap-6 text-stone-400">
@@ -127,8 +128,8 @@ export default function LandingPage() {
       {isMobileMenuOpen && (
         <div className="fixed inset-4 bg-white rounded-[2.5rem] shadow-2xl border border-stone-100 z-[110] p-8 flex flex-col transition-all duration-500 ease-out md:hidden">
           <div className="flex justify-between items-center mb-12">
-            <div className="w-10 h-10 bg-stone-900 rounded-full flex items-center justify-center text-white font-serif text-xl">
-              S
+            <div className="w-10 h-10 bg-white rounded-xl overflow-hidden flex items-center justify-center">
+              <Image src="/icon/Salin.png" alt="Salin" width={40} height={40} className="object-cover" />
             </div>
             <button
               onClick={() => setIsMobileMenuOpen(false)}

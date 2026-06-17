@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
@@ -77,8 +78,8 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="sticky top-3 flex h-[calc(100vh-1.5rem)] flex-col overflow-hidden rounded-[1.35rem] border border-line bg-panel shadow-sm">
             <div className="border-b border-line px-5 py-5">
               <Link className="inline-flex items-center gap-3 group" href="/">
-                <span className="inline-flex size-10 items-center justify-center rounded-xl bg-stone-100 text-stone-900 shadow-sm transition-transform group-hover:scale-105">
-                  <span className="font-serif text-xl font-bold">S</span>
+                <span className="inline-flex size-10 overflow-hidden items-center justify-center rounded-xl bg-stone-100 text-stone-900 shadow-sm transition-transform group-hover:scale-105">
+                  <Image src="/icon/Salin.png" alt="Salin Logo" width={40} height={40} className="object-cover" />
                 </span>
                 <span className="grid gap-0.5">
                   <span className="font-serif text-2xl text-ink tracking-tight pt-1">
@@ -104,8 +105,8 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="min-w-0 flex-1 relative bg-panel rounded-[1.35rem] border border-line shadow-sm overflow-hidden flex flex-col">
           <header className="mb-4 flex items-center justify-between border-b border-line bg-white/80 px-4 py-3 backdrop-blur lg:hidden sticky top-0 z-10">
             <Link className="inline-flex items-center gap-3" href="/">
-              <span className="inline-flex size-9 items-center justify-center rounded-lg bg-stone-100 text-stone-900 shadow-sm">
-                <span className="font-serif text-lg font-bold">S</span>
+              <span className="inline-flex size-9 overflow-hidden items-center justify-center rounded-lg bg-stone-100 text-stone-900 shadow-sm">
+                <Image src="/icon/Salin.png" alt="Salin Logo" width={36} height={36} className="object-cover" />
               </span>
               <span className="font-serif text-xl text-ink tracking-tight pt-0.5">
                 Salin
