@@ -72,6 +72,8 @@ Current home direction:
 - dashboard remains the only visible homepage CTA
 - transcript specimen and product-proof panel remain visible below the hero to prove the app workflow
 - below-hero content may use subtle scroll reveal animation when motion preferences allow it
+- homepage anchor navigation should smooth-scroll to the visual center of product sections without hiding content under the fixed glass navigation
+- mobile homepage navigation should remain compact, tappable, and close cleanly after section links are selected
 
 ### Dashboard
 
@@ -96,6 +98,7 @@ Dashboard expectations:
 - YouTube import must be framed as importing a saved public recording, not live capture
 - the library is dense and calm
 - backend-off state routes into preview workspace
+- the dashboard command deck must stay single-column, full-width, and tap-friendly on mobile after users enter from the home CTA
 
 ### Recording workspace
 

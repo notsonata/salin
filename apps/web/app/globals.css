@@ -12,6 +12,11 @@ body {
   background: oklch(97.8% 0.006 244);
 }
 
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 6.5rem;
+}
+
 body {
   font-family:
     "Avenir Next",
@@ -151,7 +156,15 @@ audio {
     transition-delay: 220ms;
   }
 
+  .reveal-delay-3 {
+    transition-delay: 320ms;
+  }
+
   @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+
     .reveal-on-scroll {
       opacity: 1;
       transform: none;
