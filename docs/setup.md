@@ -147,6 +147,180 @@ SALIN_API_INTERNAL_BASE_URL=http://localhost:8000
 PYANNOTE_DEVICE=auto
 ```
 
+## DigitalOcean Deployment
+
+This repository currently includes a single-Droplet Docker Compose deployment
+path through `infra/docker-compose.prod.yml`.
+
+Important current constraints:
+
+- The browser calls the FastAPI service directly, so the production compose file
+  publishes the API on port `8000` in addition to the web app on port `80`.
+- HTTPS termination is not checked in yet. The steps below assume plain HTTP on
+  a Droplet IP or a domain that you terminate elsewhere.
+- Postgres data stays on the Droplet in the `postgres-data` Docker volume. R2
+  stores uploaded artifacts, but it does not replace your database backups.
+
+### 1. Create the Droplet
+
+In the DigitalOcean control panel, create a Droplet with:
+
+- Ubuntu 24.04 LTS
+- A region near your users
+- An SSH key, not a password
+- Monitoring and backups if you want easier operations
+
+Repo-specific sizing guidance:
+
+- A small shared-CPU Droplet is enough for basic demo traffic when
+  `DIARIZATION_PROVIDER=none`.
+- If you want to run `pyannote` diarization on the same host, use a larger CPU
+  Droplet. That is a Salin workload recommendation, not a DigitalOcean rule.
+
+### 2. Add a Cloud Firewall
+
+Attach a firewall to the Droplet with these inbound rules:
+
+- `SSH` from your IP
+- `HTTP` on port `80` from `0.0.0.0/0` and `::/0`
+- Custom `TCP` on port `8000` from `0.0.0.0/0` and `::/0`
+
+Optional:
+
+- `HTTPS` on port `443` if you plan to add a reverse proxy later
+
+### 3. Connect to the server
+
+```bash
+ssh root@<droplet-ip>
+```
+
+### 4. Install Docker Engine, Compose, and Git
+
+```bash
+sudo apt update
+sudo apt upgrade -y
+sudo apt install -y ca-certificates curl git
+sudo install -m 0755 -d /etc/apt/keyrings
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+sudo chmod a+r /etc/apt/keyrings/docker.asc
+sudo tee /etc/apt/sources.list.d/docker.sources <<EOF
+Types: deb
+URIs: https://download.docker.com/linux/ubuntu
+Suites: $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}")
+Components: stable
+Architectures: $(dpkg --print-architecture)
+Signed-By: /etc/apt/keyrings/docker.asc
+EOF
+sudo apt update
+sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+sudo systemctl status docker
+sudo docker run hello-world
+```
+
+If you want to run `docker` without `sudo`, follow Docker's post-install steps
+to add your user to the `docker` group.
+
+### 5. Clone the repository
+
+```bash
+git clone <your-repo-url> salin
+cd salin
+```
+
+### 6. Create the production `.env`
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env` and set the required secrets plus these deployment-specific values:
+
+```env
+APP_ENV=production
+DATABASE_URL=postgresql+psycopg://salin:salin@postgres:5432/salin
+REDIS_URL=redis://redis:6379/0
+CORS_ALLOWED_ORIGINS=http://<droplet-ip>
+NEXT_PUBLIC_API_BASE_URL=http://<droplet-ip>:8000
+SALIN_API_INTERNAL_BASE_URL=http://api:8000
+DIARIZATION_PROVIDER=none
+```
+
+Then fill in the real provider values for:
+
+- `R2_BUCKET_NAME`
+- `R2_ENDPOINT_URL`
+- `R2_ACCESS_KEY_ID`
+- `R2_SECRET_ACCESS_KEY`
+- `R2_REGION`
+- `GROQ_API_KEY`
+- `OPENROUTER_API_KEY`
+- `OPENROUTER_MODELS`
+
+Notes:
+
+- If you use a domain without a reverse proxy, keep the API URL on `:8000`, for
+  example `NEXT_PUBLIC_API_BASE_URL=http://salin.example.com:8000`.
+- If you later front the stack with Caddy or Nginx, you can move the API behind
+  the same origin and stop exposing port `8000` publicly.
+- Start with `DIARIZATION_PROVIDER=none` unless you have the CPU budget and a
+  working `PYANNOTE_AUTH_TOKEN`.
+
+### 7. Start the stack
+
+```bash
+docker compose -f infra/docker-compose.prod.yml up --build -d
+```
+
+The first build can take a while because the web image installs its Node
+dependencies and Playwright browser runtime during image build.
+
+### 8. Verify the deployment
+
+Check container state:
+
+```bash
+docker compose -f infra/docker-compose.prod.yml ps
+```
+
+Tail logs if needed:
+
+```bash
+docker compose -f infra/docker-compose.prod.yml logs -f api
+docker compose -f infra/docker-compose.prod.yml logs -f worker
+docker compose -f infra/docker-compose.prod.yml logs -f web
+```
+
+Then verify from your local machine:
+
+- Open `http://<droplet-ip>` for the web app
+- Open `http://<droplet-ip>:8000/docs` for FastAPI docs
+- Upload a small supported recording and confirm the worker moves it through
+  `uploaded -> preprocessing -> transcribing -> completed`
+
+### 9. Update the deployment
+
+```bash
+git pull
+docker compose -f infra/docker-compose.prod.yml up --build -d
+```
+
+### 10. Stop or restart the stack
+
+```bash
+docker compose -f infra/docker-compose.prod.yml down
+docker compose -f infra/docker-compose.prod.yml restart
+```
+
+### 11. Recommended next hardening steps
+
+- Put a reverse proxy in front of `web` and `api`
+- Add HTTPS on `443`
+- Move the API off the public `8000` port once same-origin routing exists
+- Add Droplet backups and restore practice for Postgres
+- Consider moving Postgres off the Droplet before treating this as a durable
+  production environment
+
 ## OpenAPI and Shared Types
 
 Export the API schema:

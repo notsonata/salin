@@ -1,5 +1,22 @@
 # Tasks
 
+### [P2] Document the single-Droplet DigitalOcean deployment path
+
+Document the current DigitalOcean deployment flow and make the checked-in
+production Compose file match the way the browser reaches the API.
+
+Acceptance criteria:
+
+- `docs/setup.md` includes a step-by-step DigitalOcean Droplet guide
+- The guide documents the current HTTP-only and public-`8000` constraint
+- `infra/docker-compose.prod.yml` publishes the API port required by the web app
+
+- **Files**: `docs/setup.md`, `infra/docker-compose.prod.yml`, `docs/tasks.md`
+- **Context**: The repo already targets a Docker Compose deployment on a
+  DigitalOcean CPU Droplet, but the operational steps and API exposure were not
+  explicit enough to run it from scratch.
+- **Status**: Done
+
 ### [P0] Allow browser-to-API requests in local development
 
 Fix the local cross-origin boundary between the Next.js web app on `localhost:3000`
