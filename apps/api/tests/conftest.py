@@ -63,6 +63,8 @@ def app(tmp_path: Path):
         REDIS_URL="redis://localhost:6379/0",
         R2_BUCKET_NAME="test-bucket",
         MAX_UPLOAD_MB=5,
+        DIARIZATION_PROVIDER="none",
+        PYANNOTE_AUTH_TOKEN="",
     )
     services = ApiServices(
         storage=FakeStorage(),

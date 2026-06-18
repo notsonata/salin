@@ -49,6 +49,13 @@ Do not reintroduce the old purple notes lane or warm-beige shell.
 
 ## Screen structure
 
+### App shell
+
+- desktop sidebar keeps Settings pinned at the bottom
+- Settings opens a compact popup with server-global capability state only
+- `Enable Diarization` reflects backend configuration and is not a per-recording toggle
+- mobile navigation exposes the same Settings popup from the sheet menu
+
 ### Home
 
 Route: `/`
@@ -95,6 +102,7 @@ Required elements:
 Dashboard expectations:
 
 - upload remains visually strongest
+- the `New recording` heading does not need a small `Dashboard` label above it
 - YouTube import must be framed as importing a saved public recording, not live capture
 - the library is dense and calm
 - library rows expose a compact destructive delete action with confirmation,

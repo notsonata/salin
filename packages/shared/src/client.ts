@@ -1,4 +1,5 @@
 import type {
+  AppSettingsResponse,
   LanguageOption,
   NotesGenerationResponse,
   NotesUpdateRequest,
@@ -44,6 +45,14 @@ async function parseEmptyResponse(response: Response): Promise<void> {
 
 export class SalinApiClient {
   constructor(private readonly baseUrl: string) {}
+
+  async getSettings(): Promise<AppSettingsResponse> {
+    const response = await fetch(`${this.baseUrl}/settings`, {
+      cache: "no-store",
+    });
+
+    return parseResponse<AppSettingsResponse>(response);
+  }
 
   transcriptExportUrl(recordingId: string): string {
     return `${this.baseUrl}/recordings/${recordingId}/exports/transcript.txt`;

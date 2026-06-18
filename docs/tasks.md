@@ -1,5 +1,27 @@
 # Tasks
 
+### [P2] Add read-only app settings surface
+
+Expose server-global diarization status in the app shell without turning it into
+a per-recording processing option.
+
+Acceptance criteria:
+
+- API returns `diarization_enabled` from non-secret server configuration
+- shared client exposes a typed settings fetch
+- desktop sidebar pins Settings at the bottom
+- mobile navigation sheet exposes the same Settings popup
+- `Enable Diarization` is read-only and mirrors backend configuration
+- the dashboard upload page no longer shows a small `Dashboard` label above
+  `New recording`
+- focused API and web E2E coverage documents the behavior
+
+- **Files**: `apps/api/salin_api/api/routes.py`, `apps/api/salin_api/schemas/settings.py`, `packages/shared/src/client.ts`, `apps/web/components/app-shell.tsx`, `apps/web/components/dashboard-upload-composer.tsx`, `apps/api/tests/test_recordings_api.py`, `apps/web/tests/e2e/upload.spec.ts`, `docs/ui.md`, `docs/testing.md`, `docs/tasks.md`
+- **Context**: The app needs a small settings entry point before broader
+  configuration work, while diarization remains a server-level deployment
+  capability for now.
+- **Status**: Done
+
 ### [P1] Harden deployed YouTube imports after bot-check recurrence
 
 Make the production YouTube importer clearer and more recoverable when the

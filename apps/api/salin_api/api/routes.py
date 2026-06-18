@@ -36,6 +36,7 @@ from salin_api.schemas.recordings import (
     TranscriptSegmentsUpdateResponse,
     YouTubeImportRequest,
 )
+from salin_api.schemas.settings import AppSettingsResponse
 from salin_api.services.exports import (
     BinaryExport,
     TextExport,
@@ -149,6 +150,16 @@ def build_youtube_import_descriptor(url: str) -> bytes:
         },
         separators=(",", ":"),
     ).encode("utf-8")
+
+
+@router.get("/settings", response_model=AppSettingsResponse)
+def get_settings(request: Request) -> AppSettingsResponse:
+    settings = request.app.state.settings
+    diarization_enabled = (
+        settings.diarization_provider.strip().lower() == "pyannote"
+        and bool(settings.pyannote_auth_token.strip())
+    )
+    return AppSettingsResponse(diarization_enabled=diarization_enabled)
 
 
 @router.post(

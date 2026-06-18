@@ -17,6 +17,26 @@ def test_recording_routes_allow_browser_origin(client) -> None:
     assert response.headers["access-control-allow-origin"] == "http://localhost:3000"
 
 
+def test_settings_reports_diarization_disabled_by_default(client) -> None:
+    response = client.get("/settings")
+
+    assert response.status_code == 200
+    assert response.json() == {"diarization_enabled": False}
+
+
+def test_settings_reports_diarization_enabled_when_pyannote_is_configured(
+    client,
+    app,
+) -> None:
+    app.state.settings.diarization_provider = "pyannote"
+    app.state.settings.pyannote_auth_token = "hf-token"
+
+    response = client.get("/settings")
+
+    assert response.status_code == 200
+    assert response.json() == {"diarization_enabled": True}
+
+
 def test_supported_upload_persists_metadata_and_enqueues_job(client, app) -> None:
     response = client.post(
         "/recordings",

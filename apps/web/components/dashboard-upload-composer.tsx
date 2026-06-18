@@ -103,9 +103,6 @@ export function DashboardUploadComposer() {
     <section className="grid gap-4" id="new-recording">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="grid gap-1">
-          <p className="font-sans font-semibold text-[10px] uppercase tracking-[0.18em] text-muted">
-            Dashboard
-          </p>
           <h2 className="font-serif text-3xl text-ink sm:text-4xl">
             New recording
           </h2>

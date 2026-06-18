@@ -6,6 +6,24 @@
     "version": "0.1.0"
   },
   "paths": {
+    "/settings": {
+      "get": {
+        "summary": "Get Settings",
+        "operationId": "get_settings_settings_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppSettingsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/recordings": {
       "get": {
         "summary": "List Recordings",
@@ -749,6 +767,19 @@
   },
   "components": {
     "schemas": {
+      "AppSettingsResponse": {
+        "properties": {
+          "diarization_enabled": {
+            "type": "boolean",
+            "title": "Diarization Enabled"
+          }
+        },
+        "type": "object",
+        "required": [
+          "diarization_enabled"
+        ],
+        "title": "AppSettingsResponse"
+      },
       "ArtifactUrls": {
         "properties": {
           "original": {

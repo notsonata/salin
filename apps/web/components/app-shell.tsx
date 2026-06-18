@@ -3,15 +3,22 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import type { AppSettingsResponse } from "@salin/shared";
 import {
-  Waveform,
   Books,
-  List,
   CloudArrowUp,
+  GearSix,
+  List,
 } from "@phosphor-icons/react";
 
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Sheet,
@@ -21,7 +28,11 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { createBrowserClient } from "@/lib/api";
 import { cn } from "@/lib/utils";
+
+const apiClient = createBrowserClient();
+const fallbackSettings: AppSettingsResponse = { diarization_enabled: false };
 
 const navigation = [
   {
@@ -68,6 +79,57 @@ function SidebarLinks({ pathname }: { pathname: string }) {
   );
 }
 
+function SettingsMenu({ mobile = false }: { mobile?: boolean }) {
+  const [settings, setSettings] = useState<AppSettingsResponse | null>(null);
+
+  useEffect(() => {
+    let active = true;
+
+    apiClient
+      .getSettings()
+      .then((nextSettings) => {
+        if (active) {
+          setSettings(nextSettings);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setSettings(fallbackSettings);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          className="h-10 w-full justify-start gap-3 border-transparent bg-transparent px-3 text-muted hover:bg-stone-100 hover:text-ink"
+          variant="ghost"
+        >
+          <GearSix weight="bold" className="h-4 w-4" />
+          <span className="font-medium">Settings</span>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        align={mobile ? "start" : "end"}
+        className="w-56"
+        side={mobile ? "bottom" : "right"}
+      >
+        <DropdownMenuCheckboxItem
+          checked={settings?.diarization_enabled ?? false}
+          onSelect={(event) => event.preventDefault()}
+        >
+          Enable Diarization
+        </DropdownMenuCheckboxItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname() ?? "/";
 
@@ -99,6 +161,9 @@ export function AppShell({ children }: { children: ReactNode }) {
                 </div>
               </div>
             </ScrollArea>
+            <div className="border-t border-line px-4 py-4">
+              <SettingsMenu />
+            </div>
           </div>
         </aside>
 
@@ -129,6 +194,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 </SheetHeader>
                 <div className="mt-8 grid gap-8">
                   <SidebarLinks pathname={pathname} />
+                  <SettingsMenu mobile />
                 </div>
               </SheetContent>
             </Sheet>

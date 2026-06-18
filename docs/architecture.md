@@ -68,10 +68,13 @@ salin/
 - Render estimated/edited speaker state, speaker rename, and per-block speaker reassignment controls inside the transcript tab
 - Render manual notes generation, regeneration, and Markdown notes editing without blocking transcript review
 - Render notes TXT/PDF and combined TXT/PDF export links once notes have completed
+- Render a sidebar Settings popup backed by `GET /settings` for server-global capability state such as diarization availability
 - Show retry affordance only when the API marks a failed job as retryable
 
 ### `apps/api`
 
+- Return non-secret app settings through `GET /settings`, including whether
+  server-global diarization is enabled
 - Accept multipart recording uploads
 - Accept public single-video YouTube import requests at `POST /recordings/imports/youtube`
 - Validate supported file types and size limit

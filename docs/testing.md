@@ -19,6 +19,7 @@ Use the lowest level that gives credible confidence:
 - Supported upload persists metadata and enqueues a job
 - Unsupported file type returns the expected validation error
 - YouTube import persists a descriptor, validates the URL boundary, and enqueues the normal recording job
+- `GET /settings` reports whether server-global diarization is enabled without exposing provider secrets
 - `GET /recordings` returns recent dashboard rows
 - `DELETE /recordings/{id}` removes the library row, dependent transcript/job/notes
   rows, and stored recording artifacts under the recording prefix
@@ -94,6 +95,7 @@ Use the lowest level that gives credible confidence:
 
 - Home page frames Salin as a review board and routes into the dashboard and preview workspace
 - Dashboard renders the recording intake command deck with file upload and YouTube URL options
+- Dashboard sidebar Settings opens a server-global diarization status popup, and the new-recording header stays uncluttered
 - Library rows can be deleted after confirmation and are removed from the table
 - Supported upload redirects into the split transcript workspace, renders normalized playback, keeps the transcript toolbar sticky, supports transcript search, and exposes grouped transcript export links
 - YouTube URL import redirects into the same transcript workspace path

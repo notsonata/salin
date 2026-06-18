@@ -137,12 +137,29 @@ test("home frames the product as a transcript review board", async ({ page }) =>
 });
 
 test("dashboard home shows the recording intake composer", async ({ page }) => {
+  await page.route("http://localhost:8000/settings", async (route) => {
+    await route.fulfill({
+      status: 200,
+      headers: {
+        "access-control-allow-origin": "*",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({ diarization_enabled: false }),
+    });
+  });
+
   await page.goto("/dashboard");
 
   await expect(page.getByRole("heading", { name: "New recording", exact: true })).toBeVisible();
+  await expect(page.locator("#new-recording").getByText("Dashboard", { exact: true })).toHaveCount(0);
   await expect(page.getByTestId("dashboard-command-deck")).toBeVisible();
   await expect(page.getByRole("tab", { name: "File upload" })).toBeVisible();
   await expect(page.getByRole("tab", { name: "YouTube URL" })).toBeVisible();
+
+  await page.getByRole("button", { name: "Settings" }).click();
+  await expect(
+    page.getByRole("menuitemcheckbox", { name: "Enable Diarization" }),
+  ).toHaveAttribute("aria-checked", "false");
 });
 
 test("library search filters recording rows", async ({ page }) => {
