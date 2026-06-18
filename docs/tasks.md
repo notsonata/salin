@@ -9,13 +9,17 @@ cookies file.
 Acceptance criteria:
 
 - the worker passes `youtube:player_client=android` through `yt-dlp`
+- the importer does not force `bestaudio/best`, allowing `yt-dlp` to select the
+  available Android-client format
 - focused worker coverage locks the extractor argument in place
 - setup, architecture, and testing docs describe the Droplet recovery behavior
 
 - **Files**: `apps/worker/salin_worker/services/youtube.py`, `apps/worker/tests/test_youtube.py`, `docs/setup.md`, `docs/testing.md`, `docs/architecture.md`, `docs/tasks.md`
 - **Context**: On the Droplet, the same video failed with the default client and
   the staged cookies file, while the Android client succeeded against the same
-  worker image, cookie file, and video URL.
+  worker image, cookie file, and video URL. A second live check showed forcing
+  `bestaudio/best` could still trigger the bot-check wall, while the default
+  `yt-dlp` format choice selected a usable muxed format.
 - **Status**: Done
 
 ### [P1] Ship a JS challenge runtime for deployed YouTube imports

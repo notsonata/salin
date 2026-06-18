@@ -47,6 +47,9 @@ Use the lowest level that gives credible confidence:
   matching runtime and EJS package
 - YouTube import forces the Android YouTube player client because the default
   client can still return bot-check failures on the DigitalOcean Droplet
+- YouTube import leaves format selection to `yt-dlp` because forcing
+  `bestaudio/best` can re-trigger the bot-check failure with current
+  Android-client responses
 - Notes generation persists Markdown notes content from stored transcript data
 - Notes failures keep transcript data intact
 - Notes regeneration replaces content only after a successful rerun

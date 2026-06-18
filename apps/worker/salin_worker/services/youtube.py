@@ -40,7 +40,6 @@ class YouTubeAudioImporter:
 
         output_dir.mkdir(parents=True, exist_ok=True)
         options = {
-            "format": "bestaudio/best",
             "outtmpl": str(output_dir / "source.%(ext)s"),
             "noplaylist": True,
             "quiet": True,
@@ -148,6 +147,7 @@ class YouTubeAudioImporter:
             ".aac": "audio/aac",
             ".m4a": "audio/mp4",
             ".mp3": "audio/mpeg",
+            ".mp4": "video/mp4",
             ".ogg": "audio/ogg",
             ".opus": "audio/opus",
             ".wav": "audio/wav",
