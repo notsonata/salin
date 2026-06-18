@@ -1,5 +1,46 @@
 # Tasks
 
+### [P1] Harden deployed YouTube imports after bot-check recurrence
+
+Make the production YouTube importer clearer and more recoverable when the
+Droplet session is challenged again.
+
+Acceptance criteria:
+
+- worker settings accept an optional browser User-Agent for cookie-backed YouTube imports
+- worker settings accept an optional PO-token provider URL
+- production Compose includes the PO-token provider service for the worker
+- the importer tries the PO-token provider strategy before existing Android and cookie fallbacks
+- stale or rotated cookies fail with an actionable message instead of only raw `yt-dlp` output
+- focused worker coverage documents the new strategies and failure message
+
+- **Files**: `apps/api/salin_api/core/settings.py`, `apps/worker/salin_worker/services/youtube.py`, `apps/worker/salin_worker/services/processing.py`, `apps/worker/pyproject.toml`, `infra/docker-compose.prod.yml`, `.env.example`, `docs/setup.md`, `docs/architecture.md`, `docs/testing.md`, `docs/tasks.md`, `apps/worker/tests/test_youtube.py`
+- **Context**: Fresh prod probes showed the current Droplet receives YouTube
+  `LOGIN_REQUIRED` / bot-check responses for `ML3q7Ok4hJg`. The existing
+  mounted cookies file is Netscape-formatted but yt-dlp reports that the
+  YouTube account cookies are no longer valid, likely rotated in the browser.
+- **Status**: Done
+
+### [P2] Add recording delete from the library
+
+Let users remove old or mistaken sessions from the library without changing the
+upload dashboard or workspace flow.
+
+Acceptance criteria:
+
+- the library table exposes a compact delete action per recording row
+- deletion requires confirmation before the API request is sent
+- a successful delete removes the row from the library immediately
+- the API deletes stored objects under `recordings/{id}/`
+- the API deletes dependent transcript segment, notes, and processing job rows
+  before deleting the recording row
+- focused API and web E2E coverage lock the behavior in place
+
+- **Files**: `apps/api/salin_api/api/routes.py`, `apps/api/salin_api/repositories/recordings.py`, `apps/api/salin_api/storage/r2.py`, `apps/web/app/library/page.tsx`, `apps/web/components/recordings-table.tsx`, `packages/shared/src/client.ts`, `docs/project-plan.md`, `docs/architecture.md`, `docs/testing.md`, `docs/ui.md`
+- **Context**: Deletion was listed as a later file-management workflow, but the
+  current library now needs a basic cleanup action before deeper UI polish.
+- **Status**: Done
+
 ### [P1] Force the Android YouTube client for deployed imports
 
 Keep public YouTube imports usable on the DigitalOcean Droplet when the default

@@ -29,6 +29,11 @@ class FakeStorage:
     def presign_get(self, key: str) -> str:
         return f"https://storage.invalid/{key}"
 
+    def delete_prefix(self, prefix: str) -> None:
+        for key in list(self.objects):
+            if key.startswith(prefix):
+                del self.objects[key]
+
 
 class FakeQueue:
     def __init__(self) -> None:

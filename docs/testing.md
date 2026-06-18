@@ -20,6 +20,8 @@ Use the lowest level that gives credible confidence:
 - Unsupported file type returns the expected validation error
 - YouTube import persists a descriptor, validates the URL boundary, and enqueues the normal recording job
 - `GET /recordings` returns recent dashboard rows
+- `DELETE /recordings/{id}` removes the library row, dependent transcript/job/notes
+  rows, and stored recording artifacts under the recording prefix
 - Recording detail synthesizes idle notes state before the first notes run
 - Speaker rename updates matching transcript segments and marks them edited
 - Per-block speaker reassignment updates only the selected transcript segment
@@ -55,6 +57,9 @@ Use the lowest level that gives credible confidence:
   Android-client responses
 - YouTube import validates duration through `yt-dlp`'s pre-download filter and
   downloads in one extraction pass to reduce repeat YouTube requests
+- YouTube import can pass a configured browser User-Agent, can try a configured
+  PO-token provider with the `mweb` client before fallback strategies, and
+  explains stale or rotated cookies with an actionable error
 - Notes generation persists Markdown notes content from stored transcript data
 - Notes failures keep transcript data intact
 - Notes regeneration replaces content only after a successful rerun
@@ -89,6 +94,7 @@ Use the lowest level that gives credible confidence:
 
 - Home page frames Salin as a review board and routes into the dashboard and preview workspace
 - Dashboard renders the recording intake command deck with file upload and YouTube URL options
+- Library rows can be deleted after confirmation and are removed from the table
 - Supported upload redirects into the split transcript workspace, renders normalized playback, keeps the transcript toolbar sticky, supports transcript search, and exposes grouped transcript export links
 - YouTube URL import redirects into the same transcript workspace path
 - Desktop renders the transcript column and notes dock together while mobile falls back to transcript/notes tabs

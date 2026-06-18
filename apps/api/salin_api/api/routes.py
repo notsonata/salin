@@ -316,6 +316,22 @@ def get_recording(
     )
 
 
+@router.delete("/recordings/{recording_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_recording(
+    recording_id: str,
+    request: Request,
+    session: SessionDep,
+) -> Response:
+    repository = RecordingRepository(session)
+    recording = repository.get_recording(recording_id)
+    if recording is None:
+        raise HTTPException(status_code=404, detail="Recording not found.")
+
+    request.app.state.services.storage.delete_prefix(f"recordings/{recording_id}/")
+    repository.delete_recording(recording_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
 @router.put("/recordings/{recording_id}/rename", response_model=RecordingDetailResponse)
 def rename_recording(
     recording_id: str,

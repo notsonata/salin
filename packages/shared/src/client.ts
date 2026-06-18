@@ -33,6 +33,15 @@ async function parseResponse<T>(response: Response): Promise<T> {
   return (await response.json()) as T;
 }
 
+async function parseEmptyResponse(response: Response): Promise<void> {
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({ detail: "Request failed" }));
+    const detail =
+      typeof payload?.detail === "string" ? payload.detail : "Request failed";
+    throw new Error(detail);
+  }
+}
+
 export class SalinApiClient {
   constructor(private readonly baseUrl: string) {}
 
@@ -111,6 +120,14 @@ export class SalinApiClient {
     });
 
     return parseResponse<RecordingDetailResponse>(response);
+  }
+
+  async deleteRecording(recordingId: string): Promise<void> {
+    const response = await fetch(`${this.baseUrl}/recordings/${recordingId}`, {
+      method: "DELETE",
+    });
+
+    return parseEmptyResponse(response);
   }
 
   async renameRecording(

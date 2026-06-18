@@ -258,6 +258,53 @@ def test_list_recordings_returns_recent_rows(client, app) -> None:
     assert payload["recordings"][0]["notes"]["status"] == "idle"
 
 
+def test_delete_recording_removes_library_row_related_data_and_artifacts(client, app) -> None:
+    recording_id = create_completed_recording(client, app, filename="delete-me.mp3")
+    save_response = client.put(
+        f"/recordings/{recording_id}/notes",
+        json={"content": "# Summary\n\nDelete this session."},
+    )
+    assert save_response.status_code == 200
+    app.state.services.storage.objects[
+        f"recordings/{recording_id}/normalized/audio.wav"
+    ] = b"normalized-audio"
+    app.state.services.storage.objects[
+        f"recordings/{recording_id}/artifacts/groq-raw.json"
+    ] = b"{}"
+
+    response = client.delete(f"/recordings/{recording_id}")
+
+    assert response.status_code == 204
+    assert response.content == b""
+    assert client.get(f"/recordings/{recording_id}").status_code == 404
+
+    list_response = client.get("/recordings")
+    assert list_response.status_code == 200
+    assert all(
+        row["recording"]["id"] != recording_id
+        for row in list_response.json()["recordings"]
+    )
+
+    session = app.state.session_factory()
+    repository = RecordingRepository(session)
+    assert repository.get_recording(recording_id) is None
+    assert repository.get_job(recording_id) is None
+    assert repository.list_segments(recording_id) == []
+    assert repository.get_generated_notes(recording_id) is None
+    session.close()
+    assert all(
+        not key.startswith(f"recordings/{recording_id}/")
+        for key in app.state.services.storage.objects
+    )
+
+
+def test_delete_missing_recording_returns_not_found(client) -> None:
+    response = client.delete("/recordings/missing")
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Recording not found."
+
+
 def test_update_notes_persists_structured_edits(client, app) -> None:
     recording_id = create_completed_recording(client, app)
 

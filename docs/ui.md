@@ -97,6 +97,8 @@ Dashboard expectations:
 - upload remains visually strongest
 - YouTube import must be framed as importing a saved public recording, not live capture
 - the library is dense and calm
+- library rows expose a compact destructive delete action with confirmation,
+  without competing with the primary open-workspace action
 - backend-off state routes into preview workspace
 - the dashboard command deck must stay single-column, full-width, and tap-friendly on mobile after users enter from the home CTA
 

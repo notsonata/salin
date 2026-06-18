@@ -17,6 +17,8 @@ class ObjectStorage(Protocol):
 
     def presign_get(self, key: str) -> str: ...
 
+    def delete_prefix(self, prefix: str) -> None: ...
+
 
 class S3ObjectStorage:
     def __init__(
@@ -70,3 +72,15 @@ class S3ObjectStorage:
             Params={"Bucket": self.bucket_name, "Key": key},
             ExpiresIn=3600,
         )
+
+    def delete_prefix(self, prefix: str) -> None:
+        paginator = self.client.get_paginator("list_objects_v2")
+        for page in paginator.paginate(Bucket=self.bucket_name, Prefix=prefix):
+            objects = [{"Key": item["Key"]} for item in page.get("Contents", [])]
+            for start in range(0, len(objects), 1000):
+                chunk = objects[start : start + 1000]
+                if chunk:
+                    self.client.delete_objects(
+                        Bucket=self.bucket_name,
+                        Delete={"Objects": chunk, "Quiet": True},
+                    )

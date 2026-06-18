@@ -63,6 +63,12 @@ Optional YouTube import value:
   `yt-dlp` when YouTube asks the server to confirm it is not a bot.
   The worker stages this file into a writable temp path before invoking
   `yt-dlp`, so the mounted source file can remain read-only.
+- `YOUTUBE_USER_AGENT`: optional browser User-Agent to pair with the exported
+  YouTube cookies. Use the same browser session that produced `cookies.txt`.
+- `YOUTUBE_POT_PROVIDER_URL`: optional PO-token provider URL for the worker's
+  first YouTube download attempt. The production Compose file includes a
+  `youtube-pot-provider` service, so production can set this to
+  `http://youtube-pot-provider:4416`.
 
 ## Install
 
@@ -251,6 +257,8 @@ SALIN_API_INTERNAL_BASE_URL=http://api:8000
 DIARIZATION_PROVIDER=none
 # Optional, but recommended if YouTube imports hit bot checks:
 YOUTUBE_COOKIES_FILE=/run/secrets/salin/youtube-cookies.txt
+YOUTUBE_USER_AGENT=<full browser user-agent used to export cookies>
+YOUTUBE_POT_PROVIDER_URL=http://youtube-pot-provider:4416
 ```
 
 Then fill in the real provider values for:
@@ -283,6 +291,9 @@ cookies in Netscape `cookies.txt` format and place the file on the Droplet at:
 
 Keep this file out of git. The production Compose file mounts
 `deploy/secrets` read-only into the worker container at `/run/secrets/salin`.
+If the worker says the configured server session was rejected, the mounted
+cookies have likely expired or rotated in the browser; replace the file with a
+fresh export and restart the worker.
 
 ### 7. Start the stack
 
@@ -358,9 +369,10 @@ pnpm --filter @salin/shared generate
 
 - The worker image includes `ffmpeg`, a Deno runtime, and the `yt-dlp`
   default extras needed for current YouTube JS challenge solving. The YouTube
-  importer tries the Android player API without cookies first and skips the
-  initial webpage/config requests because those requests can hit bot checks on
-  the DigitalOcean Droplet. Mounted cookies remain a fallback, but invalid
+  importer can first try the configured production PO-token provider with the
+  `mweb` client, then tries the Android player API without cookies and skips
+  the initial webpage/config requests because those requests can hit bot checks
+  on the DigitalOcean Droplet. Mounted cookies remain a fallback, but invalid
   rotated cookies are no longer forced onto the first public-video attempt.
   The importer does not force an audio-only format selector because current
   Android-client responses can expose only a muxed MP4 format that `ffmpeg` can
@@ -402,8 +414,10 @@ pnpm --filter @salin/shared generate
 - YouTube import fails with `Sign in to confirm you're not a bot`: export a
   fresh Netscape-format `cookies.txt`, place it at
   `deploy/secrets/youtube-cookies.txt` on the host, set
-  `YOUTUBE_COOKIES_FILE=/run/secrets/salin/youtube-cookies.txt`, and restart the
-  worker.
+  `YOUTUBE_COOKIES_FILE=/run/secrets/salin/youtube-cookies.txt`, set
+  `YOUTUBE_USER_AGENT` to the exporting browser's full User-Agent, and restart
+  the worker. If `YOUTUBE_POT_PROVIDER_URL` is configured, the worker will also
+  try the production PO-token provider before falling back to the cookie path.
 - YouTube import fails with `n challenge solving failed` or only storyboard
   formats: rebuild and restart the worker so the image includes the checked-in
   Deno runtime, `yt-dlp[default]` dependency set, no-cookie Android player API

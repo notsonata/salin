@@ -32,9 +32,13 @@ class YouTubeAudioImporter:
         *,
         max_duration_seconds: int,
         cookies_file: str | Path | None = None,
+        user_agent: str | None = None,
+        pot_provider_url: str | None = None,
     ) -> None:
         self.max_duration_seconds = max_duration_seconds
         self.cookies_file = Path(cookies_file).expanduser() if cookies_file else None
+        self.user_agent = user_agent.strip() if user_agent else ""
+        self.pot_provider_url = pot_provider_url.strip().rstrip("/") if pot_provider_url else ""
 
     def download_audio(self, *, url: str, output_dir: Path) -> YouTubeImportedAudio:
         try:
@@ -63,6 +67,11 @@ class YouTubeAudioImporter:
             "js_runtimes": {"deno": {}},
             "match_filter": self._validate_before_download,
         }
+        if self.user_agent:
+            base_options["http_headers"] = {
+                "User-Agent": self.user_agent,
+                "Accept-Language": "en-US,en;q=0.9",
+            }
 
         info: dict[str, Any] | None = None
         last_download_error: DownloadError | None = None
@@ -89,6 +98,12 @@ class YouTubeAudioImporter:
                     staged_cookies_file.unlink(missing_ok=True)
         else:
             if last_download_error is not None:
+                if self.cookies_file is not None:
+                    raise RuntimeError(
+                        "YouTube rejected the configured server session. Export fresh "
+                        "Netscape-format cookies from a browser that can play the video, "
+                        "replace deploy/secrets/youtube-cookies.txt, and restart the worker."
+                    ) from last_download_error
                 raise last_download_error
             raise RuntimeError("YouTube audio download did not start.")
 
@@ -131,7 +146,21 @@ class YouTubeAudioImporter:
         return None
 
     def _download_strategies(self) -> list[_YouTubeDownloadStrategy]:
-        strategies = [
+        strategies: list[_YouTubeDownloadStrategy] = []
+        if self.pot_provider_url:
+            strategies.append(
+                _YouTubeDownloadStrategy(
+                    extractor_args={
+                        "youtube": {"player_client": ["mweb"]},
+                        "youtubepot-bgutilhttp": {
+                            "base_url": [self.pot_provider_url],
+                        },
+                    },
+                    use_cookies=False,
+                )
+            )
+
+        strategies.append(
             _YouTubeDownloadStrategy(
                 extractor_args={
                     "youtube": {
@@ -141,7 +170,7 @@ class YouTubeAudioImporter:
                 },
                 use_cookies=False,
             )
-        ]
+        )
         if self.cookies_file is not None:
             strategies.append(
                 _YouTubeDownloadStrategy(

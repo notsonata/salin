@@ -57,6 +57,8 @@ salin/
 - Render the product home at `/`
 - Render the recording intake dashboard at `/dashboard`
 - Render recent recordings history on `/library` from `GET /recordings`
+- Delete a recording from `/library` after confirmation and remove the row once
+  the API accepts the delete
 - Redirect to `/workspace/{id}` after upload or YouTube import
 - Poll `GET /recordings/{id}` every 2 seconds until the transcript job and notes lifecycle reach terminal states
 - Render recording detail header plus transcript/notes tabs
@@ -78,6 +80,8 @@ salin/
 - Persist `GeneratedNotes` rows separately from transcript segments
 - Return dashboard recording rows through `GET /recordings`
 - Return recording/job state and transcript segments
+- Delete a recording through `DELETE /recordings/{id}` by removing stored
+  artifacts under the recording prefix plus dependent job, transcript, and notes rows
 - Return synthesized idle notes state when notes have not been generated yet
 - Reset retryable failed jobs and re-enqueue them
 - Queue manual notes generation requests against stored transcript data once segments exist, including during the `diarizing` stage
@@ -93,8 +97,14 @@ salin/
 
 - Download original upload from R2
 - Detect YouTube import descriptors, download audio with `yt-dlp`, store the downloaded audio as the recording's original artifact, and then continue through the normal processing path
-- Try public YouTube downloads through the Android player API without cookies first, skipping the initial webpage/config requests that trigger Droplet bot checks; if that fails and a mounted `cookies.txt` file exists, stage it into a writable temp file and retry through the Android client
+- Try public YouTube downloads through an optional production PO-token provider
+  with the `mweb` client, then through the Android player API without cookies
+  while skipping the initial webpage/config requests that trigger Droplet bot
+  checks; if that fails and a mounted `cookies.txt` file exists, stage it into a
+  writable temp file and retry through the Android client
 - Enable a Deno-backed JS challenge runtime, let `yt-dlp` choose the available format, and download in a single extraction pass for current Droplet bot-check recovery
+- Pair a configured YouTube cookie file with an optional browser User-Agent and
+  fail with a clear stale-cookie message when YouTube rejects the server session
 - Normalize audio to mono 16 kHz with `ffmpeg`
 - Upload normalized audio artifact back to R2
 - Split normalized audio into overlapped transcription chunks when the recording exceeds the configured chunk length
@@ -145,6 +155,10 @@ Canonical persisted transcript segments stay in Postgres, not in provider-specif
 Chunk result artifacts store provider-neutral segment timestamps relative to each chunk plus the provider raw payload for that chunk. The final `{provider}-raw.json` artifact records the chunk map and source providers used for the merged transcript.
 
 Notes stay in Postgres as separate Markdown content so notes retries and failures do not disturb transcript rows.
+
+Deleting a recording removes the R2 object prefix `recordings/{id}/` before the
+database rows are removed. The database cleanup deletes transcript segments,
+generated notes, and the processing job before deleting the recording row.
 
 For YouTube imports, the API first stores a small descriptor with content type `application/vnd.salin.youtube-import+json`. During `preprocessing`, the worker downloads the audio, uploads it to `recordings/{id}/original/{filename}`, updates the recording metadata to point at that audio file, and preserves a small import artifact for debugging.
 

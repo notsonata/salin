@@ -93,7 +93,6 @@ This is the first slice that must work before the rest of the scope matters:
 
 ### Later
 
-- Deletion workflows for recordings and transcripts
 - Better processing push updates such as server-sent events
 - More robust observability and job dashboards
 - Alternate transcription and notes providers
@@ -216,6 +215,7 @@ The canonical transcript representation should remain provider-agnostic.
 - Backend PDF export endpoints for transcript, notes, and combined output (Done)
 - Current-style export UI controls for transcript, notes, and combined TXT/PDF (Done)
 - YouTube URL import for presentation/demo intake, routed through the normal recording job path (Done)
+- Library delete workflow for recordings, transcript rows, notes rows, jobs, and stored recording artifacts (Done)
 - Export presentation polish for the UI revamp
 - Retry/error-state UI polish for downstream failures
 - Better processing progress presentation

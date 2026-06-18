@@ -145,6 +145,81 @@ test("dashboard home shows the recording intake composer", async ({ page }) => {
   await expect(page.getByRole("tab", { name: "YouTube URL" })).toBeVisible();
 });
 
+test("library search filters recording rows", async ({ page }) => {
+  await page.route("http://localhost:8000/recordings", async (route) => {
+    await route.fulfill({
+      status: 200,
+      headers: {
+        "access-control-allow-origin": "*",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        recordings: [
+          recordingsListRow({ id: "rec_lecture", filename: "biology-lecture.mp3" }),
+          recordingsListRow({
+            id: "rec_interview",
+            filename: "client-interview.m4a",
+            stage: "transcribing",
+          }),
+        ],
+      }),
+    });
+  });
+
+  await page.goto("/library");
+  await expect(page.getByText("biology-lecture.mp3")).toBeVisible();
+  await expect(page.getByText("client-interview.m4a")).toBeVisible();
+
+  await page.getByLabel("Search sessions").fill("interview");
+
+  await expect(page.getByText("biology-lecture.mp3")).toBeHidden();
+  await expect(page.getByText("client-interview.m4a")).toBeVisible();
+
+  await page.getByLabel("Search sessions").fill("no match");
+
+  await expect(page.getByText("client-interview.m4a")).toBeHidden();
+  await expect(page.getByText("No recordings match your search.")).toBeVisible();
+});
+
+test("library recording rows can be deleted", async ({ page }) => {
+  let rows = [recordingsListRow({ id: "rec_delete", filename: "delete-me.mp3" })];
+
+  await page.route("http://localhost:8000/recordings", async (route) => {
+    await route.fulfill({
+      status: 200,
+      headers: {
+        "access-control-allow-origin": "*",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({ recordings: rows }),
+    });
+  });
+
+  await page.route("http://localhost:8000/recordings/rec_delete", async (route) => {
+    expect(route.request().method()).toBe("DELETE");
+    rows = [];
+    await route.fulfill({
+      status: 204,
+      headers: {
+        "access-control-allow-origin": "*",
+      },
+      body: "",
+    });
+  });
+
+  page.on("dialog", async (dialog) => {
+    expect(dialog.message()).toContain("Delete delete-me.mp3?");
+    await dialog.accept();
+  });
+
+  await page.goto("/library");
+  await expect(page.getByText("delete-me.mp3")).toBeVisible();
+  await page.getByRole("button", { name: "Delete delete-me.mp3" }).click();
+
+  await expect(page.getByText("delete-me.mp3")).toBeHidden();
+  await expect(page.getByText("No recordings yet.")).toBeVisible();
+});
+
 test("supported upload transitions into the interactive transcript workspace", async ({
   page,
 }) => {

@@ -10,6 +10,7 @@ dependencies = [
   "redis>=5.2.0",
   "rq>=1.16.2",
   "salin-api",
+  "bgutil-ytdlp-pot-provider>=1.3.1",
   "yt-dlp[default]>=2026.6.9"
 ]
 

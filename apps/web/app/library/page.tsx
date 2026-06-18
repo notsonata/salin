@@ -14,6 +14,8 @@ export default function LibraryPage() {
   const [rows, setRows] = useState<RecordingListItemSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deletingRecordingId, setDeletingRecordingId] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -47,10 +49,43 @@ export default function LibraryPage() {
     };
   }, []);
 
+  async function deleteRecording(recordingId: string, filename: string) {
+    const confirmed = window.confirm(
+      `Delete ${filename}? This removes the session from your library.`,
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    setDeletingRecordingId(recordingId);
+    setDeleteError(null);
+    try {
+      await apiClient.deleteRecording(recordingId);
+      setRows((currentRows) =>
+        currentRows.filter((row) => row.recording.id !== recordingId),
+      );
+    } catch (deleteFailure) {
+      setDeleteError(
+        deleteFailure instanceof Error
+          ? deleteFailure.message
+          : "Could not delete recording.",
+      );
+    } finally {
+      setDeletingRecordingId(null);
+    }
+  }
+
   return (
     <AppShell>
       <div className="grid gap-8 pb-10">
-        <RecordingsTable error={error} loading={loading} rows={rows} />
+        <RecordingsTable
+          deleteError={deleteError}
+          deletingRecordingId={deletingRecordingId}
+          error={error}
+          loading={loading}
+          rows={rows}
+          onDeleteRecording={deleteRecording}
+        />
       </div>
     </AppShell>
   );

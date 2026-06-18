@@ -85,6 +85,20 @@ class RecordingRepository:
         )
         return list(self.session.execute(statement).all())
 
+    def delete_recording(self, recording_id: str) -> None:
+        self.require_recording(recording_id)
+        self.session.execute(
+            delete(TranscriptSegment).where(TranscriptSegment.recording_id == recording_id)
+        )
+        self.session.execute(
+            delete(GeneratedNotes).where(GeneratedNotes.recording_id == recording_id)
+        )
+        self.session.execute(
+            delete(ProcessingJob).where(ProcessingJob.recording_id == recording_id)
+        )
+        self.session.execute(delete(Recording).where(Recording.id == recording_id))
+        self.session.commit()
+
     def list_segments(self, recording_id: str) -> list[TranscriptSegment]:
         statement = (
             select(TranscriptSegment)
