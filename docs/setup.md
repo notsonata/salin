@@ -168,8 +168,9 @@ path through `infra/docker-compose.prod.yml`.
 Important current constraints:
 
 - The production compose file uses a Caddy front door on ports `80` and `443`.
-  Browser requests to `/recordings`, `/docs`, `/redoc`, and `/openapi.json` are
-  routed to FastAPI; all other paths are routed to the Next.js web app.
+  Browser requests to `/recordings`, `/settings`, `/docs`, `/redoc`, and
+  `/openapi.json` are routed to FastAPI; all other paths are routed to the
+  Next.js web app.
 - Caddy requests and renews the TLS certificate for `salin.notsonata.dev`
   automatically. Keep the DNS record pointed directly at the Droplet while Caddy
   is issuing the certificate.

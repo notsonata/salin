@@ -6,6 +6,7 @@ salin.notsonata.dev {
     }
 
     reverse_proxy /recordings* api:8000
+    reverse_proxy /settings api:8000
     reverse_proxy /docs* api:8000
     reverse_proxy /redoc* api:8000
     reverse_proxy /openapi.json api:8000

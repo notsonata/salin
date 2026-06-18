@@ -93,8 +93,8 @@ salin/
 - Export transcript TXT/PDF, notes TXT/PDF, and combined TXT/PDF from stored database rows without reprocessing audio
 - Export OpenAPI schema for the shared TypeScript client/types workflow
 - In production, receive browser traffic through Caddy-routed `/recordings`,
-  `/docs`, `/redoc`, and `/openapi.json` paths instead of a public `:8000`
-  browser API origin
+  `/settings`, `/docs`, `/redoc`, and `/openapi.json` paths instead of a
+  public `:8000` browser API origin
 
 ### `apps/worker`
 
