@@ -93,7 +93,8 @@ salin/
 
 - Download original upload from R2
 - Detect YouTube import descriptors, download audio with `yt-dlp`, store the downloaded audio as the recording's original artifact, and then continue through the normal processing path
-- Pass an optional mounted `cookies.txt` file to `yt-dlp`, stage it into a writable temp file, enable a Deno-backed JS challenge runtime, force the Android YouTube client, let `yt-dlp` choose the available format, and download in a single extraction pass for current Droplet bot-check recovery
+- Try public YouTube downloads through the Android player API without cookies first, skipping the initial webpage/config requests that trigger Droplet bot checks; if that fails and a mounted `cookies.txt` file exists, stage it into a writable temp file and retry through the Android client
+- Enable a Deno-backed JS challenge runtime, let `yt-dlp` choose the available format, and download in a single extraction pass for current Droplet bot-check recovery
 - Normalize audio to mono 16 kHz with `ffmpeg`
 - Upload normalized audio artifact back to R2
 - Split normalized audio into overlapped transcription chunks when the recording exceeds the configured chunk length

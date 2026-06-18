@@ -358,12 +358,14 @@ pnpm --filter @salin/shared generate
 
 - The worker image includes `ffmpeg`, a Deno runtime, and the `yt-dlp`
   default extras needed for current YouTube JS challenge solving. The YouTube
-  importer also forces the Android YouTube player client because the default
-  client can still hit bot checks on the DigitalOcean Droplet. It does not
-  force an audio-only format selector because current Android-client responses
-  can expose only a muxed MP4 format that `ffmpeg` can still normalize. The
-  importer validates duration through `yt-dlp` before download so it does not
-  need a separate metadata extraction request.
+  importer tries the Android player API without cookies first and skips the
+  initial webpage/config requests because those requests can hit bot checks on
+  the DigitalOcean Droplet. Mounted cookies remain a fallback, but invalid
+  rotated cookies are no longer forced onto the first public-video attempt.
+  The importer does not force an audio-only format selector because current
+  Android-client responses can expose only a muxed MP4 format that `ffmpeg` can
+  still normalize. The importer validates duration through `yt-dlp` before
+  download so it does not need a separate metadata extraction request.
 - The web app uses `NEXT_PUBLIC_API_BASE_URL` in the browser and `SALIN_API_INTERNAL_BASE_URL` for server-side paths.
 - `CORS_ALLOWED_ORIGINS` must include the browser-facing web origin, which is `http://localhost:3000` for the default Docker Compose setup.
 - Cloudflare R2 remains the source of truth for original, normalized, and raw-provider artifacts.
@@ -404,9 +406,9 @@ pnpm --filter @salin/shared generate
   worker.
 - YouTube import fails with `n challenge solving failed` or only storyboard
   formats: rebuild and restart the worker so the image includes the checked-in
-  Deno runtime, `yt-dlp[default]` dependency set, and Android player-client
-  importer option. The importer should also leave format selection to `yt-dlp`
-  instead of forcing `bestaudio/best`.
+  Deno runtime, `yt-dlp[default]` dependency set, no-cookie Android player API
+  importer strategy, and cookie fallback. The importer should also leave format
+  selection to `yt-dlp` instead of forcing `bestaudio/best`.
 - Recording fails with `Task exceeded maximum timeout value`: raise `RECORDING_JOB_TIMEOUT_SECONDS` and retry the failed recording
 - Long recording appears stuck: check the job note for chunk progress such as `Transcribing chunk 3/12`, and confirm the worker is still running
 - Browser-facing API base URL and server-side internal API base URL diverge

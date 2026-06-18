@@ -45,8 +45,11 @@ Use the lowest level that gives credible confidence:
 - YouTube import explicitly enables the Deno JS runtime for `yt-dlp` so the
   worker can solve current YouTube JS challenges once the image ships the
   matching runtime and EJS package
-- YouTube import forces the Android YouTube player client because the default
-  client can still return bot-check failures on the DigitalOcean Droplet
+- YouTube import tries the no-cookie Android player API path first because the
+  default webpage/config path and invalid rotated cookies can still return
+  bot-check failures on the DigitalOcean Droplet
+- YouTube import falls back to a staged writable cookie file when the no-cookie
+  path fails and `YOUTUBE_COOKIES_FILE` is configured
 - YouTube import leaves format selection to `yt-dlp` because forcing
   `bestaudio/best` can re-trigger the bot-check failure with current
   Android-client responses

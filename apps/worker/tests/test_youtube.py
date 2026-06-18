@@ -9,10 +9,15 @@ import pytest
 from salin_worker.services.youtube import YouTubeAudioImporter
 
 
+class FakeDownloadError(Exception):
+    pass
+
+
 class FakeYoutubeDL:
     options_seen: list[dict[str, Any]] = []
     download_flags_seen: list[bool] = []
     download_calls_seen: list[list[str]] = []
+    fail_without_cookiefile = False
 
     def __init__(self, options: dict[str, Any]) -> None:
         self.options = options
@@ -26,6 +31,8 @@ class FakeYoutubeDL:
 
     def extract_info(self, url: str, *, download: bool) -> dict[str, Any]:
         self.download_flags_seen.append(download)
+        if self.fail_without_cookiefile and not self.options.get("cookiefile"):
+            raise FakeDownloadError("bot check")
         info = {
             "id": "demo123",
             "title": "Demo recording",
@@ -55,12 +62,17 @@ def fake_yt_dlp(monkeypatch: pytest.MonkeyPatch) -> None:
     FakeYoutubeDL.options_seen = []
     FakeYoutubeDL.download_flags_seen = []
     FakeYoutubeDL.download_calls_seen = []
+    FakeYoutubeDL.fail_without_cookiefile = False
     module = ModuleType("yt_dlp")
     module.YoutubeDL = FakeYoutubeDL
     monkeypatch.setitem(sys.modules, "yt_dlp", module)
+    utils_module = ModuleType("yt_dlp.utils")
+    utils_module.DownloadError = FakeDownloadError
+    monkeypatch.setitem(sys.modules, "yt_dlp.utils", utils_module)
 
 
 def test_youtube_importer_stages_cookie_file_for_yt_dlp(tmp_path: Path) -> None:
+    FakeYoutubeDL.fail_without_cookiefile = True
     cookies_file = tmp_path / "youtube-cookies.txt"
     cookies_file.write_text("# Netscape HTTP Cookie File\n", encoding="utf-8")
     importer = YouTubeAudioImporter(
@@ -73,7 +85,7 @@ def test_youtube_importer_stages_cookie_file_for_yt_dlp(tmp_path: Path) -> None:
         output_dir=tmp_path / "download",
     )
 
-    staged_cookiefile = Path(FakeYoutubeDL.options_seen[0]["cookiefile"])
+    staged_cookiefile = Path(FakeYoutubeDL.options_seen[1]["cookiefile"])
     assert staged_cookiefile != cookies_file
     assert not staged_cookiefile.exists()
     assert imported_audio.filename == "Demo-recording.m4a"
@@ -81,6 +93,7 @@ def test_youtube_importer_stages_cookie_file_for_yt_dlp(tmp_path: Path) -> None:
 
 
 def test_youtube_importer_handles_read_only_cookie_mount(tmp_path: Path) -> None:
+    FakeYoutubeDL.fail_without_cookiefile = True
     cookies_file = tmp_path / "youtube-cookies.txt"
     cookies_file.write_text("# Netscape HTTP Cookie File\n", encoding="utf-8")
     cookies_file.chmod(0o400)
@@ -94,7 +107,7 @@ def test_youtube_importer_handles_read_only_cookie_mount(tmp_path: Path) -> None
         output_dir=tmp_path / "download",
     )
 
-    staged_cookiefile = Path(FakeYoutubeDL.options_seen[0]["cookiefile"])
+    staged_cookiefile = Path(FakeYoutubeDL.options_seen[1]["cookiefile"])
     assert staged_cookiefile != cookies_file
     assert not staged_cookiefile.exists()
     assert imported_audio.file_size == len(b"youtube-audio")
@@ -122,7 +135,10 @@ def test_youtube_importer_uses_android_client_for_bot_check_recovery(
     )
 
     assert FakeYoutubeDL.options_seen[0]["extractor_args"] == {
-        "youtube": {"player_client": ["android"]},
+        "youtube": {
+            "player_client": ["android"],
+            "player_skip": ["webpage", "configs"],
+        },
     }
 
 

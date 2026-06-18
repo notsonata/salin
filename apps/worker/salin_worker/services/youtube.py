@@ -20,6 +20,12 @@ class YouTubeImportedAudio:
     webpage_url: str
 
 
+@dataclass(frozen=True, slots=True)
+class _YouTubeDownloadStrategy:
+    extractor_args: dict[str, dict[str, list[str]]]
+    use_cookies: bool
+
+
 class YouTubeAudioImporter:
     def __init__(
         self,
@@ -33,13 +39,20 @@ class YouTubeAudioImporter:
     def download_audio(self, *, url: str, output_dir: Path) -> YouTubeImportedAudio:
         try:
             from yt_dlp import YoutubeDL
+            from yt_dlp.utils import DownloadError
         except ImportError as exc:  # pragma: no cover - depends on runtime packaging
             raise RuntimeError(
                 "yt-dlp is required for YouTube imports. Install worker dependencies first."
             ) from exc
 
         output_dir.mkdir(parents=True, exist_ok=True)
-        options = {
+        if self.cookies_file is not None and not self.cookies_file.is_file():
+            raise RuntimeError(
+                "YouTube cookies file is configured but was not found. "
+                "Export cookies.txt and mount it at the path in YOUTUBE_COOKIES_FILE."
+            )
+
+        base_options = {
             "outtmpl": str(output_dir / "source.%(ext)s"),
             "noplaylist": True,
             "quiet": True,
@@ -48,28 +61,40 @@ class YouTubeAudioImporter:
             "fragment_retries": 2,
             "socket_timeout": 30,
             "js_runtimes": {"deno": {}},
-            "extractor_args": {"youtube": {"player_client": ["android"]}},
+            "match_filter": self._validate_before_download,
         }
-        staged_cookies_file: Path | None = None
-        options["match_filter"] = self._validate_before_download
-        if self.cookies_file is not None:
-            if not self.cookies_file.is_file():
-                raise RuntimeError(
-                    "YouTube cookies file is configured but was not found. "
-                    "Export cookies.txt and mount it at the path in YOUTUBE_COOKIES_FILE."
-                )
-            staged_cookies_file = self._stage_cookies_file(output_dir)
-            options["cookiefile"] = str(staged_cookies_file)
 
-        try:
-            with YoutubeDL(options) as downloader:
-                info = downloader.extract_info(url, download=True)
-                self._validate_info(info)
-        finally:
-            if staged_cookies_file is not None:
-                staged_cookies_file.unlink(missing_ok=True)
+        info: dict[str, Any] | None = None
+        last_download_error: DownloadError | None = None
+        for strategy in self._download_strategies():
+            self._clear_download_candidates(output_dir)
+            options = {
+                **base_options,
+                "extractor_args": strategy.extractor_args,
+            }
+            staged_cookies_file: Path | None = None
+            if strategy.use_cookies:
+                staged_cookies_file = self._stage_cookies_file(output_dir)
+                options["cookiefile"] = str(staged_cookies_file)
+
+            try:
+                with YoutubeDL(options) as downloader:
+                    info = downloader.extract_info(url, download=True)
+                    self._validate_info(info)
+                break
+            except DownloadError as exc:
+                last_download_error = exc
+            finally:
+                if staged_cookies_file is not None:
+                    staged_cookies_file.unlink(missing_ok=True)
+        else:
+            if last_download_error is not None:
+                raise last_download_error
+            raise RuntimeError("YouTube audio download did not start.")
 
         downloaded_path = self._find_downloaded_file(output_dir)
+        if info is None:
+            raise RuntimeError("YouTube audio download did not return metadata.")
         title = str(info.get("title") or info.get("id") or "youtube-recording").strip()
         duration = self._duration_seconds(info)
         filename = self._safe_filename(title, downloaded_path.suffix)
@@ -105,6 +130,27 @@ class YouTubeAudioImporter:
         self._validate_info(info)
         return None
 
+    def _download_strategies(self) -> list[_YouTubeDownloadStrategy]:
+        strategies = [
+            _YouTubeDownloadStrategy(
+                extractor_args={
+                    "youtube": {
+                        "player_client": ["android"],
+                        "player_skip": ["webpage", "configs"],
+                    },
+                },
+                use_cookies=False,
+            )
+        ]
+        if self.cookies_file is not None:
+            strategies.append(
+                _YouTubeDownloadStrategy(
+                    extractor_args={"youtube": {"player_client": ["android"]}},
+                    use_cookies=True,
+                )
+            )
+        return strategies
+
     @staticmethod
     def _duration_seconds(info: dict[str, Any]) -> int | None:
         duration = info.get("duration")
@@ -127,6 +173,12 @@ class YouTubeAudioImporter:
 
         shutil.copyfile(self.cookies_file, staged_path)
         return staged_path
+
+    @staticmethod
+    def _clear_download_candidates(output_dir: Path) -> None:
+        for path in output_dir.iterdir():
+            if path.is_file() and path.name.startswith("source."):
+                path.unlink(missing_ok=True)
 
     @staticmethod
     def _find_downloaded_file(output_dir: Path) -> Path:

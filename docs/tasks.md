@@ -8,7 +8,10 @@ cookies file.
 
 Acceptance criteria:
 
-- the worker passes `youtube:player_client=android` through `yt-dlp`
+- the worker first tries the Android player API without cookies while skipping
+  the initial webpage/config requests
+- the worker falls back to a staged mounted cookie file only if the no-cookie
+  strategy fails
 - the importer does not force `bestaudio/best`, allowing `yt-dlp` to select the
   available Android-client format
 - the importer validates duration before download without making a second
@@ -23,7 +26,9 @@ Acceptance criteria:
   `bestaudio/best` could still trigger the bot-check wall, while the default
   `yt-dlp` format choice selected a usable muxed format. The importer also
   previously made separate metadata and download extraction requests, doubling
-  the chance of hitting a transient YouTube block.
+  the chance of hitting a transient YouTube block. The most reliable Droplet
+  probe used the Android player API with the initial webpage/config requests
+  skipped and no cookie file attached.
 - **Status**: Done
 
 ### [P1] Ship a JS challenge runtime for deployed YouTube imports
