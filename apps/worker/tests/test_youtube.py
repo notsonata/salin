@@ -11,6 +11,8 @@ from salin_worker.services.youtube import YouTubeAudioImporter
 
 class FakeYoutubeDL:
     options_seen: list[dict[str, Any]] = []
+    download_flags_seen: list[bool] = []
+    download_calls_seen: list[list[str]] = []
 
     def __init__(self, options: dict[str, Any]) -> None:
         self.options = options
@@ -23,15 +25,23 @@ class FakeYoutubeDL:
         return None
 
     def extract_info(self, url: str, *, download: bool) -> dict[str, Any]:
-        assert download is False
-        return {
+        self.download_flags_seen.append(download)
+        info = {
             "id": "demo123",
             "title": "Demo recording",
             "duration": 60,
             "webpage_url": url,
         }
+        match_filter = self.options.get("match_filter")
+        if match_filter is not None:
+            match_filter(info, incomplete=False)
+        if download:
+            output_path = Path(str(self.options["outtmpl"]).replace("%(ext)s", "m4a"))
+            output_path.write_bytes(b"youtube-audio")
+        return info
 
     def download(self, urls: list[str]) -> None:
+        self.download_calls_seen.append(urls)
         assert urls == ["https://www.youtube.com/watch?v=demo123"]
         output_path = Path(str(self.options["outtmpl"]).replace("%(ext)s", "m4a"))
         output_path.write_bytes(b"youtube-audio")
@@ -43,6 +53,8 @@ class FakeYoutubeDL:
 @pytest.fixture(autouse=True)
 def fake_yt_dlp(monkeypatch: pytest.MonkeyPatch) -> None:
     FakeYoutubeDL.options_seen = []
+    FakeYoutubeDL.download_flags_seen = []
+    FakeYoutubeDL.download_calls_seen = []
     module = ModuleType("yt_dlp")
     module.YoutubeDL = FakeYoutubeDL
     monkeypatch.setitem(sys.modules, "yt_dlp", module)
@@ -125,6 +137,32 @@ def test_youtube_importer_lets_yt_dlp_pick_available_format(
     )
 
     assert "format" not in FakeYoutubeDL.options_seen[0]
+
+
+def test_youtube_importer_downloads_with_one_extraction_pass(tmp_path: Path) -> None:
+    importer = YouTubeAudioImporter(max_duration_seconds=120)
+
+    importer.download_audio(
+        url="https://www.youtube.com/watch?v=demo123",
+        output_dir=tmp_path / "download",
+    )
+
+    assert FakeYoutubeDL.download_flags_seen == [True]
+    assert FakeYoutubeDL.download_calls_seen == []
+
+
+def test_youtube_importer_validates_duration_before_download(
+    tmp_path: Path,
+) -> None:
+    importer = YouTubeAudioImporter(max_duration_seconds=30)
+
+    with pytest.raises(ValueError, match="limited to 1 minutes"):
+        importer.download_audio(
+            url="https://www.youtube.com/watch?v=demo123",
+            output_dir=tmp_path / "download",
+        )
+
+    assert not (tmp_path / "download" / "source.m4a").exists()
 
 
 def test_youtube_importer_uses_video_mp4_content_type_for_mp4_downloads() -> None:

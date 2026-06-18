@@ -50,6 +50,8 @@ Use the lowest level that gives credible confidence:
 - YouTube import leaves format selection to `yt-dlp` because forcing
   `bestaudio/best` can re-trigger the bot-check failure with current
   Android-client responses
+- YouTube import validates duration through `yt-dlp`'s pre-download filter and
+  downloads in one extraction pass to reduce repeat YouTube requests
 - Notes generation persists Markdown notes content from stored transcript data
 - Notes failures keep transcript data intact
 - Notes regeneration replaces content only after a successful rerun

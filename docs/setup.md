@@ -361,7 +361,9 @@ pnpm --filter @salin/shared generate
   importer also forces the Android YouTube player client because the default
   client can still hit bot checks on the DigitalOcean Droplet. It does not
   force an audio-only format selector because current Android-client responses
-  can expose only a muxed MP4 format that `ffmpeg` can still normalize.
+  can expose only a muxed MP4 format that `ffmpeg` can still normalize. The
+  importer validates duration through `yt-dlp` before download so it does not
+  need a separate metadata extraction request.
 - The web app uses `NEXT_PUBLIC_API_BASE_URL` in the browser and `SALIN_API_INTERNAL_BASE_URL` for server-side paths.
 - `CORS_ALLOWED_ORIGINS` must include the browser-facing web origin, which is `http://localhost:3000` for the default Docker Compose setup.
 - Cloudflare R2 remains the source of truth for original, normalized, and raw-provider artifacts.

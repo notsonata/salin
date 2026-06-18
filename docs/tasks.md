@@ -11,6 +11,8 @@ Acceptance criteria:
 - the worker passes `youtube:player_client=android` through `yt-dlp`
 - the importer does not force `bestaudio/best`, allowing `yt-dlp` to select the
   available Android-client format
+- the importer validates duration before download without making a second
+  extractor request
 - focused worker coverage locks the extractor argument in place
 - setup, architecture, and testing docs describe the Droplet recovery behavior
 
@@ -19,7 +21,9 @@ Acceptance criteria:
   the staged cookies file, while the Android client succeeded against the same
   worker image, cookie file, and video URL. A second live check showed forcing
   `bestaudio/best` could still trigger the bot-check wall, while the default
-  `yt-dlp` format choice selected a usable muxed format.
+  `yt-dlp` format choice selected a usable muxed format. The importer also
+  previously made separate metadata and download extraction requests, doubling
+  the chance of hitting a transient YouTube block.
 - **Status**: Done
 
 ### [P1] Ship a JS challenge runtime for deployed YouTube imports

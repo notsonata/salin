@@ -51,6 +51,7 @@ class YouTubeAudioImporter:
             "extractor_args": {"youtube": {"player_client": ["android"]}},
         }
         staged_cookies_file: Path | None = None
+        options["match_filter"] = self._validate_before_download
         if self.cookies_file is not None:
             if not self.cookies_file.is_file():
                 raise RuntimeError(
@@ -62,9 +63,8 @@ class YouTubeAudioImporter:
 
         try:
             with YoutubeDL(options) as downloader:
-                info = downloader.extract_info(url, download=False)
+                info = downloader.extract_info(url, download=True)
                 self._validate_info(info)
-                downloader.download([url])
         finally:
             if staged_cookies_file is not None:
                 staged_cookies_file.unlink(missing_ok=True)
@@ -93,6 +93,17 @@ class YouTubeAudioImporter:
             raise ValueError(
                 f"YouTube imports are limited to {limit_minutes} minutes for this demo."
             )
+
+    def _validate_before_download(
+        self,
+        info: dict[str, Any],
+        *,
+        incomplete: bool = False,
+    ) -> None:
+        if incomplete:
+            return None
+        self._validate_info(info)
+        return None
 
     @staticmethod
     def _duration_seconds(info: dict[str, Any]) -> int | None:
