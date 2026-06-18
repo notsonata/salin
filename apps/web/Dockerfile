@@ -15,6 +15,8 @@ RUN pnpm --filter @salin/web exec playwright install chromium --with-deps
 
 WORKDIR /workspace
 
+ARG NEXT_PUBLIC_API_BASE_URL
+ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL
 RUN pnpm --filter @salin/web exec next build
 
 ENV NODE_ENV=production
