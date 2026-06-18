@@ -171,6 +171,8 @@ Important current constraints:
   Browser requests to `/recordings`, `/settings`, `/docs`, `/redoc`, and
   `/openapi.json` are routed to FastAPI; all other paths are routed to the
   Next.js web app.
+- The production web image builds Next.js during image build and serves it with
+  `next start`, not `next dev`.
 - Caddy requests and renews the TLS certificate for `salin.notsonata.dev`
   automatically. Keep the DNS record pointed directly at the Droplet while Caddy
   is issuing the certificate.
@@ -280,8 +282,10 @@ Notes:
   routes API paths behind the same origin on ports `80` and `443`.
 - Leave `NEXT_PUBLIC_API_BASE_URL` empty in production so uploads, polling, and
   exports use same-origin relative paths such as `/recordings`.
-- Start with `DIARIZATION_PROVIDER=none` unless you have the CPU budget and a
-  working `PYANNOTE_AUTH_TOKEN`.
+- Start with `DIARIZATION_PROVIDER=none` unless you want diarization enabled by
+  default. If `PYANNOTE_AUTH_TOKEN` is configured, the sidebar Settings control
+  can enable or disable pyannote diarization for future worker jobs without
+  exposing the token.
 
 For YouTube videos that return a bot-check error from `yt-dlp`, export browser
 cookies in Netscape `cookies.txt` format and place the file on the Droplet at:
@@ -390,7 +394,12 @@ pnpm --filter @salin/shared generate
   check.
 - Long recordings are split into overlapped transcription chunks. The default chunk size is controlled by `TRANSCRIPTION_CHUNK_MINUTES`, and overlap is controlled by `TRANSCRIPTION_CHUNK_OVERLAP_SECONDS`.
 - Completed transcription chunks are cached as R2 artifacts, so retrying a failed job can resume from the first missing chunk instead of retranscribing completed chunks.
-- Diarization is disabled by default. To enable pyannote-backed diarization, accept the selected model's Hugging Face conditions, create a token, set `DIARIZATION_PROVIDER=pyannote`, and set `PYANNOTE_AUTH_TOKEN`.
+- Diarization is disabled by default. To enable pyannote-backed diarization on
+  the Droplet worker, accept the selected model's Hugging Face conditions,
+  create a token, set `PYANNOTE_AUTH_TOKEN`, rebuild/restart the worker image,
+  and turn on `Enable Diarization` in the sidebar Settings menu. Set
+  `DIARIZATION_PROVIDER=pyannote` only when you want that toggle to start on by
+  default before a saved app setting exists.
 - `PYANNOTE_DEVICE=auto` prefers `cuda`, then `mps`, then `cpu`.
 - On Apple Silicon Macs, `mps` support only applies when the worker runs directly on the macOS host. The Docker Compose worker runs in a Linux container and cannot use Apple's `mps` backend, so diarization remains CPU-only there.
 - If you want Apple GPU acceleration for diarization on macOS, run the worker directly from the host toolchain and leave `PYANNOTE_DEVICE=auto` or set `PYANNOTE_DEVICE=mps`.

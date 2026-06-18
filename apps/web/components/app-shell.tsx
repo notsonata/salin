@@ -17,6 +17,7 @@ import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -32,7 +33,10 @@ import { createBrowserClient } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 const apiClient = createBrowserClient();
-const fallbackSettings: AppSettingsResponse = { diarization_enabled: false };
+const fallbackSettings: AppSettingsResponse = {
+  diarization_available: false,
+  diarization_enabled: false,
+};
 
 const navigation = [
   {
@@ -81,6 +85,8 @@ function SidebarLinks({ pathname }: { pathname: string }) {
 
 function SettingsMenu({ mobile = false }: { mobile?: boolean }) {
   const [settings, setSettings] = useState<AppSettingsResponse | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [settingsError, setSettingsError] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -90,11 +96,13 @@ function SettingsMenu({ mobile = false }: { mobile?: boolean }) {
       .then((nextSettings) => {
         if (active) {
           setSettings(nextSettings);
+          setSettingsError(null);
         }
       })
       .catch(() => {
         if (active) {
           setSettings(fallbackSettings);
+          setSettingsError("Settings could not be loaded.");
         }
       });
 
@@ -102,6 +110,27 @@ function SettingsMenu({ mobile = false }: { mobile?: boolean }) {
       active = false;
     };
   }, []);
+
+  const updateDiarization = async (checked: boolean) => {
+    const previousSettings = settings ?? fallbackSettings;
+    setSettingsError(null);
+    setSettings({ ...previousSettings, diarization_enabled: checked });
+    setIsSaving(true);
+
+    try {
+      const nextSettings = await apiClient.updateSettings({
+        diarization_enabled: checked,
+      });
+      setSettings(nextSettings);
+    } catch (error) {
+      setSettings(previousSettings);
+      setSettingsError(
+        error instanceof Error ? error.message : "Settings update failed.",
+      );
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <DropdownMenu>
@@ -116,15 +145,22 @@ function SettingsMenu({ mobile = false }: { mobile?: boolean }) {
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align={mobile ? "start" : "end"}
-        className="w-56"
-        side={mobile ? "bottom" : "right"}
+        className="w-60"
+        side={mobile ? "bottom" : "top"}
       >
         <DropdownMenuCheckboxItem
           checked={settings?.diarization_enabled ?? false}
+          disabled={settings === null || isSaving}
+          onCheckedChange={(checked) => updateDiarization(checked === true)}
           onSelect={(event) => event.preventDefault()}
         >
           Enable Diarization
         </DropdownMenuCheckboxItem>
+        {settingsError ? (
+          <DropdownMenuItem disabled className="whitespace-normal text-xs leading-5">
+            {settingsError}
+          </DropdownMenuItem>
+        ) : null}
       </DropdownMenuContent>
     </DropdownMenu>
   );

@@ -17,4 +17,6 @@ WORKDIR /workspace
 
 RUN pnpm --filter @salin/web exec next build
 
-CMD ["pnpm", "--filter", "@salin/web", "exec", "next", "dev", "--hostname", "0.0.0.0", "--port", "3000"]
+ENV NODE_ENV=production
+
+CMD ["pnpm", "--filter", "@salin/web", "exec", "next", "start", "--hostname", "0.0.0.0", "--port", "3000"]

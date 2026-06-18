@@ -1,5 +1,6 @@
 import type {
   AppSettingsResponse,
+  AppSettingsUpdateRequest,
   LanguageOption,
   NotesGenerationResponse,
   NotesUpdateRequest,
@@ -49,6 +50,20 @@ export class SalinApiClient {
   async getSettings(): Promise<AppSettingsResponse> {
     const response = await fetch(`${this.baseUrl}/settings`, {
       cache: "no-store",
+    });
+
+    return parseResponse<AppSettingsResponse>(response);
+  }
+
+  async updateSettings(
+    payload: AppSettingsUpdateRequest,
+  ): Promise<AppSettingsResponse> {
+    const response = await fetch(`${this.baseUrl}/settings`, {
+      method: "PATCH",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(payload),
     });
 
     return parseResponse<AppSettingsResponse>(response);

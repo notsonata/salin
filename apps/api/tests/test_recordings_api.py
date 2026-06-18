@@ -5,6 +5,7 @@ from datetime import UTC, datetime, timedelta
 
 from salin_api.recording_sources import YOUTUBE_IMPORT_CONTENT_TYPE, YOUTUBE_IMPORT_KIND
 from salin_api.repositories.recordings import RecordingRepository, TranscriptSegmentInput
+from salin_api.services.app_settings import get_diarization_enabled_for_worker
 
 
 def test_recording_routes_allow_browser_origin(client) -> None:
@@ -21,7 +22,10 @@ def test_settings_reports_diarization_disabled_by_default(client) -> None:
     response = client.get("/settings")
 
     assert response.status_code == 200
-    assert response.json() == {"diarization_enabled": False}
+    assert response.json() == {
+        "diarization_available": False,
+        "diarization_enabled": False,
+    }
 
 
 def test_settings_reports_diarization_enabled_when_pyannote_is_configured(
@@ -34,7 +38,57 @@ def test_settings_reports_diarization_enabled_when_pyannote_is_configured(
     response = client.get("/settings")
 
     assert response.status_code == 200
-    assert response.json() == {"diarization_enabled": True}
+    assert response.json() == {
+        "diarization_available": True,
+        "diarization_enabled": True,
+    }
+
+
+def test_settings_rejects_diarization_enable_without_pyannote_token(client) -> None:
+    response = client.patch("/settings", json={"diarization_enabled": True})
+
+    assert response.status_code == 409
+    assert "PYANNOTE_AUTH_TOKEN" in response.json()["detail"]
+
+
+def test_settings_persists_diarization_toggle(client, app) -> None:
+    app.state.settings.pyannote_auth_token = "hf-token"
+
+    enable_response = client.patch("/settings", json={"diarization_enabled": True})
+
+    assert enable_response.status_code == 200
+    assert enable_response.json() == {
+        "diarization_available": True,
+        "diarization_enabled": True,
+    }
+
+    get_response = client.get("/settings")
+
+    assert get_response.status_code == 200
+    assert get_response.json() == {
+        "diarization_available": True,
+        "diarization_enabled": True,
+    }
+
+    disable_response = client.patch("/settings", json={"diarization_enabled": False})
+
+    assert disable_response.status_code == 200
+    assert disable_response.json() == {
+        "diarization_available": True,
+        "diarization_enabled": False,
+    }
+
+
+def test_worker_reads_persisted_diarization_toggle(client, app) -> None:
+    app.state.settings.pyannote_auth_token = "hf-token"
+
+    response = client.patch("/settings", json={"diarization_enabled": True})
+
+    assert response.status_code == 200
+    assert get_diarization_enabled_for_worker(
+        settings=app.state.settings,
+        session_factory=app.state.session_factory,
+    )
 
 
 def test_supported_upload_persists_metadata_and_enqueues_job(client, app) -> None:

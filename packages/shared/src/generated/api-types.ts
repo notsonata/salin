@@ -18,7 +18,8 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /** Update Settings */
+        patch: operations["update_settings_settings_patch"];
         trace?: never;
     };
     "/recordings": {
@@ -320,6 +321,13 @@ export interface components {
         AppSettingsResponse: {
             /** Diarization Enabled */
             diarization_enabled: boolean;
+            /** Diarization Available */
+            diarization_available: boolean;
+        };
+        /** AppSettingsUpdateRequest */
+        AppSettingsUpdateRequest: {
+            /** Diarization Enabled */
+            diarization_enabled: boolean;
         };
         /** ArtifactUrls */
         ArtifactUrls: {
@@ -576,6 +584,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AppSettingsResponse"];
+                };
+            };
+        };
+    };
+    update_settings_settings_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AppSettingsUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AppSettingsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

@@ -3,6 +3,8 @@ from __future__ import annotations
 import logging
 
 from salin_api.core.settings import Settings, get_settings
+from salin_api.db.session import create_session_factory
+from salin_api.services.app_settings import get_diarization_enabled_for_worker
 from salin_api.services.notes import OpenRouterNotesProvider
 from salin_api.storage.r2 import S3ObjectStorage
 
@@ -18,6 +20,11 @@ logger = logging.getLogger(__name__)
 
 def process_recording(recording_id: str) -> None:
     settings = get_settings()
+    session_factory = create_session_factory(settings.database_url)
+    diarization_enabled = get_diarization_enabled_for_worker(
+        settings=settings,
+        session_factory=session_factory,
+    )
     storage = S3ObjectStorage(
         bucket_name=settings.r2_bucket_name,
         endpoint_url=settings.r2_endpoint_url,
@@ -32,7 +39,12 @@ def process_recording(recording_id: str) -> None:
         local_provider=FasterWhisperTranscriptionProvider(
             model_name=settings.local_transcription_model,
         ),
-        diarization_provider=build_diarization_provider(settings),
+        diarization_provider=(
+            build_diarization_provider(settings, enabled_by_app_setting=True)
+            if diarization_enabled
+            else None
+        ),
+        session_factory=session_factory,
     )
     processor.process(recording_id)
 
@@ -49,8 +61,15 @@ def generate_notes(recording_id: str) -> None:
     generator.generate(recording_id)
 
 
-def build_diarization_provider(settings: Settings) -> DiarizationProvider | None:
+def build_diarization_provider(
+    settings: Settings,
+    *,
+    enabled_by_app_setting: bool = False,
+) -> DiarizationProvider | None:
     provider_name = settings.diarization_provider.strip().lower()
+    if enabled_by_app_setting and provider_name in {"", "none", "off", "disabled"}:
+        provider_name = "pyannote"
+
     if provider_name in {"", "none", "off", "disabled"}:
         return None
 

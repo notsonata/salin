@@ -22,6 +22,42 @@
             }
           }
         }
+      },
+      "patch": {
+        "summary": "Update Settings",
+        "operationId": "update_settings_settings_patch",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AppSettingsUpdateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppSettingsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/recordings": {
@@ -772,13 +808,31 @@
           "diarization_enabled": {
             "type": "boolean",
             "title": "Diarization Enabled"
+          },
+          "diarization_available": {
+            "type": "boolean",
+            "title": "Diarization Available"
+          }
+        },
+        "type": "object",
+        "required": [
+          "diarization_enabled",
+          "diarization_available"
+        ],
+        "title": "AppSettingsResponse"
+      },
+      "AppSettingsUpdateRequest": {
+        "properties": {
+          "diarization_enabled": {
+            "type": "boolean",
+            "title": "Diarization Enabled"
           }
         },
         "type": "object",
         "required": [
           "diarization_enabled"
         ],
-        "title": "AppSettingsResponse"
+        "title": "AppSettingsUpdateRequest"
       },
       "ArtifactUrls": {
         "properties": {

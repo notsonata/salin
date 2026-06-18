@@ -1,25 +1,27 @@
 # Tasks
 
-### [P2] Add read-only app settings surface
+### [P2] Add app settings diarization toggle
 
-Expose server-global diarization status in the app shell without turning it into
-a per-recording processing option.
+Expose server-global diarization control in the app shell without turning it
+into a per-recording processing option.
 
 Acceptance criteria:
 
-- API returns `diarization_enabled` from non-secret server configuration
-- shared client exposes a typed settings fetch
+- API returns `diarization_available` and `diarization_enabled` without exposing provider secrets
+- API persists `diarization_enabled` changes and rejects enabling when no server token is configured
+- worker reads the persisted setting before future jobs and runs pyannote on the Droplet worker when enabled
+- shared client exposes typed settings fetch and update calls
 - desktop sidebar pins Settings at the bottom
 - mobile navigation sheet exposes the same Settings popup
-- `Enable Diarization` is read-only and mirrors backend configuration
+- `Enable Diarization` opens above the Settings button on desktop and persists the global toggle
 - the dashboard upload page no longer shows a small `Dashboard` label above
   `New recording`
 - focused API and web E2E coverage documents the behavior
 
-- **Files**: `apps/api/salin_api/api/routes.py`, `apps/api/salin_api/schemas/settings.py`, `packages/shared/src/client.ts`, `apps/web/components/app-shell.tsx`, `apps/web/components/dashboard-upload-composer.tsx`, `apps/api/tests/test_recordings_api.py`, `apps/web/tests/e2e/upload.spec.ts`, `docs/ui.md`, `docs/testing.md`, `docs/tasks.md`
+- **Files**: `apps/api/salin_api/api/routes.py`, `apps/api/salin_api/models/app_setting.py`, `apps/api/salin_api/repositories/app_settings.py`, `apps/api/salin_api/services/app_settings.py`, `apps/api/salin_api/schemas/settings.py`, `apps/worker/salin_worker/tasks.py`, `packages/shared/src/client.ts`, `apps/web/components/app-shell.tsx`, `apps/web/components/dashboard-upload-composer.tsx`, `apps/api/tests/test_recordings_api.py`, `apps/worker/tests/test_pyannote_provider.py`, `apps/web/tests/e2e/upload.spec.ts`, `docs/ui.md`, `docs/testing.md`, `docs/tasks.md`
 - **Context**: The app needs a small settings entry point before broader
   configuration work, while diarization remains a server-level deployment
-  capability for now.
+  capability gated by the Droplet's pyannote token and CPU capacity.
 - **Status**: Done
 
 ### [P1] Harden deployed YouTube imports after bot-check recurrence

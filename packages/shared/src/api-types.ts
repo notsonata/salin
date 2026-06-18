@@ -2,6 +2,8 @@ import type { components } from "./generated/api-types";
 
 export type ArtifactUrls = components["schemas"]["ArtifactUrls"];
 export type AppSettingsResponse = components["schemas"]["AppSettingsResponse"];
+export type AppSettingsUpdateRequest =
+  components["schemas"]["AppSettingsUpdateRequest"];
 export type GeneratedNotesSummary = components["schemas"]["GeneratedNotesSummary"];
 export type JobStage = components["schemas"]["JobStage"];
 export type LanguageOption = components["schemas"]["LanguageOption"];

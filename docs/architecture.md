@@ -12,7 +12,7 @@ Salin now has the transcript spine plus the first review-and-notes layer as a re
 - `infra/docker-compose.prod.yml`: single-Droplet production orchestration with
   Caddy routing browser-facing web and API traffic through ports `80` and `443`
 
-This slice now covers an upload-first dashboard, public single-video YouTube URL import for presentation intake, persistent jobs, canonical transcript segments, normalized-audio review, transcript search, transcript TXT/PDF export controls, manual notes generation, Markdown notes editing, basic speaker correction workflows, non-blocking transcript-first diarization, configurable pyannote-backed diarization, chunked long-recording transcription, and backend TXT/PDF exports for transcript, notes, and a combined bundle.
+This slice now covers an upload-first dashboard, public single-video YouTube URL import for presentation intake, persistent jobs, canonical transcript segments, normalized-audio review, transcript search, transcript TXT/PDF export controls, manual notes generation, Markdown notes editing, basic speaker correction workflows, non-blocking transcript-first diarization, sidebar-controlled pyannote-backed diarization for future jobs, chunked long-recording transcription, and backend TXT/PDF exports for transcript, notes, and a combined bundle.
 
 ## System Overview
 
@@ -55,6 +55,7 @@ salin/
 ### `apps/web`
 
 - Render the product home at `/`
+- Serve production builds with `next start` in the production Docker image
 - Render the recording intake dashboard at `/dashboard`
 - Render recent recordings history on `/library` from `GET /recordings`
 - Delete a recording from `/library` after confirmation and remove the row once
@@ -68,13 +69,14 @@ salin/
 - Render estimated/edited speaker state, speaker rename, and per-block speaker reassignment controls inside the transcript tab
 - Render manual notes generation, regeneration, and Markdown notes editing without blocking transcript review
 - Render notes TXT/PDF and combined TXT/PDF export links once notes have completed
-- Render a sidebar Settings popup backed by `GET /settings` for server-global capability state such as diarization availability
+- Render a sidebar Settings popup backed by `GET /settings` and `PATCH /settings` for the server-global diarization toggle
 - Show retry affordance only when the API marks a failed job as retryable
 
 ### `apps/api`
 
 - Return non-secret app settings through `GET /settings`, including whether
-  server-global diarization is enabled
+  server-global diarization is available and enabled
+- Persist non-secret settings updates through `PATCH /settings`
 - Accept multipart recording uploads
 - Accept public single-video YouTube import requests at `POST /recordings/imports/youtube`
 - Validate supported file types and size limit
@@ -133,12 +135,13 @@ salin/
 
 Current tables:
 
+- `app_settings`
 - `recordings`
 - `processing_jobs`
 - `transcript_segments`
 - `generated_notes`
 
-The current schema still omits diarization, export, and chunk metadata tables. Basic speaker corrections are stored directly on transcript segment rows rather than in a separate speaker table.
+The current schema still omits diarization, export, and chunk metadata tables. Basic speaker corrections are stored directly on transcript segment rows rather than in a separate speaker table. `app_settings` stores non-secret application toggles such as whether pyannote diarization should run for future recording jobs.
 
 The API currently initializes tables with `Base.metadata.create_all(...)` on startup. Proper migrations can be added once the schema stabilizes beyond the transcript spine.
 
@@ -212,7 +215,7 @@ The worker owns provider-specific logic behind explicit interfaces:
 
 The rest of the system only consumes canonical transcript segments and job state, not provider response shapes.
 
-The diarization boundary defines provider-neutral speaker spans, artifact persistence, and transcript alignment. The first model-backed provider is `pyannote.audio`, using `pyannote/speaker-diarization-community-1` by default when `DIARIZATION_PROVIDER=pyannote` and `PYANNOTE_AUTH_TOKEN` are configured.
+The diarization boundary defines provider-neutral speaker spans, artifact persistence, and transcript alignment. The first model-backed provider is `pyannote.audio`, using `pyannote/speaker-diarization-community-1` by default when a real `PYANNOTE_AUTH_TOKEN` is configured and the persisted app setting enables diarization. `DIARIZATION_PROVIDER=pyannote` still seeds the initial enabled state for deployments that want diarization on by default.
 
 ## Job Lifecycle
 

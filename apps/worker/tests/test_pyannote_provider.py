@@ -165,3 +165,34 @@ def test_build_diarization_provider_instantiates_pyannote(monkeypatch) -> None:
         "model_name": "pyannote/model",
         "device": "cpu",
     }
+
+
+def test_build_diarization_provider_uses_pyannote_for_enabled_app_setting(
+    monkeypatch,
+) -> None:
+    captured: dict[str, str] = {}
+
+    class FakeProvider:
+        def __init__(self, *, auth_token: str, model_name: str, device: str) -> None:
+            captured["auth_token"] = auth_token
+            captured["model_name"] = model_name
+            captured["device"] = device
+
+    monkeypatch.setattr("salin_worker.tasks.PyannoteDiarizationProvider", FakeProvider)
+
+    provider = build_diarization_provider(
+        Settings(
+            DIARIZATION_PROVIDER="none",
+            PYANNOTE_AUTH_TOKEN="hf_token",
+            PYANNOTE_MODEL="pyannote/model",
+            PYANNOTE_DEVICE="cpu",
+        ),
+        enabled_by_app_setting=True,
+    )
+
+    assert provider is not None
+    assert captured == {
+        "auth_token": "hf_token",
+        "model_name": "pyannote/model",
+        "device": "cpu",
+    }

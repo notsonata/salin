@@ -52,8 +52,8 @@ Do not reintroduce the old purple notes lane or warm-beige shell.
 ### App shell
 
 - desktop sidebar keeps Settings pinned at the bottom
-- Settings opens a compact popup with server-global capability state only
-- `Enable Diarization` reflects backend configuration and is not a per-recording toggle
+- Settings opens a compact popup above the Settings button on desktop
+- `Enable Diarization` is a server-global toggle for future processing jobs, not a per-recording upload option
 - mobile navigation exposes the same Settings popup from the sheet menu
 
 ### Home

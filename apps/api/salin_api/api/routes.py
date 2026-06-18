@@ -12,6 +12,7 @@ from fastapi.responses import PlainTextResponse, Response
 from sqlalchemy.orm import Session
 
 from salin_api.recording_sources import YOUTUBE_IMPORT_CONTENT_TYPE, YOUTUBE_IMPORT_KIND
+from salin_api.repositories.app_settings import AppSettingsRepository
 from salin_api.repositories.recordings import RecordingRepository
 from salin_api.schemas.recordings import (
     ArtifactUrls,
@@ -36,7 +37,8 @@ from salin_api.schemas.recordings import (
     TranscriptSegmentsUpdateResponse,
     YouTubeImportRequest,
 )
-from salin_api.schemas.settings import AppSettingsResponse
+from salin_api.schemas.settings import AppSettingsResponse, AppSettingsUpdateRequest
+from salin_api.services.app_settings import get_app_settings_state
 from salin_api.services.exports import (
     BinaryExport,
     TextExport,
@@ -153,13 +155,43 @@ def build_youtube_import_descriptor(url: str) -> bytes:
 
 
 @router.get("/settings", response_model=AppSettingsResponse)
-def get_settings(request: Request) -> AppSettingsResponse:
-    settings = request.app.state.settings
-    diarization_enabled = (
-        settings.diarization_provider.strip().lower() == "pyannote"
-        and bool(settings.pyannote_auth_token.strip())
+def get_settings(request: Request, session: SessionDep) -> AppSettingsResponse:
+    state = get_app_settings_state(
+        settings=request.app.state.settings,
+        repository=AppSettingsRepository(session),
     )
-    return AppSettingsResponse(diarization_enabled=diarization_enabled)
+    return AppSettingsResponse(
+        diarization_available=state.diarization_available,
+        diarization_enabled=state.diarization_enabled,
+    )
+
+
+@router.patch("/settings", response_model=AppSettingsResponse)
+def update_settings(
+    payload: AppSettingsUpdateRequest,
+    request: Request,
+    session: SessionDep,
+) -> AppSettingsResponse:
+    repository = AppSettingsRepository(session)
+    state = get_app_settings_state(
+        settings=request.app.state.settings,
+        repository=repository,
+    )
+    if payload.diarization_enabled and not state.diarization_available:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Diarization requires PYANNOTE_AUTH_TOKEN to be configured on the server.",
+        )
+
+    repository.set_diarization_enabled(payload.diarization_enabled)
+    next_state = get_app_settings_state(
+        settings=request.app.state.settings,
+        repository=repository,
+    )
+    return AppSettingsResponse(
+        diarization_available=next_state.diarization_available,
+        diarization_enabled=next_state.diarization_enabled,
+    )
 
 
 @router.post(

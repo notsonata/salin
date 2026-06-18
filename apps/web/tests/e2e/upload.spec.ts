@@ -137,14 +137,36 @@ test("home frames the product as a transcript review board", async ({ page }) =>
 });
 
 test("dashboard home shows the recording intake composer", async ({ page }) => {
+  let updateSettingsPayload: unknown = null;
+
   await page.route("http://localhost:8000/settings", async (route) => {
+    const request = route.request();
+    if (request.method() === "PATCH") {
+      updateSettingsPayload = request.postDataJSON();
+      await route.fulfill({
+        status: 200,
+        headers: {
+          "access-control-allow-origin": "*",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          diarization_available: true,
+          diarization_enabled: true,
+        }),
+      });
+      return;
+    }
+
     await route.fulfill({
       status: 200,
       headers: {
         "access-control-allow-origin": "*",
         "content-type": "application/json",
       },
-      body: JSON.stringify({ diarization_enabled: false }),
+      body: JSON.stringify({
+        diarization_available: true,
+        diarization_enabled: false,
+      }),
     });
   });
 
@@ -157,9 +179,20 @@ test("dashboard home shows the recording intake composer", async ({ page }) => {
   await expect(page.getByRole("tab", { name: "YouTube URL" })).toBeVisible();
 
   await page.getByRole("button", { name: "Settings" }).click();
-  await expect(
-    page.getByRole("menuitemcheckbox", { name: "Enable Diarization" }),
-  ).toHaveAttribute("aria-checked", "false");
+  const settingsButton = page.getByRole("button", { name: "Settings" });
+  const diarizationItem = page.getByRole("menuitemcheckbox", {
+    name: "Enable Diarization",
+  });
+  await expect(diarizationItem).toHaveAttribute("aria-checked", "false");
+  const settingsBox = await settingsButton.boundingBox();
+  const diarizationBox = await diarizationItem.boundingBox();
+  expect(settingsBox).not.toBeNull();
+  expect(diarizationBox).not.toBeNull();
+  expect(diarizationBox!.y + diarizationBox!.height).toBeLessThanOrEqual(settingsBox!.y);
+
+  await diarizationItem.click();
+  await expect(diarizationItem).toHaveAttribute("aria-checked", "true");
+  expect(updateSettingsPayload).toEqual({ diarization_enabled: true });
 });
 
 test("library search filters recording rows", async ({ page }) => {
