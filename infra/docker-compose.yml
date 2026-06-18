@@ -9,9 +9,6 @@ services:
       WATCHPACK_POLLING: "true"
     ports:
       - "3000:3000"
-    volumes:
-      - ../apps/web:/workspace/apps/web
-      - ../packages/shared:/workspace/packages/shared
     depends_on:
       api:
         condition: service_started
