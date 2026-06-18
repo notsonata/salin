@@ -357,7 +357,9 @@ pnpm --filter @salin/shared generate
 ## Service Notes
 
 - The worker image includes `ffmpeg`, a Deno runtime, and the `yt-dlp`
-  default extras needed for current YouTube JS challenge solving.
+  default extras needed for current YouTube JS challenge solving. The YouTube
+  importer also forces the Android YouTube player client because the default
+  client can still hit bot checks on the DigitalOcean Droplet.
 - The web app uses `NEXT_PUBLIC_API_BASE_URL` in the browser and `SALIN_API_INTERNAL_BASE_URL` for server-side paths.
 - `CORS_ALLOWED_ORIGINS` must include the browser-facing web origin, which is `http://localhost:3000` for the default Docker Compose setup.
 - Cloudflare R2 remains the source of truth for original, normalized, and raw-provider artifacts.
@@ -398,7 +400,8 @@ pnpm --filter @salin/shared generate
   worker.
 - YouTube import fails with `n challenge solving failed` or only storyboard
   formats: rebuild and restart the worker so the image includes the checked-in
-  Deno runtime and `yt-dlp[default]` dependency set.
+  Deno runtime, `yt-dlp[default]` dependency set, and Android player-client
+  importer option.
 - Recording fails with `Task exceeded maximum timeout value`: raise `RECORDING_JOB_TIMEOUT_SECONDS` and retry the failed recording
 - Long recording appears stuck: check the job note for chunk progress such as `Transcribing chunk 3/12`, and confirm the worker is still running
 - Browser-facing API base URL and server-side internal API base URL diverge

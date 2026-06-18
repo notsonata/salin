@@ -99,6 +99,21 @@ def test_youtube_importer_enables_deno_runtime_for_yt_dlp(tmp_path: Path) -> Non
     assert FakeYoutubeDL.options_seen[0]["js_runtimes"] == {"deno": {}}
 
 
+def test_youtube_importer_uses_android_client_for_bot_check_recovery(
+    tmp_path: Path,
+) -> None:
+    importer = YouTubeAudioImporter(max_duration_seconds=120)
+
+    importer.download_audio(
+        url="https://www.youtube.com/watch?v=demo123",
+        output_dir=tmp_path / "download",
+    )
+
+    assert FakeYoutubeDL.options_seen[0]["extractor_args"] == {
+        "youtube": {"player_client": ["android"]},
+    }
+
+
 def test_youtube_importer_fails_clearly_when_cookie_file_is_missing(
     tmp_path: Path,
 ) -> None:

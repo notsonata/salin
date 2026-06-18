@@ -1,5 +1,23 @@
 # Tasks
 
+### [P1] Force the Android YouTube client for deployed imports
+
+Keep public YouTube imports usable on the DigitalOcean Droplet when the default
+YouTube player client still returns the bot-check wall even with a mounted
+cookies file.
+
+Acceptance criteria:
+
+- the worker passes `youtube:player_client=android` through `yt-dlp`
+- focused worker coverage locks the extractor argument in place
+- setup, architecture, and testing docs describe the Droplet recovery behavior
+
+- **Files**: `apps/worker/salin_worker/services/youtube.py`, `apps/worker/tests/test_youtube.py`, `docs/setup.md`, `docs/testing.md`, `docs/architecture.md`, `docs/tasks.md`
+- **Context**: On the Droplet, the same video failed with the default client and
+  the staged cookies file, while the Android client succeeded against the same
+  worker image, cookie file, and video URL.
+- **Status**: Done
+
 ### [P1] Ship a JS challenge runtime for deployed YouTube imports
 
 Make the production worker image include the upstream pieces that current

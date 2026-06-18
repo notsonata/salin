@@ -45,6 +45,8 @@ Use the lowest level that gives credible confidence:
 - YouTube import explicitly enables the Deno JS runtime for `yt-dlp` so the
   worker can solve current YouTube JS challenges once the image ships the
   matching runtime and EJS package
+- YouTube import forces the Android YouTube player client because the default
+  client can still return bot-check failures on the DigitalOcean Droplet
 - Notes generation persists Markdown notes content from stored transcript data
 - Notes failures keep transcript data intact
 - Notes regeneration replaces content only after a successful rerun

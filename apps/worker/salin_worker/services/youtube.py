@@ -49,6 +49,7 @@ class YouTubeAudioImporter:
             "fragment_retries": 2,
             "socket_timeout": 30,
             "js_runtimes": {"deno": {}},
+            "extractor_args": {"youtube": {"player_client": ["android"]}},
         }
         staged_cookies_file: Path | None = None
         if self.cookies_file is not None:
